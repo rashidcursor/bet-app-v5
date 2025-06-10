@@ -10,5 +10,3 @@ export const store = configureStore({
     markets: marketsReducer,
   },
 });
-
-export default store;

@@ -110,8 +110,8 @@ const BettingInterface = () => {
                                     key={league.id}
                                     variant={selectedLeagueLocal?.id === league.id ? "default" : "ghost"}
                                     className={`w-full justify-start p-3 h-auto ${selectedLeagueLocal?.id === league.id
-                                            ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                            : "hover:bg-gray-100"
+                                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                        : "hover:bg-gray-100"
                                         }`}
                                     onClick={() => handleLeagueSelect(league)}
                                 >

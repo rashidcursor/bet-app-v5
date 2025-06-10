@@ -1,16 +1,7 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/ReduxProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import Header from "@/components/home/Header";
+import Sidebar from "@/components/home/Sidebar";
 
 export const metadata = {
   title: "BetApp - Sports Betting Platform",
@@ -21,10 +12,20 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ReduxProvider>{children}</ReduxProvider>
+      <body className="antialiased">
+        <ReduxProvider>
+          <div className="min-h-screen bg-gray-100 overflow-x-hidden">
+            <Header />
+            <div className="flex overflow-hidden">
+              <div className="hidden lg:block">
+                <Sidebar />
+              </div>
+              <main className="flex-1 w-full lg:w-auto">
+                {children}
+              </main>
+            </div>
+          </div>
+        </ReduxProvider>
       </body>
     </html>
   );
