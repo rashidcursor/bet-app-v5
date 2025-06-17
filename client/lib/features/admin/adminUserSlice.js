@@ -191,6 +191,40 @@ export const updateUserDetails = createAsyncThunk(
   }
 );
 
+export const createUser = createAsyncThunk(
+  "adminUsers/createUser",
+  async (userData, { rejectWithValue }) => {
+    try {
+      console.log('Creating user with data:', userData);
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+      console.log('Create user API response:', data);
+
+      if (!response.ok) {
+        console.error('Create user API error:', data);
+        return rejectWithValue(data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Create user error:', error);
+      return rejectWithValue({
+        success: false,
+        message: "Network error occurred",
+        error: error.message,
+      });
+    }
+  }
+);
+
 export const fetchUserStats = createAsyncThunk(
   "adminUsers/fetchUserStats",
   async (_, { rejectWithValue }) => {
@@ -215,6 +249,39 @@ export const fetchUserStats = createAsyncThunk(
       return data;
     } catch (error) {
       console.error('Stats fetch error:', error);
+      return rejectWithValue({
+        success: false,
+        message: "Network error occurred",
+        error: error.message,
+      });
+    }
+  }
+);
+
+export const deleteUser = createAsyncThunk(
+  "adminUsers/deleteUser",
+  async (userId, { rejectWithValue }) => {
+    try {
+      console.log('Deleting user with ID:', userId);
+      const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      const data = await response.json();
+      console.log('Delete user API response:', data);
+
+      if (!response.ok) {
+        console.error('Delete user API error:', data);
+        return rejectWithValue(data);
+      }
+
+      return { userId, message: data.message };
+    } catch (error) {
+      console.error('Delete user error:', error);
       return rejectWithValue({
         success: false,
         message: "Network error occurred",
@@ -381,6 +448,37 @@ const adminUserSlice = createSlice({
         state.error = action.payload?.message || "Failed to update user details";
       })
 
+      // Create user cases
+      .addCase(createUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.message = null;
+      })
+      .addCase(createUser.fulfilled, (state, action) => {
+        console.log('Create user fulfilled:', action.payload);
+        state.isLoading = false;
+        const newUser = action.payload.user || action.payload;
+        if (newUser && (newUser._id || newUser.id)) {
+          state.users.unshift(newUser); // Add to beginning of users list
+          state.message = action.payload.message || "User created successfully";
+          // Update stats if available
+          if (state.stats.totalUsers !== undefined) {
+            state.stats.totalUsers += 1;
+            if (newUser.isActive) {
+              state.stats.activeUsers += 1;
+            } else {
+              state.stats.inactiveUsers += 1;
+            }
+          }
+        }
+        state.error = null;
+      })
+      .addCase(createUser.rejected, (state, action) => {
+        console.error('Create user rejected:', action.payload);
+        state.isLoading = false;
+        state.error = action.payload?.message || "Failed to create user";
+      })
+
       // Fetch user stats cases
       .addCase(fetchUserStats.pending, (state) => {
         state.isLoading = true;
@@ -396,6 +494,26 @@ const adminUserSlice = createSlice({
         console.error('Stats fetch rejected:', action.payload);
         state.isLoading = false;
         state.error = action.payload?.message || "Failed to fetch user stats";
+      })
+
+      // Delete user cases
+      .addCase(deleteUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.message = null;
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        console.log('Delete user fulfilled:', action.payload);
+        state.isLoading = false;
+        state.message = action.payload.message;
+        state.error = null;
+        // Remove the deleted user from the list
+        state.users = state.users.filter(user => user._id !== action.payload.userId);
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
+        console.error('Delete user rejected:', action.payload);
+        state.isLoading = false;
+        state.error = action.payload?.message || "Failed to delete user";
       });
   },
 });
@@ -411,4 +529,4 @@ export const selectIsLoading = (state) => state.adminUsers.isLoading;
 export const selectError = (state) => state.adminUsers.error;
 export const selectMessage = (state) => state.adminUsers.message;
 
-export default adminUserSlice.reducer; 
+export default adminUserSlice.reducer;

@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  signup,
   login,
   logout,
   getMe,
@@ -11,7 +10,6 @@ import { authenticateToken } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Public routes
-router.post("/signup", signup);
 router.post("/login", login);
 router.post("/refresh", refreshToken);
 

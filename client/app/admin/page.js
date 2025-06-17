@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
       {/* User Management Section */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">User Management</h2>
+      
         <UserManagement />
       </div>
     </div>

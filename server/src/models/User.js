@@ -42,26 +42,6 @@ const userSchema = new mongoose.Schema(
           "Password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character",
       },
     },
-    dateOfBirth: {
-      day: {
-        type: Number,
-        required: [true, "Birth day is required"],
-        min: 1,
-        max: 31,
-      },
-      month: {
-        type: Number,
-        required: [true, "Birth month is required"],
-        min: 1,
-        max: 12,
-      },
-      year: {
-        type: Number,
-        required: [true, "Birth year is required"],
-        min: 1900,
-        max: new Date().getFullYear() - 18, // Must be at least 18 years old
-      },
-    },
     gender: {
       type: String,
       required: [true, "Gender is required"],
@@ -75,11 +55,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["user", "admin"],
       default: "user",
-    },
-    balance:{
+    },    balance:{
       type: Number,
       default: 1000,
       
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false, // Optional field for tracking admin who created the user
     }
   },
   {
@@ -110,26 +94,6 @@ userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
   return userObject;
-};
-
-// Check if user is of legal age (18+)
-userSchema.methods.isOfLegalAge = function () {
-  const today = new Date();
-  const birthDate = new Date(
-    this.dateOfBirth.year,
-    this.dateOfBirth.month - 1,
-    this.dateOfBirth.day
-  );
-  const age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    return age - 1 >= 18;
-  }
-  return age >= 18;
 };
 
 const User = mongoose.model("User", userSchema);

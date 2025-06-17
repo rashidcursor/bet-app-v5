@@ -32,15 +32,9 @@ const { user, isLoading, error, message } = authState
     lastName: "",
     email: "",
     phoneNumber: "",
-    dateOfBirth: {
-      day: "",
-      month: "",
-      year: "",
-    },
     gender: "",
   })
   const [formErrors, setFormErrors] = useState({})
-
   useEffect(() => {
     if (user) {
       setFormData({
@@ -48,11 +42,6 @@ const { user, isLoading, error, message } = authState
         lastName: user.lastName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
-        dateOfBirth: {
-          day: user.dateOfBirth?.day || "",
-          month: user.dateOfBirth?.month || "",
-          year: user.dateOfBirth?.year || "",
-        },
         gender: user.gender || "",
       })
     }
@@ -116,27 +105,7 @@ const handleInputChange = useCallback((field, value) => {
       if (digitsOnly.length !== 11) {
         errors.phoneNumber = "Phone number must have exactly 11 digits"
       } else if (!/^[\+\d\s\-\(\)]+$/.test(phoneNumber)) {
-        errors.phoneNumber = "Please enter a valid phone number format"
-      }
-    }
-    
-    // Validate date of birth if partially filled
-    const { day, month, year } = dataToValidate.dateOfBirth || {}
-    const hasAnyDateValue = day || month || year
-    const hasAllDateValues = day && month && year
-    
-    if (hasAnyDateValue && !hasAllDateValues) {
-      errors.dateOfBirth = "Please complete the full date of birth or leave it empty"
-    }
-    
-
-    if (hasAllDateValues) {
-      const currentYear = new Date().getFullYear()
-      const age = currentYear - parseInt(year)
-      
-      // Simple age check (approximate) - avoid complex date calculations
-      if (age < 18) {
-        errors.dateOfBirth = "You must be at least 18 years old"}
+        errors.phoneNumber = "Please enter a valid phone number format"      }
     }
     
     return { errors, isValid: Object.keys(errors).length === 0 }
@@ -155,23 +124,12 @@ const handleInputChange = useCallback((field, value) => {
       return // Don't proceed if the form is invalid
     }
 
-    try {
-      // Prepare the data for the API call efficiently
+    try {      // Prepare the data for the API call efficiently
       const updateData = {
         firstName: formData.firstName?.trim(),
         lastName: formData.lastName?.trim(),
         phoneNumber: formData.phoneNumber?.trim() || undefined,
         gender: formData.gender || undefined,
-      }
-      
-      // Handle date of birth efficiently
-      const { day, month, year } = formData.dateOfBirth
-      if (day && month && year) {
-        updateData.dateOfBirth = {
-          day: parseInt(day),
-          month: parseInt(month),
-          year: parseInt(year)
-        }
       }
       
       console.log('📤 Sending update data:', updateData)
@@ -193,46 +151,17 @@ const handleInputChange = useCallback((field, value) => {
   
   const handleCancel = useCallback(() => {
     // Reset form data to original values efficiently
-    if (user) {
-      setFormData({
+    if (user) {      setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
-        dateOfBirth: {
-          day: user.dateOfBirth?.day || "",
-          month: user.dateOfBirth?.month || "",
-          year: user.dateOfBirth?.year || "",
-        },
         gender: user.gender || "",
       })
     }
     setFormErrors({}) // Clear any validation errors
-    setIsEditing(false)
-  }, [user])
-  const formatDateOfBirth = useCallback(() => {
-    if (!user?.dateOfBirth) return "Not provided"
-    const { day, month, year } = user.dateOfBirth
-    if (!day || !month || !year) return "Not provided"
-
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ]
-
-    return `${monthNames[month - 1]} ${day}, ${year}`
-  }, [user?.dateOfBirth])
-
+    setIsEditing(false)  }, [user])
+  
   const getAccountAge = useCallback(() => {
     if (!user?.createdAt) return "N/A"
     const created = new Date(user.createdAt)
@@ -250,27 +179,7 @@ const handleInputChange = useCallback((field, value) => {
     const lastName = user?.lastName || ""
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
   }, [user?.firstName, user?.lastName])
-  const months = useMemo(() => [
-    { value: 1, label: "January" },
-    { value: 2, label: "February" },
-    { value: 3, label: "March" },
-    { value: 4, label: "April" },
-    { value: 5, label: "May" },
-    { value: 6, label: "June" },
-    { value: 7, label: "July" },
-    { value: 8, label: "August" },
-    { value: 9, label: "September" },
-    { value: 10, label: "October" },
-    { value: 11, label: "November" },
-    { value: 12, label: "December" },
-  ], [])
-
-  const days = useMemo(() => Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: (i + 1).toString() })), [])
-    const years = useMemo(() => Array.from({ length: 100 }, (_, i) => {
-    const year = new Date().getFullYear() - 18 - i
-    return { value: year, label: year.toString() }
-  }), [])
-
+  
   // Auto-clear success messages after 5 seconds
   useEffect(() => {
     if (message) {
@@ -535,71 +444,7 @@ const handleInputChange = useCallback((field, value) => {
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Personal Details
-                  </h3>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Date of Birth</label>
-                      {isEditing ? (
-                        <div className="grid grid-cols-3 gap-2">
-                          <Select
-                            value={formData.dateOfBirth.month.toString()}
-                            onValueChange={(value) => handleInputChange("dateOfBirth.month", Number.parseInt(value))}
-                          >
-                            <SelectTrigger className="text-[13px]">
-                              <SelectValue placeholder="Month" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {months.map((month) => (
-                                <SelectItem key={month.value} value={month.value.toString()}>
-                                  {month.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          <Select
-                            value={formData.dateOfBirth.day.toString()}
-                            onValueChange={(value) => handleInputChange("dateOfBirth.day", Number.parseInt(value))}
-                          >
-                            <SelectTrigger className="text-[13px]">
-                              <SelectValue placeholder="Day" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {days.map((day) => (
-                                <SelectItem key={day.value} value={day.value.toString()}>
-                                  {day.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          <Select
-                            value={formData.dateOfBirth.year.toString()}
-                            onValueChange={(value) => handleInputChange("dateOfBirth.year", Number.parseInt(value))}
-                          >
-                            <SelectTrigger className="text-[13px]">
-                              <SelectValue placeholder="Year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {years.map((year) => (
-                                <SelectItem key={year.value} value={year.value.toString()}>
-                                  {year.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <div className="px-3 py-2 bg-muted/50 rounded-md">
-                          <p className="text-[13px] text-foreground">{formatDateOfBirth()}</p>
-                        </div>
-                      )}
-                      {formErrors.dateOfBirth && (
-                        <p className="text-red-500 text-xs mt-1">{formErrors.dateOfBirth}</p>
-                      )}
-                    </div>
-
+                  </h3>                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">Gender</label>
                       {isEditing ? (

@@ -14,51 +14,6 @@ const getCookieOptions = () => ({
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 });
 
-// @desc    Register a new user
-// @route   POST /api/auth/signup
-// @access  Public
-export const signup = async (req, res) => {
-  try {
-    // Use UserService to create user
-    const user = await UserService.createUser(req.body);
-
-    // Generate tokens
-    const accessToken = generateToken({ userId: user._id });
-    const refreshToken = generateRefreshToken({ userId: user._id });
-
-    // Set cookies
-    res.cookie("accessToken", accessToken, getCookieOptions());
-    res.cookie("refreshToken", refreshToken, {
-      ...getCookieOptions(),
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: user.toJSON(),
-      accessToken,
-    });
-  } catch (error) {
-    console.error("Signup error:", error);
-
-    // Handle custom errors from UserService
-    if (error.isOperational) {
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-        errorCode: error.errorCode
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-};
-
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public

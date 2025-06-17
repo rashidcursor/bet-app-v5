@@ -3,75 +3,67 @@ import bcrypt from "bcryptjs";
 import { CustomError } from "../utils/customErrors.js";
 import Bet from "../models/Bet.js";
 
+
+
 class UserService {
   constructor() {
     console.log("🔧 UserService initialized");
   }
-
   /**
-   * Create a new user account
-   * @param {Object} userData - User registration data
+   * Create a new user account by admin
+   * @param {Object} userData - User creation data
+   * @param {string} adminId - ID of the admin creating the user
    * @returns {Promise<Object>} Created user object
    */
-  async createUser(userData) {
-    try {
-      const {
+  async createUserByAdmin(userData, adminId) {
+    try {      const {
         firstName,
         lastName,
         email,
         phoneNumber,
         password,
-        dateOfBirth,
         gender,
-      } = userData; // Check if user already exists
+        role = 'user', // Default to 'user' role unless specified
+        isActive = true // Default to active unless specified
+      } = userData;
+
+      
+
+      // Check if user already exists
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
         throw new CustomError(
-          "User Registration: Email already exists",
+          "User Creation: Email already exists",
           409,
           "DUPLICATE_EMAIL"
         );
-      }
-
-      // Validate date of birth format
-      if (
-        !dateOfBirth ||
-        !dateOfBirth.day ||
-        !dateOfBirth.month ||
-        !dateOfBirth.year
-      ) {
+      }      // Validate role
+      if (!['user', 'admin'].includes(role)) {
         throw new CustomError(
-          "User Registration: Complete date of birth is required",
+          "User Creation: Invalid role specified",
           400,
           "VALIDATION_ERROR"
         );
       }
 
-      // Create new user instance
+          // Create new user instance
       const user = new User({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.toLowerCase().trim(),
         phoneNumber: phoneNumber.trim(),
         password,
-        dateOfBirth,
         gender,
-      }); // Check if user is of legal age
-      if (!user.isOfLegalAge()) {
-        throw new CustomError(
-          "User Registration: You must be at least 18 years old to register",
-          400,
-          "VALIDATION_ERROR"
-        );
-      }
+        role,
+        isActive,        createdBy: adminId 
+      });
 
-      // Save user to database
       await user.save();
 
-      console.log(`✅ User created successfully: ${user.email}`);
+      console.log(`✅ User created successfully by admin: ${user.email}`);
       return user;
     } catch (error) {
-      console.error("❌ Error creating user:", error.message);
+      console.error("❌ Error creating user by admin:", error.message);
 
       if (error instanceof CustomError) {
         throw error;
@@ -80,14 +72,14 @@ class UserService {
       if (error.name === "ValidationError") {
         const errors = Object.values(error.errors).map((err) => err.message);
         throw new CustomError(
-          `User Registration: Validation failed - ${errors.join(", ")}`,
+          `User Creation: Validation failed - ${errors.join(", ")}`,
           400,
           "VALIDATION_ERROR"
         );
       }
 
       throw new CustomError(
-        "User Registration: Failed to create user account",
+        "User Creation: Failed to create user account",
         500,
         "INTERNAL_ERROR"
       );
@@ -206,12 +198,10 @@ class UserService {
    * @returns {Promise<Object>} Updated user object
    */
   async updateUserProfile(userId, updateData) {
-    try {
-      const allowedUpdates = [
+    try {      const allowedUpdates = [
         "firstName",
         "lastName",
         "phoneNumber",
-        "dateOfBirth",
         "gender",
       ];
       const updates = {};
@@ -224,32 +214,8 @@ class UserService {
           } else {
             updates[key] = updateData[key];
           }
-        }
-      }); // Validate date of birth if provided
-      if (updates.dateOfBirth) {
-        const user = await User.findById(userId);
-        if (!user) {
-          throw new CustomError(
-            "User Profile: User not found",
-            404,
-            "USER_NOT_FOUND"
-          );
-        }
-
-        const tempUser = new User({
-          ...user.toObject(),
-          dateOfBirth: updates.dateOfBirth,
-        });
-
-        if (!tempUser.isOfLegalAge()) {
-          throw new CustomError(
-            "User Profile: You must be at least 18 years old",
-            400,
-            "VALIDATION_ERROR"
-          );
-        }
-      }
-
+        }      }); 
+      
       const updatedUser = await User.findByIdAndUpdate(userId, updates, {
         new: true,
         runValidators: true,
@@ -549,16 +515,13 @@ class UserService {
           400,
           "VALIDATION_ERROR"
         );
-      }
-
-      const allowedUpdates = [
+      }      const allowedUpdates = [
         "firstName",
         "lastName",
         "email",
         "phoneNumber",
         "isActive",
         "role",
-        "dateOfBirth",
         "gender",
       ];
       const updates = {};
@@ -571,33 +534,7 @@ class UserService {
           } else {
             updates[key] = updateData[key];
           }
-        }
-      });
-
-      // Validate date of birth if provided
-      if (updates.dateOfBirth) {
-        const user = await User.findById(userId);
-        if (!user) {
-          throw new CustomError(
-            "User Update: User not found",
-            404,
-            "USER_NOT_FOUND"
-          );
-        }
-
-        const tempUser = new User({
-          ...user.toObject(),
-          dateOfBirth: updates.dateOfBirth,
-        });
-
-        if (!tempUser.isOfLegalAge()) {
-          throw new CustomError(
-            "User Update: User must be at least 18 years old",
-            400,
-            "VALIDATION_ERROR"
-          );
-        }
-      }
+        }      });
 
       // Check if email is being updated and if it's already in use
       if (updates.email) {
@@ -726,34 +663,34 @@ class UserService {
     }
   }
 
-  async deleteUserById(userId) {
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new CustomError('User not found', 404);
-      }
-
-      // Check if user has any active bets
-      const activeBets = await Bet.find({ 
-        userId, 
-        status: 'pending' 
-      });
-
-      if (activeBets.length > 0) {
-        throw new CustomError('Cannot delete user with active bets', 400);
-      }
-
-      // Soft delete by updating status
-      user.status = 'deleted';
-      user.deletedAt = new Date();
-      await user.save();
-
-      return { message: 'User deleted successfully' };
-    } catch (error) {
-      console.error('Error in deleteUserById:', error);
-      throw error;
+  // ...existing code...
+async deleteUserById(userId) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new CustomError('User not found', 404);
     }
+
+    // Check if user has any active bets
+    const activeBets = await Bet.find({ 
+      userId, 
+      status: 'pending' 
+    });
+
+    if (activeBets.length > 0) {
+      throw new CustomError('Cannot delete user with active bets', 400);
+    }
+
+    // Permanently delete the user from the database
+    await User.findByIdAndDelete(userId);
+
+    return { message: 'User deleted successfully' };
+  } catch (error) {
+    console.error('Error in deleteUserById:', error);
+    throw error;
   }
+}
+// ...existing code...
 
   async changePassword(userId, currentPassword, newPassword) {
     try {

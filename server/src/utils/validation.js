@@ -1,6 +1,6 @@
-// Validation utility functions for authentication
+// Validation utility functions for user management
 
-export const validateSignupData = (data) => {
+export const validateUserData = (data) => {
   const errors = [];
 
   // Required fields
@@ -10,7 +10,6 @@ export const validateSignupData = (data) => {
     "email",
     "phoneNumber",
     "password",
-    "dateOfBirth",
     "gender",
   ];
 
@@ -36,8 +35,7 @@ export const validateSignupData = (data) => {
         data.password
       )
     ) {
-      errors.push(
-        "Password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character"
+      errors.push(        "Password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character"
       );
     }
   }
@@ -45,25 +43,6 @@ export const validateSignupData = (data) => {
   // Phone number validation
   if (data.phoneNumber && !/^\+?[\d\s\-\(\)]+$/.test(data.phoneNumber)) {
     errors.push("Please enter a valid phone number");
-  }
-
-  // Date of birth validation
-  if (data.dateOfBirth) {
-    const { day, month, year } = data.dateOfBirth;
-
-    if (!day || !month || !year) {
-      errors.push("Complete date of birth is required");
-    } else {
-      if (day < 1 || day > 31) {
-        errors.push("Day must be between 1 and 31");
-      }
-      if (month < 1 || month > 12) {
-        errors.push("Month must be between 1 and 12");
-      }
-      if (year < 1900 || year > new Date().getFullYear()) {
-        errors.push("Please enter a valid birth year");
-      }
-    }
   }
 
   // Gender validation

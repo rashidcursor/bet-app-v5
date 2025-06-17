@@ -11,6 +11,7 @@ import {
   getUserProfile,
   deleteUserById,
   getUserBets,
+  createUser,
 } from "../controllers/user.controller.js";
 import { authenticateToken, requireAdmin } from "../middlewares/auth.js";
 
@@ -25,7 +26,10 @@ router.put("/profile", updateProfile);
 router.put("/change-password", changePassword);
 router.put("/deactivate", deactivateAccount);
 
+
+
 // Admin routes - require admin role
+router.post("/", requireAdmin, createUser); // Create new user
 router.get("/stats", requireAdmin, getUserStats);
 router.get("/search", requireAdmin, searchUsers);
 router.get("/", requireAdmin, getAllUsers);

@@ -2,23 +2,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "@/config/axios";
 
 // Async thunks for API calls
-export const signup = createAsyncThunk(
-  "auth/signup",
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.post("/auth/signup", userData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data || {
-          success: false,
-          message: "Network error occurred",
-          error: error.message,
-        }
-      );
-    }
-  }
-);
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
@@ -152,29 +135,8 @@ const authSlice = createSlice({
     setInitialized: (state) => {
       state.isInitialized = true;
     },
-  },
-  extraReducers: (builder) => {
+  },  extraReducers: (builder) => {
     builder
-      // Signup cases
-      .addCase(signup.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(signup.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-        state.message = action.payload.message;
-        state.error = null;
-      })
-      .addCase(signup.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload?.message || "Signup failed";
-        state.isAuthenticated = false;
-        state.user = null;
-      })
-
       // Login cases
       .addCase(login.pending, (state) => {
         state.isLoading = true;

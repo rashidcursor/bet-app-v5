@@ -175,6 +175,25 @@ const deactivateAccount = async (req, res) => {
     }
 };
 
+// Create new user (admin only)
+const createUser = async (req, res) => {
+    try {
+        const newUser = await UserService.createUserByAdmin(req.body, req.user.id);
+    
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            user: newUser
+        });
+    } catch (error) {
+        console.error('Error in createUser:', error);
+        res.status(error.status || 500).json({
+            success: false,
+            message: error.message || 'Error creating user'
+        });
+    }
+};
+
 // Export all controller functions
 export {
     getUserProfile,
@@ -187,5 +206,6 @@ export {
     deleteUserById,
     getUserBets,
     changePassword,
-    deactivateAccount
+    deactivateAccount,
+    createUser
 };
