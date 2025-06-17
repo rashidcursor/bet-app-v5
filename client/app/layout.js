@@ -7,7 +7,7 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 import BetSlip from "@/components/BetSlip";
 import { Toaster } from "@/components/ui/sonner";
 import { metadata } from "./metadata";
-import { Header } from "@radix-ui/react-accordion";
+import  Header  from "@/components/Header";
 import SidebarWrapper from "@/components/SidebarWrapper";
 import ContentWrapper from "@/components/ContentWrapper";
 
