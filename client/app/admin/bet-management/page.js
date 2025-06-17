@@ -28,7 +28,8 @@ import {
   Check,
   Ticket,
   Trophy,
-  ThumbsDown
+  ThumbsDown,
+  TrendingDown
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,6 +68,8 @@ const generateMockBets = (count) => {
     'Match A vs B', 'Match C vs D', 'Match E vs F', 'Match G vs H', 'Match I vs J',
     'Tournament Finals', 'Championship Series', 'League Playoffs', 'World Cup Qualifiers'
   ];
+  const betTypes = ['single', 'accumulator', 'system'];
+  const selections = ['Home Win', 'Away Win', 'Draw', 'Over 2.5', 'Under 2.5', 'Both Teams to Score', 'No Goals'];
   
   const bets = [];
   for (let i = 1; i <= count; i++) {
@@ -75,13 +78,19 @@ const generateMockBets = (count) => {
     const amount = Math.floor(Math.random() * 500) + 10;
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     const event = events[Math.floor(Math.random() * events.length)];
+    const type = betTypes[Math.floor(Math.random() * betTypes.length)];
+    const selection = selections[Math.floor(Math.random() * selections.length)];
+    const odds = (Math.random() * 5 + 1.1).toFixed(2);
+    const payout = status === 'Won' ? Math.round(amount * parseFloat(odds)) : 0;
+    
     const date = new Date();
     date.setDate(date.getDate() - Math.floor(Math.random() * 14));
+    const dateTime = date.toISOString();
     const placedAt = date.toISOString().slice(0, 10) + ' ' + 
                    String(Math.floor(Math.random() * 24)).padStart(2, '0') + ':' + 
                    String(Math.floor(Math.random() * 60)).padStart(2, '0');
     
-    bets.push({ id, user, amount, status, event, placedAt });
+    bets.push({ id, user, amount, status, event, type, selection, odds, payout, dateTime, placedAt });
   }
   return bets;
 };
@@ -96,6 +105,22 @@ const mockStats = {
   pending: mockBets.filter(bet => bet.status === 'Pending').length,
   won: mockBets.filter(bet => bet.status === 'Won').length,
   lost: mockBets.filter(bet => bet.status === 'Lost').length,
+};
+
+// Format date and time for display
+const formatDateTime = (dateTime) => {
+  const date = new Date(dateTime);
+  return {
+    date: date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    }),
+    time: date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  };
 };
 
 export default function BetManagement() {
@@ -213,18 +238,26 @@ export default function BetManagement() {
     }
   };
 
-  const SortableHeader = ({ column, label }) => (
-    <TableHead className="font-medium py-4 px-6" onClick={() => handleSort(column)}>
-      <div className="flex items-center cursor-pointer gap-1">
-        {label}
-        {sortColumn === column ? (
-          <ArrowUpDown className="h-4 w-4" />
-        ) : (
-          <ArrowUpDown className="h-4 w-4 opacity-20" />
-        )}
-      </div>
-    </TableHead>
-  );
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'single':
+        return <TrendingDown className="h-4 w-4 text-blue-600" />;
+      case 'accumulator':
+        return <TrendingDown className="h-4 w-4 text-purple-600" />;
+      case 'system':
+        return <TrendingDown className="h-4 w-4 text-orange-600" />;
+      default:
+        return <ArrowUpDown className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const formatAmount = (amount) => {
+    return (
+      <span className="font-medium">
+        ${amount.toFixed(2)}
+      </span>
+    );
+  };
 
   const resetFilters = () => {
     setDateRange({ from: null, to: null });
@@ -256,7 +289,7 @@ export default function BetManagement() {
                   placeholder="Search bets..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 h-10 rounded-lg border-gray-200 bg-white"
+                  className="pl-10 pr-4 py-2 h-10 rounded-none border-gray-200 bg-white"
                 />
               </div>
               
@@ -265,7 +298,7 @@ export default function BetManagement() {
                   <Button 
                     variant="outline" 
                     size="icon" 
-                    className="h-10 w-10 rounded-lg relative"
+                    className="h-10 w-10 rounded-none relative"
                   >
                     <Sliders className="h-4 w-4" />
                     {activeFilters > 0 && (
@@ -686,7 +719,7 @@ export default function BetManagement() {
         
         {/* Stats Cards - Text left, icon right layout */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
-          <Card className="bg-white rounded-xl shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="px-5 py-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -700,7 +733,7 @@ export default function BetManagement() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white rounded-xl shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="px-5 py-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -714,7 +747,7 @@ export default function BetManagement() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white rounded-xl shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="px-5 py-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -728,7 +761,7 @@ export default function BetManagement() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white rounded-xl shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
+          <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="px-5 py-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -757,121 +790,200 @@ export default function BetManagement() {
         )}
 
         {/* Bets Table */}
-        <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <SortableHeader column="id" label="Bet ID" />
-                  <SortableHeader column="user" label="User" />
-                  <TableHead className="font-medium py-4 px-6">Event</TableHead>
-                  <SortableHeader column="amount" label="Amount" />
-                  <SortableHeader column="status" label="Status" />
-                  <SortableHeader column="placedAt" label="Placed At" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedBets.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-gray-500">
-                      <div className="flex flex-col items-center justify-center">
-                        <Search className="h-8 w-8 text-gray-300 mb-2" />
-                        <p>No bets found</p>
-                        <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filter</p>
+        <Card className="rounded-none shadow-none px-2 py-2">
+          <CardContent className="p-1">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 text-[13px]">
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('id')}
+                    >
+                      <div className="flex items-center gap-2">
+                        ID
+                        <ArrowUpDown className="h-4 w-4" />
                       </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('type')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Type
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('amount')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Stake
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('odds')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Odds
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('dateTime')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Date & Time
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Status
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="select-none">Match</TableHead>
+                    <TableHead className="select-none">Selection</TableHead>
+                    <TableHead 
+                      className="cursor-pointer select-none"
+                      onClick={() => handleSort('payout')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Payout
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  paginatedBets.map((bet) => (
-                    <TableRow key={bet.id} className="hover:bg-gray-50 border-b border-gray-100">
-                      <TableCell className="font-medium py-4 px-6">{bet.id}</TableCell>
-                      <TableCell className="py-4 px-6">{bet.user}</TableCell>
-                      <TableCell className="py-4 px-6 max-w-[200px] truncate">{bet.event}</TableCell>
-                      <TableCell className="py-4 px-6 font-medium">${bet.amount}</TableCell>
-                      <TableCell className="py-4 px-6">
-                        <Badge variant="outline" className={getStatusColor(bet.status)}>
-                          {bet.status}
-                        </Badge>
+                </TableHeader>
+                <TableBody>
+                  {paginatedBets.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-12 text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <Search className="h-8 w-8 text-gray-300 mb-2" />
+                          <p>No bets found</p>
+                          <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filter</p>
+                        </div>
                       </TableCell>
-                      <TableCell className="py-4 px-6 text-gray-500 text-sm">{bet.placedAt}</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    paginatedBets.map((bet) => {
+                      const { date, time } = formatDateTime(bet.dateTime || bet.placedAt);
+                      return (
+                        <TableRow key={bet.id} className="hover:bg-gray-50 text-[13px]">
+                          <TableCell className="font-mono">{bet.id}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(bet.type)}
+                              <span className="capitalize">{bet.type || 'single'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatAmount(bet.amount)}</TableCell>
+                          <TableCell>{bet.odds || '1.50'}</TableCell>
+                          <TableCell>
+                            <div>
+                              <div>{date}</div>
+                              <div className="text-gray-500">{time}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getStatusColor(bet.status)}>
+                              {bet.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-48">
+                            <div className="truncate" title={bet.event}>
+                              {bet.event}
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-48">
+                            <div className="truncate" title={bet.selection}>
+                              {bet.selection || 'Home Win'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {bet.status === 'Won' ? (
+                              <span className="font-medium text-green-600">
+                                +${bet.payout ? bet.payout.toFixed(2) : (bet.amount * 1.5).toFixed(2)}
+                              </span>
+                            ) : bet.status === 'Pending' ? (
+                              <span className="text-gray-500">Pending</span>
+                            ) : (
+                              <span className="text-red-600">$0.00</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
           
           {/* Pagination */}
           {sortedBets.length > 0 && (
-            <CardFooter className="flex items-center justify-between p-4 border-t border-gray-100">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to{" "}
-                <span className="font-medium">{Math.min(page * pageSize, sortedBets.length)}</span> of{" "}
-                <span className="font-medium">{sortedBets.length}</span> bets
+            <div className="flex justify-between items-center mt-4 pt-4 border-t">
+              <div className="text-sm text-gray-600">
+                Showing {paginatedBets.length} of {sortedBets.length} bets
               </div>
-              <div className="flex items-center space-x-2">
-                <Select value={pageSize.toString()} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
                 
-                <div className="flex items-center space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handlePageChange(page - 1)}
-                    disabled={page === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <div className="flex items-center">
-                    {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (page <= 3) {
-                        pageNum = i + 1;
-                      } else if (page >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = page - 2 + i;
-                      }
-                      
-                      return (
-                        <Button
-                          key={i}
-                          variant={page === pageNum ? "default" : "outline"}
-                          size="icon"
-                          className="h-8 w-8 mx-0.5"
-                          onClick={() => handlePageChange(pageNum)}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handlePageChange(page + 1)}
-                    disabled={page === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center">
+                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={i}
+                        variant={page === pageNum ? "default" : "outline"}
+                        size="icon"
+                        className="h-8 w-8 mx-0.5"
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
                 </div>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-            </CardFooter>
+            </div>
           )}
         </Card>
       </div>
