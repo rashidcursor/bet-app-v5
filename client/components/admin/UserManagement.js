@@ -86,22 +86,23 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
   const loading = useSelector(selectIsLoading);
   const error = useSelector(selectError);
   const message = useSelector(selectMessage);
-  
+
   // State
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [localSearch, setLocalSearch] = useState("");
-  
+  const [pageSize, setPageSize] = useState(10);
+
   // Add new state for transaction dialog
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   // Clear error on mount
   useEffect(() => {
     dispatch(resetErrorState());
     dispatch(clearMessage());
-    
+
     return () => {
       dispatch(resetErrorState());
     };
@@ -110,8 +111,8 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
   // Initial load
   useEffect(() => {
     dispatch(resetErrorState());
-    
-    dispatch(fetchUsers({ page: 1, limit: 10 }))
+
+    dispatch(fetchUsers({ page: 1, limit: pageSize }))
       .unwrap()
       .then(() => {
         dispatch(resetErrorState());
@@ -125,11 +126,11 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
   useEffect(() => {
     // Clear any existing errors first
     dispatch(resetErrorState());
-    
+
     // Only perform search if query is at least 3 characters
     if (searchQuery && searchQuery.trim() && searchQuery.trim().length >= 3) {
       setLocalSearch(searchQuery);
-      
+
       // Use client-side filtering instead of API call
       // This avoids server errors and provides instant results
       if (users && users.length > 0) {
@@ -142,11 +143,11 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
           .then(() => dispatch(resetErrorState()))
           .catch(() => setTimeout(() => dispatch(resetErrorState()), 100));
       }
-    } 
+    }
     // When search is cleared, reset to initial state if needed
     else if (searchQuery === "" && localSearch !== "") {
       setLocalSearch("");
-      
+
       // Fetch first page of users when search is cleared
       dispatch(fetchUsers({ page: 1, limit: 10 }))
         .unwrap()
@@ -154,7 +155,7 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
         .catch(() => setTimeout(() => dispatch(resetErrorState()), 100));
     }
   }, [searchQuery, dispatch, localSearch, users]);
-  
+
   // Handlers
   const handleStatusChange = (userId, newStatus) => {
     dispatch(updateUserStatus({ userId, isActive: newStatus }));
@@ -182,13 +183,13 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
     setDeleteDialogOpen(false);
     setUserToDelete(null);
   };
-  
+
   // Add new handler for transaction button
   const handleTransactionClick = (user) => {
     setSelectedUser(user);
     setShowTransactionDialog(true);
   };
-  
+
   // Filter users
   const filteredUsers = users.filter((user) => {
     // Filter by status
@@ -196,24 +197,24 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
       if (statusFilter === "active" && !user.isActive) return false;
       if (statusFilter === "inactive" && user.isActive) return false;
     }
-    
+
     // Filter by role
     if (roleFilter !== "all" && user.role !== roleFilter) return false;
-    
+
     // Filter by search query (client-side filtering)
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase().trim();
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
       const email = user.email ? user.email.toLowerCase() : "";
       const phone = user.phoneNumber || "";
-      
+
       return (
         fullName.includes(query) ||
         email.includes(query) ||
         phone.includes(query)
       );
     }
-    
+
     return true;
   });
 
@@ -239,9 +240,9 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
       {error && (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700 border-l-4 border-red-500 mb-6">
           {error}
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => dispatch(resetErrorState())}
             className="ml-4"
           >
@@ -249,14 +250,14 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
           </Button>
         </div>
       )}
-      
+
       {/* Success Message */}
       {message && (
         <div className="rounded-lg bg-green-50 p-4 text-sm text-green-700 border-l-4 border-green-500 mb-6">
           {message}
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => dispatch(clearMessage())}
             className="ml-4"
           >
@@ -264,9 +265,9 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
           </Button>
         </div>
       )}
-      
+
       {/* Users Table */}
-      <Card className="rounded-none shadow-none px-2 py-2">
+      <Card className="rounded-none shadow-none px-2 py-2 gap-0">
         <CardContent className="p-1">
           <div className="overflow-x-auto">
             <Table>
@@ -361,7 +362,7 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
                               Deposit/Withdraw
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick= {()=>{router.push("/betting-history")}}
+                              onClick={() => { router.push("/betting-history") }}
                             >
                               <History className="h-4 w-4 mr-2" />
                               View Betting History
@@ -391,12 +392,43 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
             </Table>
           </div>
         </CardContent>
-        
+
         {/* Pagination */}
         {filteredUsers.length > 0 && pagination && (
-          <div className="flex justify-between items-center mt-4 pt-4 border-t">
-            <div className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {pagination?.totalUsers || filteredUsers.length} users
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-1 pt-4 border-t gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600">
+                Showing {filteredUsers.length} of {pagination?.totalUsers || filteredUsers.length} users
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Show</span>
+                <Select 
+                  value={String(pageSize)} 
+                  onValueChange={(value) => {
+                    const newSize = Number(value);
+                    setPageSize(newSize);
+                    dispatch(resetErrorState());
+                    dispatch(fetchUsers({ page: 1, limit: newSize }))
+                      .unwrap()
+                      .then(() => dispatch(resetErrorState()))
+                      .catch(() => {
+                        setTimeout(() => dispatch(resetErrorState()), 100);
+                      });
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-20">
+                    <SelectValue placeholder="10" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-600">entries</span>
+              </div>
             </div>
             <div className="flex items-center space-x-1">
               <Button
@@ -475,6 +507,8 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
             </div>
           </div>
         )}
+      
+
       </Card>
 
       {/* Create User Dialog */}
@@ -482,14 +516,14 @@ export default function UserManagement({ searchQuery = "", statusFilter = "all",
         isOpen={showCreateUserDialog}
         onClose={() => setShowCreateUserDialog(false)}
       />
-      
+
       {/* Transaction Dialog */}
       <TransactionDialog
         isOpen={showTransactionDialog}
         onClose={() => setShowTransactionDialog(false)}
         user={selectedUser}
       />
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

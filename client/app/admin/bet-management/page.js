@@ -130,7 +130,7 @@ export default function BetManagement() {
   const [message, setMessage] = useState(null);
   const [sortColumn, setSortColumn] = useState('id');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   
@@ -207,10 +207,10 @@ export default function BetManagement() {
   }, [filteredBets, sortColumn, sortDirection]);
 
   const paginatedBets = useMemo(() => {
-    const start = (page - 1) * pageSize;
+    const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    return sortedBets.slice(start, end);
-  }, [sortedBets, page, pageSize]);
+    return filteredBets.slice(start, end);
+  }, [filteredBets, currentPage, pageSize]);
 
   const totalPages = Math.ceil(sortedBets.length / pageSize);
 
@@ -225,7 +225,7 @@ export default function BetManagement() {
 
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
-      setPage(newPage);
+      setCurrentPage(newPage);
     }
   };
 
@@ -790,7 +790,7 @@ export default function BetManagement() {
         )}
 
         {/* Bets Table */}
-        <Card className="rounded-none shadow-none px-2 py-2">
+        <Card className="rounded-none shadow-none px-2 py-2 gap-0">
           <CardContent className="p-1">
             <div className="overflow-x-auto">
               <Table>
@@ -931,17 +931,41 @@ export default function BetManagement() {
           
           {/* Pagination */}
           {sortedBets.length > 0 && (
-            <div className="flex justify-between items-center mt-4 pt-4 border-t">
-              <div className="text-sm text-gray-600">
-                Showing {paginatedBets.length} of {sortedBets.length} bets
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 pt-4 border-t gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  Showing {paginatedBets.length} of {filteredBets.length} bets
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Show</span>
+                  <Select 
+                    value={String(pageSize)} 
+                    onValueChange={(value) => {
+                      setPageSize(Number(value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-20">
+                      <SelectValue placeholder="10" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">entries</span>
+                </div>
               </div>
               <div className="flex items-center space-x-1">
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -951,18 +975,18 @@ export default function BetManagement() {
                     let pageNum;
                     if (totalPages <= 5) {
                       pageNum = i + 1;
-                    } else if (page <= 3) {
+                    } else if (currentPage <= 3) {
                       pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
+                    } else if (currentPage >= totalPages - 2) {
                       pageNum = totalPages - 4 + i;
                     } else {
-                      pageNum = page - 2 + i;
+                      pageNum = currentPage - 2 + i;
                     }
                     
                     return (
                       <Button
                         key={i}
-                        variant={page === pageNum ? "default" : "outline"}
+                        variant={currentPage === pageNum ? "default" : "outline"}
                         size="icon"
                         className="h-8 w-8 mx-0.5"
                         onClick={() => handlePageChange(pageNum)}
@@ -977,8 +1001,8 @@ export default function BetManagement() {
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -989,4 +1013,4 @@ export default function BetManagement() {
       </div>
     </div>
   );
-} 
+}

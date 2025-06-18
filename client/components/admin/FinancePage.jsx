@@ -723,7 +723,7 @@ const FinancePage = () => {
         </div>
         
         {/* Data Table */}
-        <Card className="rounded-none shadow-none px-2 py-2">
+        <Card className="rounded-none shadow-none px-2 py-2 gap-0">
           <CardContent className="p-1">
             <div className="overflow-x-auto">
               <Table>
@@ -829,7 +829,7 @@ const FinancePage = () => {
           
           {/* Pagination with Entries Per Page Selector */}
           {sortedTransactions.length > 0 && (
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 pt-4 border-t gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-1 pt-4 border-t gap-4">
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-600">
                   Showing {paginatedTransactions.length} of {sortedTransactions.length} transactions
