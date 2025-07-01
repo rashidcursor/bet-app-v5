@@ -13,6 +13,7 @@ const LeagueHeader = ({ league }) => {
 
     const router = useRouter();
     const toggleDropdown = () => {
+        
         setIsDropdownOpen(!isDropdownOpen);
     };
 
@@ -20,10 +21,12 @@ const LeagueHeader = ({ league }) => {
         setIsDropdownOpen(false);
     };
 
-    useEffect(() => {
-        console.log("League Header Rendered", league);
+   
 
-    }, [])
+    // useEffect(() => {
+    //     console.log("League Header Rendered", league);
+
+    // }, [])
 
     return (
         <div className="mb-4 bg-white p-3 w-screen">
