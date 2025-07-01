@@ -45,7 +45,7 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                 {isInPlay ? (match.liveTime || '45:32') : match.time}
                             </div>
                             <div className="text-xs text-gray-500">
-                                {isInPlay ? '' : '+358'}
+                                {isInPlay ? '' : ''}
                             </div>
                         </div>
                         <Link href={`/matches/${match.id}`}>

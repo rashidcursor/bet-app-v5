@@ -51,7 +51,7 @@ const LeagueAccordions = ({ matches }) => {
             <div key={match.id}>
                 <div className='flex justify-between mt-2'>
                     <div className="text-xs text-gray-600">{matchTime}</div>
-                    <div className="text-xs text-gray-500">+358</div>
+                    <div className="text-xs text-gray-500"></div>
                 </div>
                 {hasOdds ? (
                     <Link href={`/matches/${match.id}`}>

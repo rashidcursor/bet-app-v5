@@ -49,6 +49,15 @@ const BetSlip = () => {
                 )) {
                     return;
                 }
+                
+                // Don't close if clicking on input fields
+                const isInputElement = event.target.tagName === 'INPUT' || 
+                                      event.target.closest('input') ||
+                                      event.target.closest('.input-wrapper');
+                if (isInputElement) {
+                    return;
+                }
+                
                 // Only collapse, don't close entirely when clicking outside
                 if (isExpanded) {
                     dispatch(collapseBetSlip());

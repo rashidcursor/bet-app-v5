@@ -21,6 +21,34 @@ export const fetchMatches = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching upcoming matches
+export const fetchUpcomingMatches = createAsyncThunk(
+  "matches/fetchUpcomingMatches",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/fixtures/upcoming");
+      
+      // Transform the data from { leagueName: [matches] } format to an array of leagues
+      const data = response.data.data;
+      const transformedData = Object.keys(data).map(leagueName => {
+        return {
+          id: data[leagueName][0]?.league?.id || Math.random().toString(36).substr(2, 9),
+          name: leagueName,
+          image_path: data[leagueName][0]?.league?.image_path || null,
+          icon: "⚽",
+          matches: data[leagueName] || []
+        };
+      });
+      
+      return transformedData;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error?.message || "Failed to fetch upcoming matches"
+      );
+    }
+  }
+);
+
 // Async thunk for fetching individual match data with classified odds
 export const fetchMatchById = createAsyncThunk(
   "matches/fetchMatchById",
@@ -49,6 +77,9 @@ const matchesSlice = createSlice({
   name: "matches",
   initialState: {
     data: {}, // matches by league
+    upcomingMatches: [], // upcoming matches
+    upcomingMatchesLoading: false,
+    upcomingMatchesError: null,
     matchDetails: {}, // individual match details by matchId
     loading: false,
     matchDetailLoading: false,
@@ -60,6 +91,7 @@ const matchesSlice = createSlice({
     clearError: (state) => {
       state.error = null;
       state.matchDetailError = null;
+      state.upcomingMatchesError = null;
     },
     setSelectedLeague: (state, action) => {
       state.selectedLeague = action.payload;
@@ -86,6 +118,19 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Fetch upcoming matches
+      .addCase(fetchUpcomingMatches.pending, (state) => {
+        state.upcomingMatchesLoading = true;
+        state.upcomingMatchesError = null;
+      })
+      .addCase(fetchUpcomingMatches.fulfilled, (state, action) => {
+        state.upcomingMatchesLoading = false;
+        state.upcomingMatches = action.payload;
+      })
+      .addCase(fetchUpcomingMatches.rejected, (state, action) => {
+        state.upcomingMatchesLoading = false;
+        state.upcomingMatchesError = action.payload;
+      })
       // Fetch individual match details
       .addCase(fetchMatchById.pending, (state) => {
         state.matchDetailLoading = true;
@@ -105,3 +150,9 @@ const matchesSlice = createSlice({
 export const { clearError, setSelectedLeague, clearMatchDetail } =
   matchesSlice.actions;
 export default matchesSlice.reducer;
+
+// Selectors
+export const selectMatchesByLeague = (state, leagueId) => state.matches.data[leagueId] || [];
+export const selectUpcomingMatches = (state) => state.matches.upcomingMatches;
+export const selectUpcomingMatchesLoading = (state) => state.matches.upcomingMatchesLoading;
+export const selectUpcomingMatchesError = (state) => state.matches.upcomingMatchesError;
