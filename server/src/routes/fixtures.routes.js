@@ -2,7 +2,6 @@ import express from "express";
 import {
   getOptimizedFixtures,
   getTodaysFixtures,
-  getLiveFixtures,
   getUpcomingFixtures,
   getPopularLeagues,
   getHomepageFixtures,
@@ -18,7 +17,6 @@ const fixturesRouter = express.Router();
 fixturesRouter.get("/", getOptimizedFixtures);
 fixturesRouter.get("/homepage", getHomepageFixtures);
 fixturesRouter.get("/today", getTodaysFixtures);
-fixturesRouter.get("/live", getLiveFixtures);
 fixturesRouter.get("/upcoming", getUpcomingFixtures);
 fixturesRouter.get("/leagues/popular", getPopularLeagues);
 
@@ -29,7 +27,7 @@ fixturesRouter.get("/upcoming", getUpcomingFixtures);
 // Add new route for matches by league
 fixturesRouter.get("/league/:leagueId", getMatchesByLeague);
 
-// INFO: These are admin routes for monitoring and cache management
+// NOTE: These are admin routes for monitoring and cache management
 // // Protected routes for monitoring and admin
 // fixturesRouter.get(
 //   "/cache/stats",

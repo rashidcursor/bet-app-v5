@@ -19,6 +19,7 @@ import financeRoutes from "./routes/finance.routes.js";
 import betRoutes from "./routes/bet.routes.js";
 import agenda from "./config/agenda.js";
 import BetService from "./services/bet.service.js";
+import fixtureOptimizationService from "./services/fixture.service.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -59,7 +60,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/sportsmonk", sportsMonkRouter);
 app.use("/api/fixtures", fixturesRouter);
-app.use("/api/finance", authenticateToken, requireAdmin, financeRoutes);
+app.use("/api/finance", authenticateToken, financeRoutes);
 app.use("/api/bet", betRoutes);
 
 // 404 handler - must be after all routes
@@ -70,6 +71,8 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
+
+global.fixtureOptimizationService = fixtureOptimizationService;
 
 agenda.define("checkBetOutcome", async (job) => {
   const { betId, matchId } = job.attrs.data;
@@ -83,6 +86,17 @@ agenda.define("checkBetOutcome", async (job) => {
   }
 });
 
+agenda.define("refreshUpcomingMatchesCache", async () => {
+  await fixtureOptimizationService.refreshUpcomingMatchesCache();
+});
+
+(async () => {
+  await agenda.start();
+  console.log("[Agenda] Started and polling for jobs.");
+  await agenda.every("6 hours", "refreshUpcomingMatchesCache");
+  // Add any other recurring jobs here
+})();
+
 agenda.on("ready", () => {
   console.log("[Agenda] Ready and connected to MongoDB");
 });
@@ -95,10 +109,3 @@ agenda.on("start", (job) => {
 agenda.on("fail", (err, job) => {
   console.error(`[Agenda] Job ${job.attrs.name} failed:`, err);
 });
-
-agenda
-  .start()
-  .then(() => {
-    console.log("[Agenda] Started and polling for jobs.");
-  })
-  .catch(console.error);

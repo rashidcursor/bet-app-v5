@@ -12,6 +12,9 @@ class FixtureOptimizationService {
     this.liveCache = new NodeCache({ stdTTL: 600 });
     this.fixtureCache = new NodeCache({ stdTTL: 3600 });
     this.leagueCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for leagues
+    this.liveMatchesCache = new NodeCache({ stdTTL: 60 }); // 1 minute for live matches
+    this.activeMatchesCache = new NodeCache({ stdTTL: 6 * 60 * 60 }); // 6 hours TTL
+    this.upcomingMatchesCache = new NodeCache({ stdTTL: 6 * 60 * 60 }); // 6 hours TTL
 
     // INFO: Track API calls for rate limiting
     this.apiCallCount = 0;
@@ -62,6 +65,7 @@ class FixtureOptimizationService {
         states,
         includeOdds,
         per_page,
+        bookmakers: 2,
       });
 
       console.log("🔍 Optimized API params:", apiParams);
@@ -72,7 +76,7 @@ class FixtureOptimizationService {
       console.log(`📊 API Calls made: ${this.apiCallCount}`);
 
       if (!response.data) {
-        throw new CustomError("No fixtures found", 404, "NO_FIXTURES");
+        new CustomError("No fixtures found", 404, "NO_FIXTURES");
       }
 
       //TODO: Transform and optimize the data
@@ -101,34 +105,26 @@ class FixtureOptimizationService {
   }) {
     const params = {
       page,
-      per_page: Math.min(limit, 50), // SportMonks max per page
+      per_page: 50,
     };
 
-    // Build filters array for v3 API format - keep it simple like the working Postman example
+    // Build filters array for v3 API format
     const filters = [];
 
-    // State filtering (match the working Postman example: fixtureStates:1)
+    // State filtering
     if (states && states.length > 0) {
       filters.push(`fixtureStates:${states.join(",")}`);
     }
-
-    // Only add other filters if specifically requested
     if (leagues && leagues.length > 0) {
-      filters.push(`fixtureLeagues:${leagues.join(",")}`);
+      filters.push(`leagueIds:${leagues.join(",")}`);
     }
+    // Note: Removed fixtureStartingAtFrom and fixtureStartingAtTo to avoid syntax error
+    // Date filtering should be handled via endpoint or client-side
 
-    // Date filtering - only if explicitly provided
-    if (dateFrom) {
-      filters.push(`fixtureStartingAtFrom:${dateFrom}`);
+    // Add bookmaker filter only if odds are included
+    if (includeOdds) {
+      filters.push("bookmakers:2");
     }
-    if (dateTo) {
-      filters.push(`fixtureStartingAtTo:${dateTo}`);
-    }
-
-    // Always add bookmakers filter to ensure odds come from bookmaker 1
-    filters.push("bookmakers:1");
-
-    // Add markets filter when odds are requested
 
     // Add filters parameter
     if (filters.length > 0) {
@@ -141,6 +137,7 @@ class FixtureOptimizationService {
       includes.push("odds");
     }
     params.include = includes.join(";");
+
     return params;
   }
 
@@ -304,24 +301,6 @@ class FixtureOptimizationService {
       limit: 100,
       priority: "main",
     });
-  }
-
-  async getLiveFixtures() {
-    const cacheKey = "live_fixtures";
-    const cached = this.liveCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    const liveFixtures = await this.getOptimizedFixtures({
-      states: [2], // Live only
-      limit: 50,
-      includeOdds: true,
-    });
-
-    this.liveCache.set(cacheKey, liveFixtures);
-    return liveFixtures;
   }
 
   async getUpcomingFixtures() {
@@ -888,15 +867,15 @@ class FixtureOptimizationService {
 
       try {
         const today = new Date();
-        const pastDate = new Date(today.getTime()); // 7 days ago
-        const futureDate = new Date(today.getTime() + 20 * 24 * 60 * 60 * 1000); // 30 days ahead
+        const pastDate = new Date(today.getTime());
+        const futureDate = new Date(today.getTime() + 20 * 24 * 60 * 60 * 1000);
 
         const apiResponse = await this.getOptimizedFixtures({
           dateFrom: pastDate.toISOString().split("T")[0],
           dateTo: futureDate.toISOString().split("T")[0],
           states: [1],
           includeOdds,
-          limit: 500,
+          bookmakers: 2,
         });
 
         // Search for the specific match in the API response
@@ -1027,6 +1006,70 @@ class FixtureOptimizationService {
       // Always return an array, even if error
       return [];
     }
+  }
+
+  async getLiveMatchesFromApi() {
+    const cacheKey = "live_matches_api";
+    const cached = this.liveMatchesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const liveMatches = await sportsMonksService.getLiveMatches();
+    // Always return an array, even if undefined/null
+    const safeMatches = Array.isArray(liveMatches) ? liveMatches : [];
+    this.liveMatchesCache.set(cacheKey, safeMatches, 60);
+    return safeMatches;
+  }
+
+  // Periodic job to fetch and cache matches starting in next 6 hours
+  async refreshUpcomingMatchesCache() {
+    const now = new Date();
+    const sixHoursLater = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+    const apiParams = this.buildOptimizedApiParams({
+      dateFrom: now.toISOString(),
+      dateTo: sixHoursLater.toISOString(),
+      states: [2], // Not started
+      includeOdds: false,
+      per_page: 100,
+      includeOdds: false,
+    });
+    let matches = [];
+    try {
+      const response = await sportsMonksService.getOptimizedFixtures(apiParams);
+      matches = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+    } catch (err) {
+      console.error(
+        "[UpcomingMatchesCache] Error fetching upcoming matches:",
+        err
+      );
+      matches = [];
+    }
+    // Only store id, starting_at, league
+    const minimalMatches = matches.map((m) => ({
+      id: m.id,
+      starting_at: m.starting_at,
+      league: m.league,
+    }));
+    this.upcomingMatchesCache.flushAll();
+    minimalMatches.forEach((m) => this.upcomingMatchesCache.set(m.id, m));
+    console.log(
+      `[UpcomingMatchesCache] Cached ${minimalMatches.length} matches for next 6 hours`
+    );
+  }
+
+  // Return matches that are currently 'active' (start time <= now)
+  getActiveMatchesFromCache() {
+    const now = new Date();
+    const active = [];
+    this.upcomingMatchesCache.keys().forEach((matchId) => {
+      const match = this.upcomingMatchesCache.get(matchId);
+      if (match && new Date(match.starting_at) <= now) {
+        active.push(match);
+      }
+    });
+    return active;
   }
 }
 

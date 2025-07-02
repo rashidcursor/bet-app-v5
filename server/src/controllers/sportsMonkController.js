@@ -1,4 +1,4 @@
-import sportsMonksService from "../services/SportsMonks.service.js";
+import sportsMonksService from "../services/sportsMonks.service.js";
 import { asyncHandler } from "../utils/customErrors.js";
 
 export const getLeagues = asyncHandler(async (req, res) => {
@@ -37,6 +37,16 @@ export const getMarkets = asyncHandler(async (req, res) => {
     success: true,
     message: "Markets fetched successfully",
     data: markets,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+export const getLiveMatches = asyncHandler(async (req, res) => {
+  const matches = await sportsMonksService.getLiveMatches();
+  res.status(200).json({
+    success: true,
+    message: "Live matches fetched successfully",
+    data: matches,
     timestamp: new Date().toISOString(),
   });
 });

@@ -5,7 +5,6 @@ const agenda = new Agenda({
     address: process.env.MONGODB_URI || "mongodb://localhost:27017/bet-app",
     collection: "agendaJobs",
   },
-  // processEvery: "10 seconds",
 });
 
 export default agenda;

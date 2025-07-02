@@ -251,15 +251,15 @@ class SportsMonksService {
       );
 
       const response = await this.client.get("/football/fixtures", {
-        params: apiParams,
+        params: {
+          ...apiParams,
+          bookmakers: 2,
+        },
       });
 
+      // If no fixtures found, return empty array instead of throwing error
       if (!response.data?.data) {
-        throw new CustomError(
-          "SportsMonks API: No fixtures found",
-          404,
-          "FIXTURES_NOT_FOUND"
-        );
+        return { data: [] };
       }
 
       return response.data;
@@ -365,6 +365,14 @@ class SportsMonksService {
       draw: 3.4,
       away: 3.2,
     };
+  }
+
+  getActiveMatchesFromCache() {
+    // Delegate to fixtureOptimizationService
+    return (
+      (global.fixtureOptimizationService || {}).getActiveMatchesFromCache?.() ||
+      []
+    );
   }
 }
 

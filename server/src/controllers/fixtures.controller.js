@@ -70,20 +70,6 @@ export const getTodaysFixtures = asyncHandler(async (req, res) => {
   });
 });
 
-// Get live fixtures (optimized for live betting)
-export const getLiveFixtures = asyncHandler(async (req, res) => {
-  const liveFixtures = await fixtureOptimizationService.getLiveFixtures();
-
-  res.status(200).json({
-    success: true,
-    message: "Live fixtures fetched successfully",
-    data: liveFixtures,
-    count: liveFixtures.length,
-    refresh_interval: 30, // Suggest refresh every 30 seconds
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // Get upcoming fixtures
 export const getUpcomingFixtures = asyncHandler(async (req, res) => {
   const fixtures = await fixtureOptimizationService.getUpcomingFixtures();
