@@ -44,10 +44,9 @@ const BettingHistoryPage = () => {
   };
 
   const formatAmount = (amount) => {
-    const isPositive = amount >= 0;
     return (
-      <span className={` ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '+' : ''}${Math.abs(amount).toFixed(2)}
+      <span className="text-black">
+        ${Math.abs(amount).toFixed(2)}
       </span>
     );
   };
@@ -305,7 +304,9 @@ const BettingHistoryPage = () => {
                             ) : item.status === 'pending' ? (
                               <span className="text-gray-500">Pending</span>
                             ) : (
-                              <span className="text-red-600">$0.00</span>
+                              <span className="font-medium text-red-600">
+                                -${item.stake.toFixed(2)}
+                              </span>
                             )}
                           </TableCell>
                         </TableRow>

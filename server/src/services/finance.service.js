@@ -1,5 +1,6 @@
 import Transaction from "../models/Transaction.js";
 import User from "../models/User.js";
+import mongoose from "mongoose";
 
 class FinanceService {
   // Create a new transaction
@@ -69,8 +70,22 @@ class FinanceService {
     } = filters;
 
     const query = {}; // Apply filters
-    if (type) query.type = type;
-    if (userId) query.userId = userId;
+    if (type && type !== 'all') query.type = type;
+    if (userId) {
+      try {
+        // Convert to ObjectId if it's a string
+        if (typeof userId === 'string') {
+          query.userId = new mongoose.Types.ObjectId(userId);
+        } else {
+          query.userId = userId;
+        }
+      } catch (error) {
+        console.error(`[getTransactions] Error converting userId to ObjectId:`, error);
+        query.userId = userId; // Keep the original value
+      }
+    }
+
+    console.log(`[getTransactions] Query:`, query);
 
     // Date range filter
     if (dateFrom || dateTo) {
@@ -238,8 +253,58 @@ class FinanceService {
   }
   // Get user's transaction history
   async getUserTransactions(userId, filters = {}) {
-    const userFilters = { ...filters, userId };
-    return this.getTransactions(userFilters);
+    console.log(`[getUserTransactions] Called with userId: ${userId}`);
+    console.log(`[getUserTransactions] Filters:`, filters);
+    
+    try {
+      // Check if the userId is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.error(`[getUserTransactions] Invalid userId format: ${userId}`);
+        return {
+          transactions: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: 10,
+          },
+        };
+      }
+      
+      // Check if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        console.error(`[getUserTransactions] User not found with ID: ${userId}`);
+        return {
+          transactions: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: 10,
+          },
+        };
+      }
+      
+      console.log(`[getUserTransactions] User found: ${user.firstName} ${user.lastName}`);
+      
+      // Check if there are any transactions for this user directly
+      const transactionCount = await Transaction.countDocuments({ userId });
+      console.log(`[getUserTransactions] Found ${transactionCount} transactions for user ${userId}`);
+      
+      const userFilters = { ...filters, userId };
+      const result = await this.getTransactions(userFilters);
+      
+      console.log(`[getUserTransactions] Result:`, {
+        transactionCount: result.transactions.length,
+        pagination: result.pagination
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`[getUserTransactions] Error:`, error);
+      throw error;
+    }
   }
 }
 

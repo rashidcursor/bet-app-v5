@@ -1,74 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "@/config/axios";
 
-// Mock transaction data
-const mockTransactions = [
-  {
-    id: "TXN001",
-    type: "deposit",
-    amount: 100.00,
-    dateTime: "2025-06-15T14:30:00Z",
-    status: "completed",
-    description: "Credit card deposit"
-  },
-  {
-    id: "TXN002",
-    type: "withdrawal",
-    amount: -50.00,
-    dateTime: "2025-06-14T10:15:00Z",
-    status: "completed",
-    description: "Bank transfer withdrawal"
-  },
-  {
-    id: "TXN003",
-    type: "bet",
-    amount: -25.00,
-    dateTime: "2025-06-13T16:45:00Z",
-    status: "completed",
-    description: "Football match bet"
-  },
-  {
-    id: "TXN004",
-    type: "win",
-    amount: 75.00,
-    dateTime: "2025-06-13T18:30:00Z",
-    status: "completed",
-    description: "Bet winnings"
-  },
-  {
-    id: "TXN005",
-    type: "deposit",
-    amount: 200.00,
-    dateTime: "2025-06-12T12:00:00Z",
-    status: "completed",
-    description: "Skrill deposit"
-  },
-  {
-    id: "TXN006",
-    type: "bet",
-    amount: -15.00,
-    dateTime: "2025-06-11T20:30:00Z",
-    status: "completed",
-    description: "Basketball bet"
-  },
-  {
-    id: "TXN007",
-    type: "withdrawal",
-    amount: -100.00,
-    dateTime: "2025-06-10T09:15:00Z",
-    status: "pending",
-    description: "PayPal withdrawal"
-  },
-  {
-    id: "TXN008",
-    type: "deposit",
-    amount: 50.00,
-    dateTime: "2025-06-09T15:45:00Z",
-    status: "completed",
-    description: "Credit card deposit"
-  }
-];
-
 // Mock betting history data
 const mockBettingHistory = [
   {
@@ -124,43 +56,44 @@ const mockBettingHistory = [
 // Async thunks for API calls
 export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
-  async (filters = {}, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue, getState }) => {
     try {
-      const response = await apiClient.get("/transactions", { params: filters });
+      // Get the current user ID from the auth state
+      const { auth } = getState();
+      console.log("Auth state:", auth);
+      
+      // Check if user exists and has an ID
+      if (!auth.user) {
+        console.error("User not authenticated - auth.user is null");
+        return rejectWithValue({
+          success: false,
+          message: "User not authenticated",
+        });
+      }
+      
+      // Try to get the user ID - it could be in different formats
+      const userId = auth.user._id || auth.user.id;
+      
+      if (!userId) {
+        console.error("User ID not available in auth state:", auth.user);
+        return rejectWithValue({
+          success: false,
+          message: "User ID not available",
+        });
+      }
+      
+      console.log(`Fetching transactions for user ID: ${userId}`);
+      
+      // Use the user-specific endpoint
+      const response = await apiClient.get(`/finance/users/${userId}/transactions`, { 
+        params: filters 
+      });
+      
+      console.log("API response:", response.data);
+      
       return response.data;
     } catch (error) {
-      // If API endpoint doesn't exist yet, fall back to mock data
-      if (error.response?.status === 404) {
-        const { type, dateFrom, dateTo } = filters;
-        
-        let filteredTransactions = [...mockTransactions];
-        
-        if (type && type !== 'all') {
-          filteredTransactions = filteredTransactions.filter(t => t.type === type);
-        }
-    
-        if (dateFrom) {
-          filteredTransactions = filteredTransactions.filter(t => 
-            new Date(t.dateTime) >= new Date(dateFrom)
-          );
-        }
-        
-        if (dateTo) {
-          filteredTransactions = filteredTransactions.filter(t => 
-            new Date(t.dateTime) <= new Date(dateTo)
-          );
-        }
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        return {
-          success: true,
-          data: filteredTransactions,
-          total: filteredTransactions.length
-        };
-      }
-
+      console.error("Error fetching transactions:", error);
       return rejectWithValue(
         error.response?.data || {
           success: false,
@@ -252,19 +185,27 @@ const transactionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch transactions
       .addCase(fetchTransactions.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchTransactions.fulfilled, (state, action) => {
         state.loading = false;
-        state.transactions = action.payload.data;
-        state.total = action.payload.total;
+        state.error = null;
+        
+        // Handle the API response format
+        if (action.payload.success) {
+          state.transactions = action.payload.data || [];
+          state.total = action.payload.pagination?.totalItems || 0;
+        } else {
+          state.error = action.payload.message || "Failed to fetch transactions";
+          state.transactions = [];
+        }
       })
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message || "Failed to fetch transactions";
+        state.transactions = [];
+        state.error = action.payload?.message || "Failed to fetch transactions";
       })
       // Fetch betting history
       .addCase(fetchBettingHistory.pending, (state) => {
@@ -283,5 +224,11 @@ const transactionsSlice = createSlice({
   },
 });
 
-export const { setFilters, clearError, resetFilters } = transactionsSlice.actions;
+export const {
+  setFilters,
+  resetFilters,
+  setCurrentPage,
+  clearError
+} = transactionsSlice.actions;
+
 export default transactionsSlice.reducer;

@@ -59,7 +59,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/sportsmonk", sportsMonkRouter);
 app.use("/api/fixtures", fixturesRouter);
-app.use("/api/finance", authenticateToken, requireAdmin, financeRoutes);
+app.use("/api/finance", authenticateToken, financeRoutes);
 app.use("/api/bet", betRoutes);
 
 // 404 handler - must be after all routes

@@ -45,17 +45,45 @@ const TransactionHistoryPage = () => {
     setSortConfig({ key, direction });
   };
 
-  const formatAmount = (amount) => {
-    const isPositive = amount >= 0;
-    return (
-      <span className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '+' : ''}${Math.abs(amount).toFixed(2)}
-      </span>
-    );
+  const formatAmount = (amount, type) => {
+    // For deposits and wins, show positive amount in green with + sign
+    if (type === 'deposit' || type === 'win') {
+      return (
+        <span className="font-medium text-green-600">
+          +${Math.abs(amount).toFixed(2)}
+        </span>
+      );
+    } 
+    // For withdrawals and bets, show negative amount in red with - sign
+    else if (type === 'withdraw' || type === 'bet') {
+      return (
+        <span className="font-medium text-red-600">
+          -${Math.abs(amount).toFixed(2)}
+        </span>
+      );
+    }
+    // Default case
+    else {
+      return (
+        <span className="font-medium">
+          ${Math.abs(amount).toFixed(2)}
+        </span>
+      );
+    }
   };
 
   const formatDateTime = (dateTime) => {
+    // Handle both API format (createdAt) and mock data format (dateTime)
     const date = new Date(dateTime);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return {
+        date: "Unknown date",
+        time: "Unknown time"
+      };
+    }
+    
     return {
       date: date.toLocaleDateString('en-US', { 
         year: 'numeric', 
@@ -74,7 +102,7 @@ const TransactionHistoryPage = () => {
     switch (type) {
       case 'deposit':
         return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case 'withdrawal':
+      case 'withdraw':
         return <TrendingDown className="h-4 w-4 text-red-600" />;
       case 'bet':
         return <TrendingDown className="h-4 w-4 text-orange-600" />;
@@ -87,7 +115,6 @@ const TransactionHistoryPage = () => {
   const sortedData = React.useMemo(() => {
     const data = transactions;
     if (!sortConfig.key) return data;
-
     return [...data].sort((a, b) => {
       if (sortConfig.key === 'amount') {
         const aVal = Math.abs(a.amount);
@@ -95,9 +122,9 @@ const TransactionHistoryPage = () => {
         return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
       
-      if (sortConfig.key === 'dateTime') {
-        const aVal = new Date(a.dateTime);
-        const bVal = new Date(b.dateTime);
+      if (sortConfig.key === 'dateTime' || sortConfig.key === 'createdAt') {
+        const aVal = new Date(a.dateTime || a.createdAt);
+        const bVal = new Date(b.dateTime || b.createdAt);
         return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
 
@@ -163,9 +190,7 @@ const TransactionHistoryPage = () => {
                   </SelectTrigger>                  <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="deposit">Deposit</SelectItem>
-                    <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                    <SelectItem value="bet">Bet</SelectItem>
-                    <SelectItem value="win">Win</SelectItem>
+                    <SelectItem value="withdraw">Withdrawal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -197,19 +222,23 @@ const TransactionHistoryPage = () => {
         {/* Data Table */}
         <Card className={"rounded-none px-2 py-2"}>
           <CardContent className="p-1">            
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                <span>Loading transactions...</span>
-              </div>
-            ) : sortedData.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">
-                  No transactions found with current filters.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Loading transactions...</span>
+                </div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-500">
+                  <p>{error}</p>
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">
+                    No transactions found.
+                  </p>
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="px-3">
@@ -253,16 +282,23 @@ const TransactionHistoryPage = () => {
                   </TableHeader>
                   <TableBody>
                     {sortedData.map((item) => {
-                      const { date, time } = formatDateTime(item.dateTime);                      return (
-                        <TableRow key={item.id} className="hover:bg-gray-50 text-[13px]">
-                          <TableCell className="font-mono ">{item.id}</TableCell>
+                      // Handle both API and mock data formats
+                      const dateTimeField = item.dateTime || item.createdAt;
+                      const { date, time } = formatDateTime(dateTimeField);
+                      
+                      // Get ID from either _id (API) or id (mock)
+                      const itemId = item._id || item.id;
+                      
+                      return (
+                        <TableRow key={itemId} className="hover:bg-gray-50 text-[13px]">
+                          <TableCell className="font-mono ">{itemId}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getTypeIcon(item.type)}
                               <span className="capitalize">{item.type}</span>
                             </div>
                           </TableCell>
-                          <TableCell>{formatAmount(item.amount)}</TableCell>
+                          <TableCell>{formatAmount(item.amount, item.type)}</TableCell>
                           <TableCell>
                             <div className="">
                               <div className="">{date}</div>
@@ -279,8 +315,8 @@ const TransactionHistoryPage = () => {
                     })}
                   </TableBody>
                 </Table>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
