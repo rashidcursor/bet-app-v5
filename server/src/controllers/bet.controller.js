@@ -3,15 +3,15 @@ import { CustomError } from "../utils/customErrors.js";
 
 class BetController {
   async placeBet(req, res, next) {
-    console.log("Placing bet");
+    console.log("Placing bet with data:", req.body);
     try {
-      const { matchId, oddId, stake} = req.body;
+      const { matchId, oddId, stake, betOption } = req.body;
       const userId = req.user._id; 
 
       // Validate inputs
-      if (!matchId || !oddId || !stake) {
+      if (!matchId || !oddId || !stake || !betOption) {
         throw new CustomError(
-          "Missing required fields: matchId, oddId, stake",
+          "Missing required fields: matchId, oddId, stake, betOption",
           400,
           "INVALID_INPUT"
         );
@@ -24,7 +24,7 @@ class BetController {
         );
       }
 
-      const result = await BetService.placeBet(userId, matchId, oddId, stake);
+      const result = await BetService.placeBet(userId, matchId, oddId, stake, betOption);
       res.status(201).json({
         success: true,
         data: result,

@@ -12,7 +12,7 @@ class BetService {
     this.finalMatchResultCache = new NodeCache({ stdTTL: 24 * 60 * 60 }); // 24 hours TTL
   }
 
-  async placeBet(userId, matchId, oddId, stake) {
+  async placeBet(userId, matchId, oddId, stake, betOption) {
     let matchData;
     const cacheKey = `match_${matchId}`;
     const cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -129,14 +129,14 @@ class BetService {
       matchData.participants && matchData.participants.length >= 2
         ? `${matchData.participants[0].name} vs ${matchData.participants[1].name}`
         : "";
-    const selection = `${odds.name} - ${odds.market_description}`;
+    const selection = betOption || `${odds.name} - ${odds.market_description}`; // Use provided betOption or fallback
     const matchDate = new Date(matchData.starting_at);
     const estimatedMatchEnd = new Date(matchDate.getTime() + 2 * 60 * 60 * 1000 + 5 * 60 * 1000); // Add 2 hours and 5 minutes
     const bet = new Bet({
       userId,
       matchId,
       oddId,
-      betOption: odds.name,
+      betOption: betOption || odds.name, // Use provided betOption or fallback to odds.name
       odds: parseFloat(odds.value),
       stake,
       payout: 0,

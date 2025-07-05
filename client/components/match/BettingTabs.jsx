@@ -5,6 +5,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "../ui/button"
 import { useBetting } from "@/hooks/useBetting"
+import { useDispatch, useSelector } from "react-redux"
+import { removeBet } from "@/lib/features/betSlip/betSlipSlice"
 
 
 const BettingTabs = ({ matchData }) => {
@@ -71,8 +73,8 @@ const BettingTabs = ({ matchData }) => {
             });
             
         return [{
-            id: categoryId,
-            label: categories.find(cat => cat.id === categoryId)?.label || categoryId,
+                id: categoryId,
+                label: categories.find(cat => cat.id === categoryId)?.label || categoryId,
             markets: filteredMarkets,
             totalMarkets: filteredMarkets.length
         }];
@@ -232,7 +234,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
         // For result markets (1X2), always use 3 columns if there are 3 options
         const isResultMarket = options.length === 3 &&
             (options.some(opt => opt.label.toLowerCase() === 'draw') ||
-            options.every(opt => ['1x', 'x2', '12'].includes(opt.label.toLowerCase())));
+                options.every(opt => ['1x', 'x2', '12'].includes(opt.label.toLowerCase())));
         
         // For over/under markets, always use 2 columns
         const isOverUnderMarket = options.length === 2 && 
@@ -254,8 +256,17 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
         const isResultMarket = 
             section.title?.toLowerCase().includes('result') || 
             section.title?.toLowerCase().includes('winner') ||
-            section.title?.toLowerCase().includes('handicap') ||
             section.title?.toLowerCase().includes('1x2');
+        
+        // Special handling for handicap markets
+        const isHandicapMarket = 
+            section.title?.toLowerCase().includes('handicap');
+        
+        // Special handling for half-time markets
+        const isHalfTimeMarket =
+            section.title?.toLowerCase().includes('1st half') ||
+            section.title?.toLowerCase().includes('first half') ||
+            section.title?.toLowerCase().includes('halftime');
         
         // Special handling for over/under markets
         const isOverUnderMarket = 
@@ -270,9 +281,17 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             section.title?.toLowerCase().includes('first team') || 
             section.title?.toLowerCase().includes('last team') ||
             section.type === 'goal-scorer';
-        
+
+        // Special handling for Corner Match Bet markets
+        const isCornerMatchBet = 
+            section.title?.toLowerCase().includes('corner match bet') ||
+            section.type === 'corner-match-bet';
+
         // Use appropriate grid class based on market type
         const gridClass = isGoalScorerMarket && options.length === 3 ? "grid-cols-3" : getGridClass(options);
+        
+        console.log('Section:', section); // Debug log
+        console.log('Options:', options); // Debug log
         
         return (
             <div className={`grid ${gridClass} gap-1`}>
@@ -281,12 +300,20 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         key={`${option.label}-${idx}`}
                         label={option.label}
                         value={option.value}
-                        sectionType={section?.type || 'market'}
+                        sectionType={isCornerMatchBet ? 'corner-match-bet' : section?.type || 'market'}
                         optionId={option?.id}
                         matchData={matchData}
                         isResultOption={isResultMarket}
+                        isHandicapOption={isHandicapMarket}
+                        isHalfTimeOption={isHalfTimeMarket}
                         isOverUnderOption={isOverUnderMarket}
                         isGoalScorerOption={isGoalScorerMarket}
+                        handicapValue={option.handicapValue}
+                        halfIndicator={option.halfIndicator}
+                        thresholds={option.thresholds}
+                        total={option.total}
+                        name={option.name}
+                        marketDescription={section.title}
                     />
                 ))}
             </div>
@@ -471,50 +498,257 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     );
 };
 
-const BettingOptionButton = ({ label, value, sectionType, optionId, matchData, isResultOption, isOverUnderOption, isGoalScorerOption }) => {
-    const { createBetHandler } = useBetting();
-    const transformedOBJ = {
-        id: matchData.id,
-        team1: matchData.participants[0].name,
-        team2: matchData.participants[1].name,
-        time: matchData.starting_at,
-    }
-    
-    // Determine if this is a team name (for styling)
-    const isTeamName = 
-        label === matchData?.participants?.[0]?.name || 
-        label === matchData?.participants?.[1]?.name;
-    
-    // Determine if this is a draw option
-    const isDrawOption = label.toLowerCase() === 'draw' || label.toLowerCase() === 'tie' || label === 'X';
-    
-    // Get appropriate style classes
-    const getStyleClasses = () => {
-        if (isOverUnderOption) {
-            return "bg-base hover:bg-base-dark";
+const BettingOptionButton = ({ 
+    label, 
+    value, 
+    sectionType, 
+    optionId, 
+    matchData, 
+    isResultOption, 
+    isHandicapOption, 
+    isHalfTimeOption, 
+    isOverUnderOption, 
+    isGoalScorerOption, 
+    handicapValue, 
+    halfIndicator, 
+    thresholds,
+    total,
+    marketDescription,
+    name,
+    ...props 
+}) => {
+    const { placeBet } = useBetting();
+    const dispatch = useDispatch();
+    const selectedBets = useSelector(state => state.betSlip.bets);
+    const isSelected = selectedBets && selectedBets.some((bet) => bet.oddId === optionId);
+
+    const handleBetClick = () => {
+        if (isSelected) {
+            // Find the bet to remove
+            const betToRemove = selectedBets.find(bet => bet.oddId === optionId);
+            if (betToRemove) {
+                dispatch(removeBet(betToRemove.id));
+            }
+        } else {
+            // Create a properly formatted match object
+            const formattedMatch = {
+                id: matchData.id,
+                team1: matchData.participants?.[0]?.name || 'Home',
+                team2: matchData.participants?.[1]?.name || 'Away',
+                starting_at: matchData.starting_at,
+                participants: matchData.participants
+            };
+
+            // Create bet option object
+            const betOption = {
+                label,
+                value,
+                oddId: optionId,
+                marketDescription,
+                type: sectionType,
+                handicapValue,
+                halfIndicator,
+                total,
+                name
+            };
+            
+            // Use the placeBet function from the hook with complete bet data
+            placeBet(formattedMatch, betOption.label, betOption.value, betOption.type, betOption.oddId, {
+                marketDescription: betOption.marketDescription,
+                handicapValue: betOption.handicapValue,
+                halfIndicator: betOption.halfIndicator,
+                total: betOption.total,
+                name: betOption.name
+            });
+        }
+    };
+
+    // Format the label to highlight the handicap value or over/under value
+    const formattedLabel = () => {
+        // For Team Total Goals market
+        if (marketDescription === 'Team Total Goals') {
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{label}</span>
+                    <span className="bg-white/20 px-1 rounded text-[9px]">{total || value}</span>
+                </div>
+            );
+        }
+
+        // For Correct Score market
+        if (marketDescription === 'Correct Score') {
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{label}</span>
+                    <span className="bg-white/20 px-1 rounded text-[9px]">{name}</span>
+                </div>
+            );
+        }
+
+        // For Clean Sheet market
+        if (marketDescription === 'Clean Sheet') {
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{label}</span>
+                    <span className="bg-white/20 px-1 rounded text-[9px]">{name}</span>
+                </div>
+            );
+        }
+
+        // For Specials market
+        if (marketDescription === 'Specials') {
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{label}</span>
+                    <span className="bg-white/20 px-1 rounded text-[9px]">{name}</span>
+                </div>
+            );
+        }
+
+        // For Last Match Corner market
+        if (marketDescription === 'Last Match Corner' && matchData?.participants?.length >= 2) {
+            if (label === '1') {
+                return matchData.participants[0].name;
+            } else if (label === '2') {
+                return matchData.participants[1].name;
+            }
+        }
+
+        // For Corner Match Bet markets
+        if (sectionType === 'corner-match-bet' && matchData?.participants?.length >= 2) {
+            if (label === '1') {
+                return matchData.participants[0].name;
+            } else if (label === '2') {
+                return matchData.participants[1].name;
+            } else if (label === 'Tie' || label === 'tie' || label === 'X') {
+                return 'Draw';
+            }
+        }
+
+        // For Team Corners market
+        if (marketDescription === 'Team Corners' && matchData?.participants?.length >= 2) {
+            if (label === '1') {
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{matchData.participants[0].name}</span>
+                        <span className="bg-white/20 px-1 rounded text-[9px]">{total}</span>
+                    </div>
+                );
+            } else if (label === '2') {
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{matchData.participants[1].name}</span>
+                        <span className="bg-white/20 px-1 rounded text-[9px]">{total}</span>
+                    </div>
+                );
+            }
+        }
+
+        // For Corners Race market
+        if (marketDescription === 'Corners Race' && matchData?.participants?.length >= 2) {
+            console.log('Corners Race Data:', { label, name }); // Debug log
+            if (label === '1') {
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{matchData.participants[0].name}</span>
+                        <span className="bg-white/20 px-1 rounded text-[9px]">{name}</span>
+                    </div>
+                );
+            } else if (label === '2') {
+                return (
+                    <div className="flex items-center gap-1">
+                        <span>{matchData.participants[1].name}</span>
+                        <span className="bg-white/20 px-1 rounded text-[9px]">{name}</span>
+                    </div>
+                );
+            } else if (label === 'Neither') {
+                return 'Neither';
+            }
+        }
+
+        // For over/under options including Alternative Goal Line
+        if (label.toLowerCase().startsWith('over') || label.toLowerCase().startsWith('under')) {
+            const [type, ...values] = label.split(' ');
+            const thresholds = values.join(' ').split(',').map(v => v.trim());
+            
+            return (
+                <div className="flex items-center gap-1">
+                    <span>{type}</span>
+                    {thresholds.map((threshold, index) => (
+                        <span key={index} className="bg-white/20 px-1 rounded text-[9px]">{threshold}</span>
+                    ))}
+                </div>
+            );
+        }
+
+        // For To Score In Half markets
+        if (halfIndicator) {
+            return (
+                <>
+                    {label} <span className="bg-white/20 px-1 rounded text-[9px] ml-1">{halfIndicator}</span>
+                </>
+            );
+        }
+
+        // For Half Time Correct Score
+        if (sectionType === 'half-time' && matchData?.participants) {
+            // Extract team name and score
+            const match = label.match(/^(.+?)\s+(\d+-\d+)$/);
+            if (match) {
+                const [_, team, score] = match;
+                return (
+                    <>
+                        {team} <span className="bg-white/20 px-1 rounded text-[9px] ml-1">{score}</span>
+                    </>
+                );
+            }
+        }
+
+        // For Asian Handicap and Alternative Asian Handicap markets
+        if ((isHandicapOption || sectionType === 'asian-handicap' || sectionType === 'alternative-asian-handicap') && handicapValue) {
+            return (
+                <>
+                    {label} <span className="bg-white/20 px-1 rounded text-[9px] ml-1">{handicapValue}</span>
+                </>
+            );
         }
         
-        if (isResultOption) {
+        return label;
+    };
+
+    // Determine if this is a team name (for styling)
+    const isTeamName = matchData?.participants && (
+        label === matchData.participants[0]?.name || 
+        label === matchData.participants[1]?.name || 
+        label.includes(matchData.participants[0]?.name) || 
+        label.includes(matchData.participants[1]?.name) ||
+        (sectionType === 'corner-match-bet' && (label === '1' || label === '2'))
+    );
+
+    // Determine if this is a draw option
+    const isDrawOption = label === 'Tie' || label === 'tie' || label === 'X' || label.toLowerCase().includes('draw');
+
+    const getStyleClasses = () => {
+        if (isResultOption || isHandicapOption || isHalfTimeOption || sectionType === 'corner-match-bet') {
             if (isTeamName) {
                 return "bg-base hover:bg-base-dark";
             }
-            if (isDrawOption) {
+            // Only change draw color for full-time markets (not half-time)
+            if (isDrawOption && !isHalfTimeOption) {
                 return "bg-emerald-600 hover:bg-emerald-700";
             }
         }
-        
-        // All other options (including goal scorer) use the default style
         return "bg-base hover:bg-base-dark";
     };
-    
+
     return (
         <Button
             className={`group relative px-2 py-1 text-center transition-all duration-200 active:scale-[0.98] betting-button ${getStyleClasses()}`}
-            onClick={createBetHandler(transformedOBJ, label, value, sectionType, optionId)}
+            onClick={handleBetClick}
         >
-            <div className="relative w-full flex justify-between py-1 z-10">
-                <div className="text-[12px] text-white font-medium mb-0.5 transition-colors duration-200 leading-tight">
-                    {label}
+            <div className="relative w-full flex justify-between items-center py-1 z-10">
+                <div className="text-[12px] text-white font-medium transition-colors duration-200 leading-tight">
+                    {formattedLabel()}
                 </div>
                 <div className="text-[12px] font-bold text-white transition-colors duration-200">
                     {value}

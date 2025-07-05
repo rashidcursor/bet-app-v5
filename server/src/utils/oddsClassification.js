@@ -265,8 +265,9 @@ const transformToBettingData = (classifiedOdds, matchData = null) => {
       const bettingSection = {
         id: `market-${market.market_id}`,
         title: market.market_description,
-        type: category.id, // Use category ID as type
+        type: market.market_description.toLowerCase() === 'to score in half' ? 'to-score-in-half' : category.id,
         category: category.id,
+        name: market.market_description.toLowerCase() === 'to score in half' ? market.odds[0]?.name : undefined,
         options: market.odds.map((odd) => {
           // Safely handle odds value - it might be a string or number
           let oddsValue = odd.value;
@@ -274,11 +275,7 @@ const transformToBettingData = (classifiedOdds, matchData = null) => {
             oddsValue = parseFloat(oddsValue);
           }
           // Fallback to a default odds if invalid
-          if (
-            isNaN(oddsValue) ||
-            oddsValue === null ||
-            oddsValue === undefined
-          ) {
+          if (isNaN(oddsValue) || oddsValue === null || oddsValue === undefined) {
             oddsValue = 1.0;
           }
 
@@ -381,8 +378,53 @@ if (isPlayerMarket) {
             const isSpecialMarket = category.id === 'specials';
             const isOthersMarket = category.id === 'others';
             
+            // Special handling for Half Time Correct Score
+            if (marketLower === 'half time correct score') {
+                // The name field contains the actual score (e.g., "1-0")
+                if (odd.name && odd.name.match(/^\d+-\d+$/)) {
+                    // For Half Time Correct Score, label "1" means home team, "2" means away team
+                    let teamName;
+                    if (label === "1") {
+                        teamName = homeTeam;
+                    } else if (label === "2") {
+                        teamName = awayTeam;
+                    } else if (label.toLowerCase() === "x" || label.toLowerCase() === "draw") {
+                        teamName = "Draw";
+                    } else {
+                        // If label doesn't match expected values, use default logic
+                        const [homeScore, awayScore] = odd.name.split('-');
+                        if (parseInt(homeScore) > parseInt(awayScore)) {
+                            teamName = homeTeam;
+                        } else if (parseInt(homeScore) < parseInt(awayScore)) {
+                            teamName = awayTeam;
+                        } else {
+                            teamName = "Draw";
+                        }
+                    }
+                    label = `${teamName} ${odd.name}`;
+                }
+            }
+            // Special handling for Alternative Handicap Result
+            else if ((marketLower.includes('alternative handicap') || 
+                 marketLower.includes('1st half handicap') || 
+                 marketLower.includes('first half handicap')) && 
+                odd.handicap) {
+              // Store the handicap value for display
+              odd.handicapValue = odd.handicap;
+              
+              // Format the label to include the handicap
+              if (label === "1" || label.toLowerCase() === "home" || label === homeTeam) {
+                label = `${homeTeam} ${odd.handicap}`;
+              } else if (label === "2" || label.toLowerCase() === "away" || label === awayTeam) {
+                label = `${awayTeam} ${odd.handicap}`;
+              } else if (label === "X" || label.toLowerCase() === "draw" || label.toLowerCase() === "tie") {
+                label = `Draw ${odd.handicap}`;
+              }
+              
+              // Don't add 1H indicator for half-time markets
+            }
             // For specific markets, replace numeric labels with team names
-            if (isResultMarket || isHandicapMarket || marketLower.includes('1x2') || 
+            else if (isResultMarket || isHandicapMarket || marketLower.includes('1x2') || 
                 (isGoalScorerMarket && (label === "1" || label === "2")) ||
                 (isSpecialMarket && (label === "1" || label === "2")) ||
                 (isOthersMarket && (label === "1" || label === "2"))) {
@@ -447,17 +489,52 @@ if (isPlayerMarket) {
             }
             
             // For over/under markets, make labels clearer
-            if (marketLower.includes('over/under') || marketLower.includes('goals')) {
-              if (label.toLowerCase() === "over") {
-                // Try to extract the threshold from the market description
-                const thresholdMatch = marketDescription.match(/(\d+\.?\d*)/);
-                const threshold = thresholdMatch ? thresholdMatch[1] : "";
-                label = `Over ${threshold}`;
-              } else if (label.toLowerCase() === "under") {
-                const thresholdMatch = marketDescription.match(/(\d+\.?\d*)/);
-                const threshold = thresholdMatch ? thresholdMatch[1] : "";
-                label = `Under ${threshold}`;
-              }
+            if (marketLower.includes('over/under') || 
+                marketLower.includes('goals') || 
+                marketLower.includes('goal line') ||
+                marketLower.includes('corners')) {
+                
+                // Special handling for Total Goals/Both Teams to Score market
+                if (marketLower === 'total goals/both teams to score') {
+                    // Keep the original label as is
+                    label = odd.label;
+                }
+                // Special handling for Team Total Goals market
+                else if (marketLower === 'team total goals') {
+                    // Extract the total value from the name or label
+                    const totalValue = odd.name || odd.total || odd.handicap || "";
+                    odd.total = totalValue;
+                    
+                    // Set the label to the team name
+                    if (label === "1" || label.toLowerCase() === "home") {
+                        label = homeTeam;
+                    } else if (label === "2" || label.toLowerCase() === "away") {
+                        label = awayTeam;
+                    }
+                }
+                else {
+                    // Get threshold from name field
+                    let threshold = odd.name || "";
+                    
+                    if (label.toLowerCase().includes('over')) {
+                        label = `Over ${threshold}`;
+                    } else if (label.toLowerCase().includes('under')) {
+                        label = `Under ${threshold}`;
+                    } else if (label.toLowerCase() === 'over') {
+                        label = `Over ${threshold}`;
+                    } else if (label.toLowerCase() === 'under') {
+                        label = `Under ${threshold}`;
+                    }
+                }
+            }
+            // Special handling for To Score In Half markets
+            else if (marketLower === 'to score in half') {
+                // The name field contains which half (1st Half/2nd Half)
+                const halfIndicator = odd.name;
+                if (halfIndicator) {
+                    // Convert to abbreviated format (1H/2H)
+                    odd.halfIndicator = halfIndicator.toLowerCase().includes('1st') ? '1H' : '2H';
+                }
             }
           }
 
@@ -465,6 +542,8 @@ if (isPlayerMarket) {
             ...odd,
             value: oddsValue,
             label,
+            handicapValue: odd.handicap,
+            halfIndicator: odd.halfIndicator
           };
         }),
       };
@@ -517,6 +596,105 @@ if (isPlayerMarket) {
 
   console.log(`Transformed ${bettingData.length} betting sections from ${processedMarkets.size} unique markets`);
   return bettingData;
+};
+
+const processToScoreInHalf = (odds) => {
+    const options = odds.map(odd => {
+        // Convert "1st Half"/"2nd Half" to "1H"/"2H"
+        const halfIndicator = odd.name === "1st Half" ? "1H" : odd.name === "2nd Half" ? "2H" : "";
+        
+        return {
+            id: odd.id,
+            label: odd.label,
+            value: Number(odd.dp3),
+            halfIndicator: halfIndicator,
+            marketId: odd.market_id,
+            marketDescription: odd.market_description
+        };
+    });
+
+    return {
+        type: 'to-score-in-half',
+        title: 'To Score In Half',
+        options: options
+    };
+};
+
+const processAsianHandicap = (odds) => {
+    const options = odds.map(odd => ({
+        id: odd.id,
+        label: odd.label,
+        value: Number(odd.dp3),
+        handicapValue: odd.handicap,
+        marketId: odd.market_id,
+        marketDescription: odd.market_description
+    }));
+
+    const isAlternative = odds[0].market_description.toLowerCase().includes('alternative');
+    const isFirstHalf = odds[0].market_description.toLowerCase().includes('1st half');
+
+    return {
+        type: isAlternative ? 'alternative-asian-handicap' : 'asian-handicap',
+        title: odds[0].market_description,
+        options: options
+    };
+};
+
+const processAlternativeGoalLine = (odds) => {
+    const options = odds.map(odd => {
+        // Get the base type (Over/Under) and values
+        const baseType = odd.label.split(' ')[0]; // "Over" or "Under"
+        let values;
+
+        // Handle multiple values (e.g., "Over 0.5, 1.0")
+        if (odd.label.includes(',')) {
+            values = odd.label.substring(odd.label.indexOf(' ') + 1).split(',').map(v => v.trim());
+        } else {
+            // Handle single value (e.g., "Over 0.5")
+            values = [odd.label.split(' ')[1]];
+        }
+
+        return {
+            id: odd.id,
+            label: odd.label, // Keep the original label
+            value: Number(odd.dp3),
+            thresholds: values,
+            marketId: odd.market_id,
+            marketDescription: odd.market_description,
+            type: 'alternative-goal-line'
+        };
+    });
+
+    return {
+        type: 'alternative-goal-line',
+        title: 'Alternative 1st Half Goal Line',
+        options: options
+    };
+};
+
+const processCornerMatchBet = (odds) => {
+    const options = odds.map(odd => {
+        let label = odd.label;
+        // Keep the original numeric labels (1, 2) and only convert "Tie" to "X"
+        if (label.toLowerCase() === "tie") {
+            label = "X";
+        }
+
+        return {
+            id: odd.id,
+            label: label,
+            value: Number(odd.dp3),
+            marketId: odd.market_id,
+            marketDescription: odd.market_description,
+            type: 'corner-match-bet'
+        };
+    });
+
+    return {
+        type: 'corner-match-bet',
+        title: 'Corner Match Bet',
+        options: options
+    };
 };
 
 export { classifyOdds, transformToBettingData };

@@ -65,11 +65,11 @@ const TransactionHistoryPage = () => {
     }
     // Default case
     else {
-      return (
+    return (
         <span className="font-medium">
           ${Math.abs(amount).toFixed(2)}
-        </span>
-      );
+      </span>
+    );
     }
   };
 
@@ -230,22 +230,22 @@ const TransactionHistoryPage = () => {
         <Card className={"rounded-none px-2 py-2"}>
           <CardContent className="p-1">            
             <div className="overflow-x-auto">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Loading transactions...</span>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Loading transactions...</span>
+              </div>
               ) : error ? (
                 <div className="text-center py-8 text-red-500">
                   <p>{error}</p>
                 </div>
               ) : transactions.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">
+              <div className="text-center py-12">
+                <p className="text-gray-500">
                     No transactions found.
-                  </p>
-                </div>
-              ) : (
+                </p>
+              </div>
+            ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="px-3">
@@ -323,7 +323,7 @@ const TransactionHistoryPage = () => {
                   </TableBody>
                 </Table>
               )}
-            </div>
+              </div>
           </CardContent>
         </Card>
       </div>

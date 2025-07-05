@@ -25,17 +25,23 @@ const betSlipSlice = createSlice({
         odds,
         type = "1x2",
         oddId = null,
+        marketDescription,
+        handicapValue,
+        halfIndicator,
+        total,
+        name,
+        ...rest
       } = action.payload;
 
-      console.log(action.payload);
+      console.log("Adding bet with payload:", action.payload);
 
       // Check if bet already exists
       const existingBetIndex = state.bets.findIndex(
-        (bet) => bet.match.id === match.id && bet.selection === selection
+        (bet) => bet.oddId === oddId
       );
 
       const newBet = {
-        id: `${match.id}-${selection}-${Date.now()}`,
+        id: `${match.id}-${oddId}-${Date.now()}`,
         match: {
           id: match.id,
           team1: match.team1 || (match.participants && match.participants[0] ? match.participants[0].name : 'Team 1'),
@@ -49,7 +55,13 @@ const betSlipSlice = createSlice({
         odds: parseFloat(odds),
         type,
         stake: 0,
-        oddId, // Store oddId if provided
+        oddId,
+        marketDescription,
+        handicapValue,
+        halfIndicator,
+        total,
+        name,
+        ...rest
       };
 
       if (existingBetIndex >= 0) {
@@ -58,7 +70,9 @@ const betSlipSlice = createSlice({
       } else {
         // Add new bet
         state.bets.push(newBet);
-      } // Auto-open bet slip when bet is added
+      }
+      
+      // Auto-open bet slip when bet is added
       state.isOpen = true;
       state.isExpanded = false; // Start collapsed when new bet is added
 
