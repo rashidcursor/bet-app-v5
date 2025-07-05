@@ -131,8 +131,7 @@ class BetService {
         : "";
     const selection = `${odds.name} - ${odds.market_description}`;
     const matchDate = new Date(matchData.starting_at);
-    // const estimatedMatchEnd = new Date(matchDate.getTime() + 2 * 60 * 60 * 1000 + 5 * 60 * 1000); // Add 2 hours and 5 minutes
-    const estimatedMatchEnd = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+    const estimatedMatchEnd = new Date(matchDate.getTime() + 2 * 60 * 60 * 1000 + 5 * 60 * 1000); // Add 2 hours and 5 minutes
     const bet = new Bet({
       userId,
       matchId,
@@ -148,18 +147,18 @@ class BetService {
     });
     await bet.save();
 
-    //INFO: Schedule outcome check or process immediately if overdue
+    //INFO: Always schedule outcome check - don't process immediately
     const now = new Date();
-    if (estimatedMatchEnd <= now) {
-      this.checkBetOutcome(bet._id).catch((error) => {
-        console.error(
-          `Error processing overdue bet ${bet._id} on placement:`,
-          error
-        );
-      });
-    } else {
-      this.scheduleBetOutcomeCheck(bet._id, estimatedMatchEnd, matchId);
-    }
+    const nowUTC = new Date(now.toISOString());
+    const estimatedMatchEndUTC = new Date(estimatedMatchEnd.toISOString());
+    
+    console.log(`[placeBet] Match start time (UTC): ${matchDate.toISOString()}`);
+    console.log(`[placeBet] Estimated match end (UTC): ${estimatedMatchEndUTC.toISOString()}`);
+    console.log(`[placeBet] Current time (UTC): ${nowUTC.toISOString()}`);
+    
+    // Always schedule the check instead of processing immediately
+    console.log(`[placeBet] Scheduling bet outcome check`);
+    this.scheduleBetOutcomeCheck(bet._id, estimatedMatchEnd, matchId);
 
     return {
       betId: bet._id,
@@ -175,13 +174,16 @@ class BetService {
   }
 
   scheduleBetOutcomeCheck(betId, estimatedMatchEnd, matchId) {
-    // Schedule with Agenda for 1 minute after bet placement
-    const runAt = new Date(Date.now() + 1 * 60 * 1000); // 1 minute from now
+    // Schedule with Agenda for 120 minutes after match starts
+    const runAt = new Date(estimatedMatchEnd.getTime()); // 120 minutes after estimated match end
+    const runAtUTC = new Date(runAt.toISOString());
+    const nowUTC = new Date().toISOString();
+    
     console.log(
-      `[scheduleBetOutcomeCheck] Now: ${new Date().toISOString()}, runAt: ${runAt.toISOString()} (should be 1 minute later)`
+      `[scheduleBetOutcomeCheck] Now (UTC): ${nowUTC}, runAt (UTC): ${runAtUTC.toISOString()} (should be 120 minutes after match end)`
     );
-    agenda.schedule(runAt, "checkBetOutcome", { betId, matchId });
-    console.log(`Scheduled Agenda job for bet ${betId} at ${runAt}`);
+    agenda.schedule(runAtUTC, "checkBetOutcome", { betId, matchId });
+    console.log(`Scheduled Agenda job for bet ${betId} at ${runAtUTC.toISOString()}`);
   }
 
   async fetchMatchResult(matchId) {
@@ -241,23 +243,23 @@ class BetService {
 
     console.log(`[checkBetOutcome] Match state:`, matchData.state);
     //INFO: COMMENTED FOR NOW FOR TESTING PURPOSES
-    // if (!matchData.state || matchData.state.id !== 5) {
-    //   console.log(
-    //     `[checkBetOutcome] Match not finished for betId: ${betId}, state:`,
-    //     matchData.state
-    //   );
-    //   // Reschedule for 2 minutes later
-    //   const runAt = new Date(Date.now() + 10 * 60 * 1000);
-    //   agenda.schedule(runAt, "checkBetOutcome", {
-    //     betId,
-    //     matchId: bet.matchId,
-    //   });
-    //   return {
-    //     betId,
-    //     status: bet.status,
-    //     message: "Match not yet finished, rescheduled",
-    //   };
-    // }
+    if (!matchData.state || matchData.state.id !== 5) {
+      console.log(
+        `[checkBetOutcome] Match not finished for betId: ${betId}, state:`,
+        matchData.state
+      );
+      // Reschedule for 10 minutes later
+      const runAt = new Date(Date.now() + 10 * 60 * 1000);
+      agenda.schedule(runAt, "checkBetOutcome", {
+        betId,
+        matchId: bet.matchId,
+      });
+      return {
+        betId,
+        status: bet.status,
+        message: "Match not yet finished, rescheduled",
+      };
+    }
 
     // Always search for the oddId in the fresh odds from the API
 
@@ -504,23 +506,40 @@ class BetService {
       }
 
       for (const match of matches) {
+        // Only process bets for matches that are actually finished (state.id === 5)
         if (match.state?.id === 5) {
           FixtureOptimizationService.fixtureCache.set(
             `match_${match.id}`,
             match,
             24 * 3600
           );
-        }
-        for (const bet of betsByMatch[match.id]) {
-          try {
-            const result = await this.checkBetOutcome(bet._id, match);
-            results.push(result);
-          } catch (error) {
-            console.error(`Error processing overdue bet ${bet._id}:`, error);
+          for (const bet of betsByMatch[match.id]) {
+            try {
+              const result = await this.checkBetOutcome(bet._id, match);
+              results.push(result);
+            } catch (error) {
+              console.error(`Error processing overdue bet ${bet._id}:`, error);
+              results.push({
+                betId: bet._id,
+                status: bet.status,
+                message: "Error processing bet",
+              });
+            }
+          }
+        } else {
+          // For matches that are not finished, reschedule the bets for later
+          console.log(`Match ${match.id} is not finished (state: ${match.state?.name}), rescheduling bets`);
+          for (const bet of betsByMatch[match.id]) {
+            // Reschedule for 30 minutes later
+            const newScheduleTime = new Date(now.getTime() + 30 * 60 * 1000);
+            agenda.schedule(newScheduleTime, "checkBetOutcome", {
+              betId: bet._id,
+              matchId: bet.matchId,
+            });
             results.push({
               betId: bet._id,
               status: bet.status,
-              message: "Error processing bet",
+              message: "Match not finished, rescheduled",
             });
           }
         }
@@ -532,8 +551,8 @@ class BetService {
           !matches.find((m) => m.id == matchId || m.id === parseInt(matchId))
         ) {
           for (const bet of betsByMatch[matchId]) {
-            // Reschedule for 10 minutes later
-            const newScheduleTime = new Date(now.getTime() + 10 * 60 * 1000);
+            // Reschedule for 30 minutes later
+            const newScheduleTime = new Date(now.getTime() + 30 * 60 * 1000);
             agenda.schedule(newScheduleTime, "checkBetOutcome", {
               betId: bet._id,
               matchId,
