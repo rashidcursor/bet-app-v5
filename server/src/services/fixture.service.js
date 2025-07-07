@@ -7,7 +7,7 @@ import {
 } from "../utils/oddsClassification.js";
 import cron from "node-cron";
 import LiveFixturesService from "./LiveFixtures.service.js";
-import League from '../models/League.js';
+import League from "../models/League.js";
 
 class FixtureOptimizationService {
   constructor() {
@@ -40,14 +40,36 @@ class FixtureOptimizationService {
       .split("T")[0];
     const cacheKey = `fixtures_next7days_${startDate}_${endDate}`;
 
+    console.log(`🔍 Looking for cache key: ${cacheKey}`);
+    console.log(`📅 Date range: ${startDate} to ${endDate}`);
+
     // Check cache first
     const cached = this.fixtureCache.get(cacheKey);
     if (cached) {
       console.log("📦 Returning cached fixtures data");
+      console.log(
+        `📊 Cached data type: ${
+          cached instanceof Map
+            ? "Map"
+            : Array.isArray(cached)
+            ? "Array"
+            : typeof cached
+        }`
+      );
+      console.log(
+        `📊 Cached data size: ${
+          cached instanceof Map
+            ? cached.size
+            : Array.isArray(cached)
+            ? cached.length
+            : "unknown"
+        }`
+      );
       // If cached is a Map, return as is
       return cached;
     }
 
+    console.log("🚀 No cache found, fetching from API...");
     this.checkRateLimit();
 
     let allFixtures = [];
@@ -60,25 +82,38 @@ class FixtureOptimizationService {
           per_page: 50,
           page: page,
         };
+        console.log(`📡 Fetching page ${page}...`);
         const response = await sportsMonksService.client.get(pageUrl, {
           params,
         });
         const data = response.data?.data || [];
+        console.log(`📊 Page ${page} returned ${data.length} fixtures`);
         allFixtures = allFixtures.concat(data);
         const pagination = response.data?.pagination;
         if (pagination && pagination.has_more && pagination.next_page) {
           page++;
-          pageUrl = null;
+
+          if (page == 3) {
+            pageUrl = null;
+          }
         } else {
           pageUrl = null;
         }
       }
+      console.log(`✅ Total fixtures fetched: ${allFixtures.length}`);
+
       // Transform and cache as a Map
       const transformedArr = this.transformFixturesData(allFixtures);
+      console.log(`🔄 Transformed fixtures: ${transformedArr.length}`);
+
       const transformed = new Map();
       for (const fixture of transformedArr) {
         transformed.set(fixture.id, fixture);
       }
+      console.log(
+        `💾 Caching ${transformed.size} fixtures with key: ${cacheKey}`
+      );
+
       this.fixtureCache.set(cacheKey, transformed);
       return transformed;
     } catch (error) {
@@ -119,7 +154,6 @@ class FixtureOptimizationService {
       return transformed;
     });
   }
-
 
   extractMainOdds(odds) {
     if (!odds || odds.length === 0) return null;
@@ -169,10 +203,8 @@ class FixtureOptimizationService {
       return cached;
     }
 
-
     try {
       // Make API call to get actual leagues
-     
 
       const response = await sportsMonksService.getLeagues();
       this.apiCallCount++;
@@ -180,21 +212,20 @@ class FixtureOptimizationService {
 
       if (response && response.length > 0) {
         // Get popular leagues from MongoDB
-      
+
         const popularLeaguesInDb = await League.find({}).lean();
-        
-        
+
         const popularLeaguesMap = new Map(
-          popularLeaguesInDb.map(league => [league.leagueId, league])
+          popularLeaguesInDb.map((league) => [league.leagueId, league])
         );
 
         // Enhance leagues with popularity status and order
-        const enhancedLeagues = response.map(league => {
+        const enhancedLeagues = response.map((league) => {
           const dbLeague = popularLeaguesMap.get(league.id);
           return {
             ...league,
             isPopular: dbLeague ? dbLeague.isPopular : false, // Check the isPopular field specifically
-            popularOrder: dbLeague?.order || 0
+            popularOrder: dbLeague?.order || 0,
           };
         });
 
@@ -202,14 +233,13 @@ class FixtureOptimizationService {
         const sortedLeagues = enhancedLeagues.sort((a, b) => {
           if (a.isPopular && !b.isPopular) return -1;
           if (!a.isPopular && b.isPopular) return 1;
-          if (a.isPopular && b.isPopular) return a.popularOrder - b.popularOrder;
+          if (a.isPopular && b.isPopular)
+            return a.popularOrder - b.popularOrder;
           return 0;
         });
 
-        
-        
         this.leagueCache.set(cacheKey, sortedLeagues);
-      
+
         return sortedLeagues;
       } else {
         throw new Error("No leagues found from API");
@@ -227,22 +257,28 @@ class FixtureOptimizationService {
   }
 
   async getUpcomingFixtures() {
+    console.log("🔍 Starting getUpcomingFixtures...");
+
     // Always use the main fixtures cache (no filters)
     let fixturesMap = await this.getOptimizedFixtures();
     let fixtures = this.getAllFixturesArrayFromMap(fixturesMap);
 
-    // Optionally, filter to only fixtures within [today, 10 days later] if needed for display
+    console.log(`📊 Total fixtures from cache: ${fixtures.length}`);
+
+    // Filter to only show upcoming matches (from today onwards) - show all cached matches
     const today = new Date();
-    const filterEndDate = new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000); // 10 days later
     fixtures = fixtures.filter((fixture) => {
       const fixtureDate = new Date(fixture.starting_at);
-      return fixtureDate >= today && fixtureDate <= filterEndDate;
+      return fixtureDate >= today; // Show all upcoming matches from today onwards
     });
+
+    console.log(`📊 Upcoming fixtures after date filter: ${fixtures.length}`);
 
     // Fetch all leagues from cache (now using 'popular_leagues')
     console.log("League cache keys:", this.leagueCache.keys());
-    
+
     const leagues = this.leagueCache.get("popular_leagues") || [];
+    console.log(`📊 Leagues from cache: ${leagues.length}`);
 
     // Attach league object and main odds to each fixture
     fixtures.forEach((fixture) => {
@@ -254,7 +290,10 @@ class FixtureOptimizationService {
             name: foundLeague.name,
             imageUrl: foundLeague.image_path || null,
             icon: foundLeague.image_path || "⚽",
-            country: typeof foundLeague.country === "string" ? foundLeague.country : foundLeague.country?.name || null,
+            country:
+              typeof foundLeague.country === "string"
+                ? foundLeague.country
+                : foundLeague.country?.name || null,
           }
         : {
             id: leagueId,
@@ -267,17 +306,46 @@ class FixtureOptimizationService {
       fixture.odds = this.extractMainOddsObject(fixture.odds);
     });
 
-    // Group fixtures by league name
+    console.log(`📊 Fixtures after league attachment: ${fixtures.length}`);
+
+    // Group fixtures by league with proper structure for frontend
     const groupedByLeague = {};
     fixtures.forEach((fixture) => {
       const leagueName = fixture.league?.name || "Unknown League";
       if (!groupedByLeague[leagueName]) {
-        groupedByLeague[leagueName] = [];
+        groupedByLeague[leagueName] = {
+          league: fixture.league,
+          matches: [],
+        };
       }
-      groupedByLeague[leagueName].push(this.transformMatchOdds(fixture));
+      groupedByLeague[leagueName].matches.push(
+        this.transformMatchOdds(fixture)
+      );
     });
 
-    return groupedByLeague;
+    console.log(`📊 Grouped leagues: ${Object.keys(groupedByLeague).length}`);
+
+    // Sort matches within each league by start time and return structured data
+    const result = {};
+    Object.keys(groupedByLeague).forEach((leagueName) => {
+      const leagueData = groupedByLeague[leagueName];
+      // Sort matches by start time (earliest first)
+      leagueData.matches.sort(
+        (a, b) => new Date(a.starting_at) - new Date(b.starting_at)
+      );
+
+      // Return structured data with league info and matches
+      result[leagueName] = {
+        league: leagueData.league,
+        matches: leagueData.matches,
+        matchCount: leagueData.matches.length,
+      };
+    });
+
+    console.log(`✅ Final result leagues: ${Object.keys(result).length}`);
+    console.log(`📋 League names: ${Object.keys(result).join(", ")}`);
+
+    return result;
   }
 
   // Get optimized homepage data
@@ -325,7 +393,10 @@ class FixtureOptimizationService {
       // Check if we have cached fixture data
       const cachedFixtures = this.fixtureCache.get(fixturesCacheKey);
 
-      if (cachedFixtures && (Array.isArray(cachedFixtures) || cachedFixtures instanceof Map)) {
+      if (
+        cachedFixtures &&
+        (Array.isArray(cachedFixtures) || cachedFixtures instanceof Map)
+      ) {
         console.log("📦 Using cached fixture data for homepage filtering");
         allFixtures = this.getAllFixturesArrayFromMap(cachedFixtures);
         usedCache = true;
@@ -333,7 +404,9 @@ class FixtureOptimizationService {
         console.log("🔍 No suitable cached fixtures found, making API call...");
 
         // Make a single API call for all fixtures we need (20 days, all leagues)
-        const fixturesMap = await this.getOptimizedFixtures().catch(() => new Map());
+        const fixturesMap = await this.getOptimizedFixtures().catch(
+          () => new Map()
+        );
         allFixtures = this.getAllFixturesArrayFromMap(fixturesMap);
       }
 
@@ -371,7 +444,11 @@ class FixtureOptimizationService {
             }
           }
           // Only keep main odds for homepage
-          return { ...this.transformMatchOdds(match), league, odds: this.extractMainOddsObject(match.odds) };
+          return {
+            ...this.transformMatchOdds(match),
+            league,
+            odds: this.extractMainOddsObject(match.odds),
+          };
         })
         .filter((match) => match.odds && Object.keys(match.odds).length > 0)
         .sort((a, b) => new Date(a.starting_at) - new Date(b.starting_at)); // Sort by start time
@@ -389,9 +466,7 @@ class FixtureOptimizationService {
               ...this.transformMatchOdds(match),
               odds: this.extractMainOddsObject(match.odds), // Only keep main odds for homepage
             }))
-            .filter(
-              (match) => match.odds && Object.keys(match.odds).length > 0
-            )
+            .filter((match) => match.odds && Object.keys(match.odds).length > 0)
             .sort((a, b) => new Date(a.starting_at) - new Date(b.starting_at)), // Sort matches by start time
         }))
         .filter((league) => league.matches.length > 0); // Filter out leagues with no matches
@@ -484,11 +559,16 @@ class FixtureOptimizationService {
       const matchTime = new Date(fixture.starting_at);
       const hoursUntilMatch = (matchTime - now) / (1000 * 60 * 60);
 
-      if (hoursUntilMatch >= 0 && hoursUntilMatch <= 6) score += 50; // Next 6 hours - highest priority
-      else if (hoursUntilMatch > 6 && hoursUntilMatch <= 12) score += 40; // Next 12 hours
-      else if (hoursUntilMatch > 12 && hoursUntilMatch <= 24) score += 35; // Next 24 hours
-      else if (hoursUntilMatch > 24 && hoursUntilMatch <= 48) score += 25; // Next 48 hours
-      else if (hoursUntilMatch > 48 && hoursUntilMatch <= 72) score += 15; // Next 72 hours
+      if (hoursUntilMatch >= 0 && hoursUntilMatch <= 6)
+        score += 50; // Next 6 hours - highest priority
+      else if (hoursUntilMatch > 6 && hoursUntilMatch <= 12)
+        score += 40; // Next 12 hours
+      else if (hoursUntilMatch > 12 && hoursUntilMatch <= 24)
+        score += 35; // Next 24 hours
+      else if (hoursUntilMatch > 24 && hoursUntilMatch <= 48)
+        score += 25; // Next 48 hours
+      else if (hoursUntilMatch > 48 && hoursUntilMatch <= 72)
+        score += 15; // Next 72 hours
       else if (hoursUntilMatch > 72 && hoursUntilMatch <= 168) score += 5; // Next week
 
       // Prefer matches with recognizable teams (heuristic: longer team names often = bigger clubs)
@@ -854,12 +934,14 @@ class FixtureOptimizationService {
       try {
         const fixturesMap = await this.getOptimizedFixtures();
         // Use Map for direct lookup
-        cachedMatch = fixturesMap instanceof Map ? fixturesMap.get(Number(matchId)) : null;
+        cachedMatch =
+          fixturesMap instanceof Map ? fixturesMap.get(Number(matchId)) : null;
         if (!cachedMatch) {
           // fallback: if not found in Map, try array search (for legacy or error cases)
           let fixtures = this.getAllFixturesArrayFromMap(fixturesMap);
           cachedMatch = fixtures.find(
-            (fixture) => fixture.id == matchId || fixture.id === parseInt(matchId)
+            (fixture) =>
+              fixture.id == matchId || fixture.id === parseInt(matchId)
           );
         }
         if (!cachedMatch) {
@@ -944,8 +1026,8 @@ class FixtureOptimizationService {
     if (cached) {
       console.log("📦 Returning cached matches for league from cache");
       const league = this.getLeagueById(parseInt(leagueId));
-      const fixtures = (cached.fixtures || []).map(f => {
-        let odds =this.extractMainOddsObject(f.odds);
+      const fixtures = (cached.fixtures || []).map((f) => {
+        let odds = this.extractMainOddsObject(f.odds);
         return {
           ...f,
           odds,
@@ -960,8 +1042,8 @@ class FixtureOptimizationService {
       let fixtures = this.getAllFixturesArrayFromMap(fixturesMap).filter(
         (f) => f.league_id === parseInt(leagueId)
       );
-      fixtures = fixtures.map(f => {
-        let odds =  (f.odds);
+      fixtures = fixtures.map((f) => {
+        let odds = f.odds;
         return {
           ...f,
           odds,
@@ -1043,9 +1125,15 @@ class FixtureOptimizationService {
   // Helper to extract main odds in the expected frontend format
   extractMainOddsObject(oddsArray) {
     if (!Array.isArray(oddsArray)) return {};
-    const homeOdd = oddsArray.find(o => o.name?.toLowerCase().includes("home") || o.name === "1");
-    const drawOdd = oddsArray.find(o => o.name?.toLowerCase().includes("draw") || o.name === "X");
-    const awayOdd = oddsArray.find(o => o.name?.toLowerCase().includes("away") || o.name === "2");
+    const homeOdd = oddsArray.find(
+      (o) => o.name?.toLowerCase().includes("home") || o.name === "1"
+    );
+    const drawOdd = oddsArray.find(
+      (o) => o.name?.toLowerCase().includes("draw") || o.name === "X"
+    );
+    const awayOdd = oddsArray.find(
+      (o) => o.name?.toLowerCase().includes("away") || o.name === "2"
+    );
     return {
       home: homeOdd ? { value: homeOdd.value, oddId: homeOdd.id } : undefined,
       draw: drawOdd ? { value: drawOdd.value, oddId: drawOdd.id } : undefined,
@@ -1055,37 +1143,61 @@ class FixtureOptimizationService {
 
   // Helper to get all fixtures as an array from the Map
   getAllFixturesArrayFromMap(fixturesMap) {
-    if (!fixturesMap) return [];
-    if (fixturesMap instanceof Map) {
-      return Array.from(fixturesMap.values());
+    console.log(`🔍 getAllFixturesArrayFromMap called`);
+    console.log(
+      `📊 Input type: ${
+        fixturesMap instanceof Map
+          ? "Map"
+          : Array.isArray(fixturesMap)
+          ? "Array"
+          : typeof fixturesMap
+      }`
+    );
+
+    if (!fixturesMap) {
+      console.log("⚠️ No fixturesMap provided");
+      return [];
     }
-    if (Array.isArray(fixturesMap)) return fixturesMap;
+    if (fixturesMap instanceof Map) {
+      const result = Array.from(fixturesMap.values());
+      console.log(`✅ Converted Map to Array: ${result.length} fixtures`);
+      return result;
+    }
+    if (Array.isArray(fixturesMap)) {
+      console.log(`✅ Already an Array: ${fixturesMap.length} fixtures`);
+      return fixturesMap;
+    }
+    console.log("⚠️ Unknown data type, returning empty array");
     return [];
   }
 
   // Update league popularity status (single or multiple)
   async updateLeaguePopularity(leagues) {
     console.log("🔧 updateLeaguePopularity service called with:", leagues);
-    
+
     if (!Array.isArray(leagues)) {
       throw new Error("Leagues must be an array");
     }
 
     const results = [];
-    
+
     // Handle empty array case (when all popular leagues are removed)
     if (leagues.length === 0) {
-      console.log("📭 No leagues to update - this may be clearing all popular leagues");
+      console.log(
+        "📭 No leagues to update - this may be clearing all popular leagues"
+      );
       // Clear cache to force refresh even when no updates
-      this.clearCache('leagues');
+      this.clearCache("leagues");
       return results;
     }
-    
+
     for (const leagueData of leagues) {
       const { leagueId, name, isPopular, order } = leagueData;
-      
-      console.log(`🔄 Processing league: ${leagueId} - ${name} - isPopular: ${isPopular} - order: ${order}`);
-      
+
+      console.log(
+        `🔄 Processing league: ${leagueId} - ${name} - isPopular: ${isPopular} - order: ${order}`
+      );
+
       if (!leagueId) {
         throw new Error("League ID is required for each league");
       }
@@ -1094,12 +1206,12 @@ class FixtureOptimizationService {
         // Update or create league document
         const league = await League.findOneAndUpdate(
           { leagueId },
-          { 
+          {
             leagueId,
             name,
             isPopular,
-            order: isPopular ? (order || 0) : 0,
-            updatedAt: new Date()
+            order: isPopular ? order || 0 : 0,
+            updatedAt: new Date(),
           },
           { upsert: true, new: true }
         );
@@ -1108,13 +1220,15 @@ class FixtureOptimizationService {
         results.push(league);
       } catch (error) {
         console.error(`❌ Error updating league ${leagueId}:`, error);
-        throw new Error(`Failed to update league ${leagueId}: ${error.message}`);
+        throw new Error(
+          `Failed to update league ${leagueId}: ${error.message}`
+        );
       }
     }
 
     // Clear cache to force refresh
     console.log("🧹 Clearing league cache...");
-    this.clearCache('leagues');
+    this.clearCache("leagues");
 
     console.log("🎉 updateLeaguePopularity completed successfully");
     return results;

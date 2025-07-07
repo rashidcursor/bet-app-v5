@@ -27,23 +27,29 @@ export const fetchUpcomingMatches = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/fixtures/upcoming");
-      
-      // Transform the data from { leagueName: [matches] } format to an array of leagues
+
+      // Transform the data from { leagueName: { league, matches, matchCount } } format to an array of leagues
       const data = response.data.data;
-      const transformedData = Object.keys(data).map(leagueName => {
+      const transformedData = Object.keys(data).map((leagueName) => {
+        const leagueData = data[leagueName];
         return {
-          id: data[leagueName][0]?.league?.id || Math.random().toString(36).substr(2, 9),
+          id: leagueData.league?.id || Math.random().toString(36).substr(2, 9),
           name: leagueName,
-          image_path: data[leagueName][0]?.league?.image_path || null,
-          icon: "⚽",
-          matches: data[leagueName] || []
+          image_path: leagueData.league?.imageUrl || null,
+          imageUrl: leagueData.league?.imageUrl || null,
+          icon: leagueData.league?.icon || "⚽",
+          country: leagueData.league?.country || null,
+          league: leagueData.league, // Keep the full league object
+          matches: leagueData.matches || [],
+          matchCount: leagueData.matchCount || 0,
         };
       });
-      
+
       return transformedData;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.error?.message || "Failed to fetch upcoming matches"
+        error.response?.data?.error?.message ||
+          "Failed to fetch upcoming matches"
       );
     }
   }
@@ -82,7 +88,7 @@ export const fetchLiveOdds = createAsyncThunk(
       return {
         matchId,
         liveOdds: response.data.data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       return rejectWithValue(
@@ -184,7 +190,8 @@ const matchesSlice = createSlice({
       .addCase(fetchLiveOdds.fulfilled, (state, action) => {
         state.liveOddsLoading = false;
         state.liveOdds[action.payload.matchId] = action.payload.liveOdds;
-        state.liveOddsTimestamp[action.payload.matchId] = action.payload.timestamp;
+        state.liveOddsTimestamp[action.payload.matchId] =
+          action.payload.timestamp;
       })
       .addCase(fetchLiveOdds.rejected, (state, action) => {
         state.liveOddsLoading = false;
@@ -198,13 +205,18 @@ export const { clearError, setSelectedLeague, clearMatchDetail } =
 export default matchesSlice.reducer;
 
 // Selectors
-export const selectMatchesByLeague = (state, leagueId) => state.matches.data[leagueId] || [];
+export const selectMatchesByLeague = (state, leagueId) =>
+  state.matches.data[leagueId] || [];
 export const selectUpcomingMatches = (state) => state.matches.upcomingMatches;
-export const selectUpcomingMatchesLoading = (state) => state.matches.upcomingMatchesLoading;
-export const selectUpcomingMatchesError = (state) => state.matches.upcomingMatchesError;
+export const selectUpcomingMatchesLoading = (state) =>
+  state.matches.upcomingMatchesLoading;
+export const selectUpcomingMatchesError = (state) =>
+  state.matches.upcomingMatchesError;
 
 // Live odds selectors
-export const selectLiveOdds = (state, matchId) => state.matches.liveOdds[matchId];
+export const selectLiveOdds = (state, matchId) =>
+  state.matches.liveOdds[matchId];
 export const selectLiveOddsLoading = (state) => state.matches.liveOddsLoading;
 export const selectLiveOddsError = (state) => state.matches.liveOddsError;
-export const selectLiveOddsTimestamp = (state, matchId) => state.matches.liveOddsTimestamp[matchId];
+export const selectLiveOddsTimestamp = (state, matchId) =>
+  state.matches.liveOddsTimestamp[matchId];
