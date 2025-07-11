@@ -105,7 +105,9 @@ class BetOutcomeCalculationService {
 
       // Get market information
       const marketId =
-        bet.marketId || this.extractMarketIdFromOdd(bet.oddId, matchData);
+        bet.marketId ||
+        bet.betDetails?.market_id ||
+        this.extractMarketIdFromOdd(bet.oddId, matchData);
 
       if (!marketId) {
         return {
@@ -220,6 +222,9 @@ class BetOutcomeCalculationService {
 
       case "HALF_TIME_GOALS":
         return this.calculateOverUnder(bet, matchData); // Similar to over/under for specific half
+
+      case "HALF_TIME_FULL_TIME":
+        return this.calculateHalfTimeFullTime(bet, matchData);
 
       case "PLAYER_SHOTS_ON_TARGET":
         return this.calculatePlayerShotsOnTarget(bet, matchData);
@@ -830,53 +835,6 @@ class BetOutcomeCalculationService {
   /**
    * Calculate outcome for Half Time / Full Time Double Result
    */
-  calculateHalfTimeFullTime(bet, matchData) {
-    const fullTimeScores = this.extractMatchScores(matchData);
-    const halfTimeScores = this.extractHalfTimeScores(matchData);
-
-    if (!halfTimeScores) {
-      return {
-        status: "canceled",
-        payout: bet.stake,
-        reason: "Half-time scores not available",
-      };
-    }
-
-    // Determine half-time result
-    let htResult;
-    if (halfTimeScores.homeScore > halfTimeScores.awayScore) {
-      htResult = "1";
-    } else if (halfTimeScores.homeScore < halfTimeScores.awayScore) {
-      htResult = "2";
-    } else {
-      htResult = "X";
-    }
-
-    // Determine full-time result
-    let ftResult;
-    if (fullTimeScores.homeScore > fullTimeScores.awayScore) {
-      ftResult = "1";
-    } else if (fullTimeScores.homeScore < fullTimeScores.awayScore) {
-      ftResult = "2";
-    } else {
-      ftResult = "X";
-    }
-
-    const actualResult = `${htResult}/${ftResult}`;
-    const betOption = bet.betOption.replace(/[^\d\/X]/g, ""); // Extract pattern like "1/X"
-    const isWinning = actualResult === betOption;
-
-    return {
-      status: isWinning ? "won" : "lost",
-      payout: isWinning ? bet.stake * bet.odds : 0,
-      halfTimeResult: htResult,
-      fullTimeResult: ftResult,
-      actualResult: actualResult,
-      expectedResult: betOption,
-      reason: `HT/FT: ${actualResult}`,
-    };
-  }
-
   /**
    * Calculate outcome for Penalty markets
    */
@@ -1020,6 +978,95 @@ class BetOutcomeCalculationService {
   }
 
   /**
+   * Calculate outcome for Half Time/Full Time market
+   * Handles bets like "Tijuana - Draw" (Half Time result - Full Time result)
+   */
+  calculateHalfTimeFullTime(bet, matchData) {
+    // Extract both half-time and full-time scores
+    const halfTimeScores = this.extractHalfTimeScores(matchData);
+    const fullTimeScores = this.extractMatchScores(matchData);
+
+    if (!halfTimeScores || !fullTimeScores) {
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Score data not available",
+      };
+    }
+
+    // Get team names from match data (similar to calculateDoubleChance)
+    const homeTeam = matchData.participants?.[0]?.name || "Home";
+    const awayTeam = matchData.participants?.[1]?.name || "Away";
+
+    // Determine half-time result
+    let halfTimeResult;
+    if (halfTimeScores.homeScore > halfTimeScores.awayScore) {
+      halfTimeResult = homeTeam; // Home team wins half time
+    } else if (halfTimeScores.homeScore < halfTimeScores.awayScore) {
+      halfTimeResult = awayTeam; // Away team wins half time
+    } else {
+      halfTimeResult = "Draw"; // Half time draw
+    }
+
+    // Determine full-time result
+    let fullTimeResult;
+    if (fullTimeScores.homeScore > fullTimeScores.awayScore) {
+      fullTimeResult = homeTeam; // Home team wins full time
+    } else if (fullTimeScores.homeScore < fullTimeScores.awayScore) {
+      fullTimeResult = awayTeam; // Away team wins full time
+    } else {
+      fullTimeResult = "Draw"; // Full time draw
+    }
+
+    // Parse bet selection (e.g., "Tijuana - Draw")
+    const betOption = bet.betOption || bet.selection || "";
+    const betParts = betOption.split(" - ");
+
+    if (betParts.length !== 2) {
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Invalid bet format for Half Time/Full Time",
+      };
+    }
+
+    const expectedHalfTime = betParts[0].trim();
+    const expectedFullTime = betParts[1].trim();
+
+    // Check if the bet selection matches the actual results
+    let halfTimeMatch = false;
+    let fullTimeMatch = false;
+
+    // Check half-time match (similar logic to calculateDoubleChance)
+    if (expectedHalfTime.toLowerCase() === "draw") {
+      halfTimeMatch = halfTimeResult === "Draw";
+    } else if (expectedHalfTime.toLowerCase() === homeTeam.toLowerCase()) {
+      halfTimeMatch = halfTimeResult === homeTeam;
+    } else if (expectedHalfTime.toLowerCase() === awayTeam.toLowerCase()) {
+      halfTimeMatch = halfTimeResult === awayTeam;
+    }
+
+    // Check full-time match
+    if (expectedFullTime.toLowerCase() === "draw") {
+      fullTimeMatch = fullTimeResult === "Draw";
+    } else if (expectedFullTime.toLowerCase() === homeTeam.toLowerCase()) {
+      fullTimeMatch = fullTimeResult === homeTeam;
+    } else if (expectedFullTime.toLowerCase() === awayTeam.toLowerCase()) {
+      fullTimeMatch = fullTimeResult === awayTeam;
+    }
+
+    const isWinning = halfTimeMatch && fullTimeMatch;
+
+    return {
+      status: isWinning ? "won" : "lost",
+      payout: isWinning ? bet.stake * bet.odds : 0,
+      reason: `Half Time/Full Time: HT: ${halfTimeResult}, FT: ${fullTimeResult}, Expected: ${expectedHalfTime} - ${expectedFullTime}`,
+      actualResult: `${halfTimeResult} - ${fullTimeResult}`,
+      expectedResult: betOption,
+    };
+  }
+
+  /**
    * Enhanced market type detection with more markets
    */
   getMarketType(marketId) {
@@ -1050,6 +1097,7 @@ class BetOutcomeCalculationService {
       HALF_TIME_ASIAN_HANDICAP: [26], // 1st Half Asian Handicap
       HALF_TIME_GOAL_LINE: [27], // 1st Half Goal Line
       HALF_TIME_GOALS: [28], // 1st Half Goals
+      HALF_TIME_FULL_TIME: [29], // Half Time/Full Time
       PLAYER_SHOTS_ON_TARGET: [267], // Player Total Shots On Target
       ...this.marketTypes,
     };
@@ -1159,21 +1207,7 @@ class BetOutcomeCalculationService {
    */
   extractHalfTimeScores(matchData) {
     if (matchData.scores && Array.isArray(matchData.scores)) {
-      // First try to find half time scores with the expected structure
-      const halfTimeScore = matchData.scores.find(
-        (score) =>
-          score.description === "HT" || score.description === "HALFTIME"
-      );
-
-      if (halfTimeScore && halfTimeScore.score?.goals?.home !== undefined) {
-        return {
-          homeScore: halfTimeScore.score.goals.home || 0,
-          awayScore: halfTimeScore.score.goals.away || 0,
-        };
-      }
-
-      // If no half time score found, calculate from 1ST_HALF scores
-      // This handles the structure from example.json where each score entry has participant_id and goals
+      // Extract 1ST_HALF scores - this is the half-time result
       const firstHalfScores = matchData.scores.filter(
         (score) => score.description === "1ST_HALF"
       );
@@ -1195,28 +1229,18 @@ class BetOutcomeCalculationService {
         return { homeScore, awayScore };
       }
 
-      // Fallback: try to aggregate all 1ST_HALF scores by participant
-      const homeScores = matchData.scores.filter(
+      // Fallback: try to find legacy half time scores
+      const halfTimeScore = matchData.scores.find(
         (score) =>
-          score.score?.participant === "home" &&
-          score.description === "1ST_HALF"
-      );
-      const awayScores = matchData.scores.filter(
-        (score) =>
-          score.score?.participant === "away" &&
-          score.description === "1ST_HALF"
+          score.description === "HT" || score.description === "HALFTIME"
       );
 
-      const homeScore = homeScores.reduce(
-        (total, score) => total + (score.score?.goals || 0),
-        0
-      );
-      const awayScore = awayScores.reduce(
-        (total, score) => total + (score.score?.goals || 0),
-        0
-      );
-
-      return { homeScore, awayScore };
+      if (halfTimeScore && halfTimeScore.score?.goals?.home !== undefined) {
+        return {
+          homeScore: halfTimeScore.score.goals.home || 0,
+          awayScore: halfTimeScore.score.goals.away || 0,
+        };
+      }
     }
 
     return null;
@@ -1463,6 +1487,49 @@ class BetOutcomeCalculationService {
       payout: bet.stake,
       reason: "Unable to calculate outcome for this market type",
     };
+  }
+
+  /**
+   * Check if match is finished
+   */
+  isMatchFinished(matchData) {
+    if (!matchData || !matchData.state) {
+      return false;
+    }
+
+    const matchState = matchData.state.name?.toLowerCase();
+    const finishedStates = [
+      "finished",
+      "ended",
+      "ft",
+      "fulltime",
+      "completed",
+      "closed",
+    ];
+
+    return finishedStates.includes(matchState);
+  }
+
+  /**
+   * Helper methods for extracting bet option components
+   */
+  extractOverUnderType(betOption) {
+    const normalized = betOption.toLowerCase();
+    if (normalized.includes("over")) return "OVER";
+    if (normalized.includes("under")) return "UNDER";
+    return "EXACT";
+  }
+
+  extractHandicapTeam(betOption) {
+    const normalized = betOption.toLowerCase();
+    if (normalized.includes("home") || normalized.includes("1")) return "HOME";
+    if (normalized.includes("away") || normalized.includes("2")) return "AWAY";
+    return "UNKNOWN";
+  }
+
+  normalizeScoreFormat(betOption) {
+    // Convert various score formats to "X-Y" format
+    return betOption.replace(/[^\d-]/g, "").replace(/:/g, "-");
   }
 }
 
