@@ -54,7 +54,8 @@ class UserService {
         password,
         gender,
         role,
-        isActive,        createdBy: adminId 
+        isActive,        
+        createdBy: adminId 
       });
 
       await user.save();
