@@ -129,6 +129,22 @@ const FinancePage = () => {
 
     dispatch(setFilters(apiFilters));
     dispatch(fetchFinanceTransactions(apiFilters));
+
+    // Also fetch filtered financial summary when filters change
+    const summaryFilters = {
+      dateFrom: dateRange.from ? dateRange.from.toISOString() : "",
+      dateTo: dateRange.to ? dateRange.to.toISOString() : "",
+      type: typeFilter !== "all" ? typeFilter : "",
+      // Note: userId filter would need to be implemented if you want user-specific filtering
+    };
+
+    // Only fetch filtered summary if there are actual filters applied
+    if (summaryFilters.dateFrom || summaryFilters.dateTo || summaryFilters.type) {
+      dispatch(fetchFinancialSummary(summaryFilters));
+    } else {
+      // If no filters, fetch the regular summary
+      dispatch(fetchFinancialSummary());
+    }
   }, [
     dispatch,
     typeFilter,
@@ -771,6 +787,9 @@ const FinancePage = () => {
                     <p className="text-2xl font-bold text-gray-900">
                       ${summary.profits.toFixed(2)}
                     </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      From betting outcomes
+                    </p>
                   </div>
                   <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
                     <DollarSign className="h-5 w-5 text-blue-600" />
@@ -801,6 +820,7 @@ const FinancePage = () => {
             </Card>
           </div>
         )}
+
         {/* Data Table */}
         <Card className="rounded-none shadow-none px-2 py-2 gap-0">
           <CardContent className="p-1">

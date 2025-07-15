@@ -137,11 +137,19 @@ const BetSlip = () => {
             if (placeBetThunk.fulfilled.match(resultAction)) {
                 toast.success('Bet placed successfully!');
             } else {
-                const errorMsg = resultAction.payload?.message || 'Failed to place bet.';
+                // Improved error handling: show backend error if available
+                let errorMsg =
+                    resultAction.payload?.error?.message ||
+                    resultAction.payload?.message ||
+                    resultAction.error?.message ||
+                    (typeof resultAction.payload === 'string' ? resultAction.payload : null) ||
+                    'Failed to place bet.';
                 toast.error(errorMsg);
             }
         } catch (err) {
-            toast.error('Failed to place bet.');
+            // Try to show backend error if available
+            const backendMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message;
+            toast.error(backendMsg || 'Failed to place bet.');
         } finally {
             setIsPlacingBet(false);
         }

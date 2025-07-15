@@ -135,6 +135,32 @@ class FinanceController {
     }
   }
 
+  // Get filtered financial summary
+  async getFilteredFinancialSummary(req, res) {
+    try {
+      const filters = {
+        dateFrom: req.query.dateFrom,
+        dateTo: req.query.dateTo,
+        type: req.query.type,
+        userId: req.query.userId,
+      };
+
+      const summary = await financeService.getFilteredFinancialSummary(filters);
+
+      res.status(200).json({
+        success: true,
+        message: "Filtered financial summary retrieved successfully",
+        data: summary,
+      });
+    } catch (error) {
+      console.error("Get filtered financial summary error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to retrieve filtered financial summary",
+      });
+    }
+  }
+
   // Get user's transaction history
   async getUserTransactions(req, res) {
     try {

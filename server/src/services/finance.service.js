@@ -1,5 +1,6 @@
 import Transaction from "../models/Transaction.js";
 import User from "../models/User.js";
+import Bet from "../models/Bet.js";
 import mongoose from "mongoose";
 
 class FinanceService {
@@ -216,6 +217,7 @@ class FinanceService {
 
   // Get financial summary
   async getFinancialSummary() {
+    // Get transaction summary
     const summary = await Transaction.aggregate([
       {
         $group: {
@@ -236,6 +238,42 @@ class FinanceService {
       },
     ]);
 
+    // Calculate profit from betting outcomes
+    const bettingProfit = await Bet.aggregate([
+      {
+        $match: {
+          status: { $in: ["won", "lost"] } // Only completed bets
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalStakes: { $sum: "$stake" },
+          totalPayouts: { $sum: "$payout" },
+          totalWonBets: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "won"] }, 1, 0]
+            }
+          },
+          totalLostBets: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "lost"] }, 1, 0]
+            }
+          },
+          totalWonStakes: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "won"] }, "$stake", 0]
+            }
+          },
+          totalLostStakes: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "lost"] }, "$stake", 0]
+            }
+          }
+        }
+      }
+    ]);
+
     const deposits = summary.find((s) => s._id === "deposit") || {
       totalAmount: 0,
       count: 0,
@@ -247,9 +285,18 @@ class FinanceService {
 
     const currentBalance = totalUsersBalance[0]?.totalBalance || 0;
 
-    // Calculate profits: Total deposits - current balance - total withdrawals
-    const profits =
-      deposits.totalAmount - currentBalance - withdrawals.totalAmount;
+    // Calculate betting profit: Money kept from lost bets - Money paid out for won bets
+    const bettingProfitData = bettingProfit[0] || {
+      totalStakes: 0,
+      totalPayouts: 0,
+      totalWonBets: 0,
+      totalLostBets: 0,
+      totalWonStakes: 0,
+      totalLostStakes: 0
+    };
+
+    // Profit = Money kept from lost bets - Money paid out for won bets
+    const profits = bettingProfitData.totalLostStakes - bettingProfitData.totalPayouts;
 
     return {
       totalDeposits: deposits.totalAmount,
@@ -259,6 +306,158 @@ class FinanceService {
       depositsCount: deposits.count,
       withdrawalsCount: withdrawals.count,
       totalTransactions: deposits.count + withdrawals.count,
+      // Additional betting statistics
+      totalBets: bettingProfitData.totalWonBets + bettingProfitData.totalLostBets,
+      totalWonBets: bettingProfitData.totalWonBets,
+      totalLostBets: bettingProfitData.totalLostBets,
+      totalStakes: bettingProfitData.totalStakes,
+      totalPayouts: bettingProfitData.totalPayouts,
+      totalWonStakes: bettingProfitData.totalWonStakes,
+      totalLostStakes: bettingProfitData.totalLostStakes
+    };
+  }
+
+  // Get filtered financial summary
+  async getFilteredFinancialSummary(filters = {}) {
+    const { dateFrom, dateTo, type, userId } = filters;
+    
+    // Build match conditions for transactions
+    const transactionMatch = {};
+    if (dateFrom || dateTo) {
+      transactionMatch.createdAt = {};
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        transactionMatch.createdAt.$gte = fromDate;
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        transactionMatch.createdAt.$lte = toDate;
+      }
+    }
+    if (type && type !== 'all') {
+      transactionMatch.type = type;
+    }
+    if (userId) {
+      transactionMatch.userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Build match conditions for bets
+    const betMatch = {
+      status: { $in: ["won", "lost"] } // Only completed bets
+    };
+    if (dateFrom || dateTo) {
+      betMatch.createdAt = {};
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        betMatch.createdAt.$gte = fromDate;
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        betMatch.createdAt.$lte = toDate;
+      }
+    }
+    if (userId) {
+      betMatch.userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Get filtered transaction summary
+    const summary = await Transaction.aggregate([
+      { $match: transactionMatch },
+      {
+        $group: {
+          _id: "$type",
+          totalAmount: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Get current total balance of all users (not affected by date filters)
+    const totalUsersBalance = await User.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalBalance: { $sum: "$balance" },
+        },
+      },
+    ]);
+
+    // Calculate filtered profit from betting outcomes
+    const bettingProfit = await Bet.aggregate([
+      { $match: betMatch },
+      {
+        $group: {
+          _id: null,
+          totalStakes: { $sum: "$stake" },
+          totalPayouts: { $sum: "$payout" },
+          totalWonBets: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "won"] }, 1, 0]
+            }
+          },
+          totalLostBets: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "lost"] }, 1, 0]
+            }
+          },
+          totalWonStakes: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "won"] }, "$stake", 0]
+            }
+          },
+          totalLostStakes: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "lost"] }, "$stake", 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    const deposits = summary.find((s) => s._id === "deposit") || {
+      totalAmount: 0,
+      count: 0,
+    };
+    const withdrawals = summary.find((s) => s._id === "withdraw") || {
+      totalAmount: 0,
+      count: 0,
+    };
+
+    const currentBalance = totalUsersBalance[0]?.totalBalance || 0;
+
+    // Calculate filtered betting profit: Money kept from lost bets - Money paid out for won bets
+    const bettingProfitData = bettingProfit[0] || {
+      totalStakes: 0,
+      totalPayouts: 0,
+      totalWonBets: 0,
+      totalLostBets: 0,
+      totalWonStakes: 0,
+      totalLostStakes: 0
+    };
+
+    // Profit = Money kept from lost bets - Money paid out for won bets
+    const profits = bettingProfitData.totalLostStakes - bettingProfitData.totalPayouts;
+
+    return {
+      totalDeposits: deposits.totalAmount,
+      totalWithdrawals: withdrawals.totalAmount,
+      currentBalance,
+      profits,
+      depositsCount: deposits.count,
+      withdrawalsCount: withdrawals.count,
+      totalTransactions: deposits.count + withdrawals.count,
+      // Additional betting statistics
+      totalBets: bettingProfitData.totalWonBets + bettingProfitData.totalLostBets,
+      totalWonBets: bettingProfitData.totalWonBets,
+      totalLostBets: bettingProfitData.totalLostBets,
+      totalStakes: bettingProfitData.totalStakes,
+      totalPayouts: bettingProfitData.totalPayouts,
+      totalWonStakes: bettingProfitData.totalWonStakes,
+      totalLostStakes: bettingProfitData.totalLostStakes
     };
   }
   // Get user's transaction history

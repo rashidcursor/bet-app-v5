@@ -12,6 +12,9 @@ router.get("/transactions/:id", requireAdmin, financeController.getTransactionBy
 // Financial summary route
 router.get("/summary", requireAdmin, financeController.getFinancialSummary);
 
+// Filtered financial summary route
+router.get("/summary/filtered", requireAdmin, financeController.getFilteredFinancialSummary);
+
 // User-specific transaction routes
 router.get(
   "/users/:userId/transactions",

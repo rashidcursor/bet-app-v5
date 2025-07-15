@@ -24,15 +24,44 @@ export const fetchFinanceTransactions = createAsyncThunk(
 
 export const fetchFinancialSummary = createAsyncThunk(
   "finance/fetchSummary",
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get("/finance/summary");
-      return response.data;
+      // If filters are provided, use the filtered endpoint
+      if (filters.dateFrom || filters.dateTo || filters.type || filters.userId) {
+        const response = await apiClient.get("/finance/summary/filtered", {
+          params: filters,
+        });
+        return response.data;
+      } else {
+        // Otherwise use the regular summary endpoint
+        const response = await apiClient.get("/finance/summary");
+        return response.data;
+      }
     } catch (error) {
       return rejectWithValue(
         error.response?.data || {
           success: false,
           message: "Failed to fetch financial summary",
+          error: error.message,
+        }
+      );
+    }
+  }
+);
+
+export const fetchFilteredFinancialSummary = createAsyncThunk(
+  "finance/fetchFilteredSummary",
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get("/finance/summary/filtered", {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || {
+          success: false,
+          message: "Failed to fetch filtered financial summary",
           error: error.message,
         }
       );
