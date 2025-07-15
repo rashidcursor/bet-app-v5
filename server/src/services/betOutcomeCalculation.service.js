@@ -175,6 +175,8 @@ class BetOutcomeCalculationService {
         return this.calculateAsianHandicap(bet, matchData);
 
       case "LAST_TEAM_TO_SCORE":
+        return this.calculateLastTeamToScore(bet, matchData);
+
       case "GOALSCORER_ANYTIME":
       case "GOALSCORERS":
         return this.calculateGoalscorers(bet, matchData);
@@ -1286,7 +1288,7 @@ class BetOutcomeCalculationService {
       BOTH_TEAM_TO_SCORE_1ST_HALF_2ND_HALF: [125],
       ALTERNATIVE_MATCH_GOALS:[5] ,// Both Teams to Score in 1st/2nd Half
       RESULT_TOTAL_GOALS: [37], // Result/Total Goals
-      ...this.marketTypes,
+      LAST_TEAM_TO_SCORE:[11]
     };
 
     for (const [type, ids] of Object.entries(extendedMarketTypes)) {
@@ -1296,6 +1298,123 @@ class BetOutcomeCalculationService {
     }
 
     return "UNKNOWN";
+  }
+
+
+  /**
+   * Calculate Last Team To Score outcome
+   * Uses events data with type_id: 14 (goals) to find the last goal scored
+   */
+  calculateLastTeamToScore(bet, matchData) {
+    // Check if events data is available
+    if (!matchData.events || !Array.isArray(matchData.events)) {
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Events data not available for last team to score calculation",
+      };
+    }
+
+    // Filter events to get only goals (type_id: 14)
+    const goalEvents = matchData.events.filter(event => event.type_id === 14);
+    
+    if (goalEvents.length === 0) {
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "No goals scored in the match",
+      };
+    }
+
+    // Sort goals by minute to find the last goal
+    // Calculate total time including extra time for accurate ordering
+    const sortedGoals = [...goalEvents].sort((a, b) => {
+      const timeA = (a.minute || 0) + (a.extra_minute || 0);
+      const timeB = (b.minute || 0) + (b.extra_minute || 0);
+      return timeB - timeA; // Descending order to get last goal first
+    });
+
+    const lastGoal = sortedGoals[0];
+    const lastScoringTeamParticipantId = lastGoal.participant_id;
+
+    // Get team names and build participant mapping
+    let homeTeam = "Home";
+    let awayTeam = "Away";
+    let homeParticipantId = null;
+    let awayParticipantId = null;
+
+    // Try to extract team names from match name
+    const matchName = matchData.name || "";
+    if (matchName.includes(" vs ")) {
+      const teams = matchName.split(" vs ");
+      homeTeam = teams[0]?.trim() || "Home";
+      awayTeam = teams[1]?.trim() || "Away";
+    }
+
+    // Try to get participant info from participants array
+    if (matchData.participants && Array.isArray(matchData.participants)) {
+      if (matchData.participants[0]) {
+        homeTeam = matchData.participants[0].name || homeTeam;
+        homeParticipantId = matchData.participants[0].id;
+      }
+      if (matchData.participants[1]) {
+        awayTeam = matchData.participants[1].name || awayTeam;
+        awayParticipantId = matchData.participants[1].id;
+      }
+    }
+
+
+    // Determine which team scored the last goal
+    let lastScoringTeam;
+    let lastScoringTeamName;
+    
+    if (lastScoringTeamParticipantId === homeParticipantId) {
+      lastScoringTeam = "HOME";
+      lastScoringTeamName = homeTeam;
+    } else if (lastScoringTeamParticipantId === awayParticipantId) {
+      lastScoringTeam = "AWAY";
+      lastScoringTeamName = awayTeam;
+    } else {
+      // Fallback: try to determine from goal events order or lineups
+      lastScoringTeam = "UNKNOWN";
+      lastScoringTeamName = "Unknown";
+    }
+
+    // Parse bet selection to determine what the user bet on
+    // Check multiple sources for the bet selection
+    const betSelection = bet.betOption || bet.selection || bet.betDetails?.name || bet.betDetails?.label || "";
+
+    // Determine if the bet is winning
+    let isWinning = false;
+
+    // Simple comparison: "1" = home team, "2" = away team
+    if (betSelection === "1") {
+      // User bet on home team
+      isWinning = lastScoringTeam === "HOME";
+    } else if (betSelection === "2") {
+      // User bet on away team
+      isWinning = lastScoringTeam === "AWAY";
+    } else {
+      // Invalid selection
+      isWinning = false;
+    }
+
+    return {
+      status: isWinning ? "won" : "lost",
+      payout: isWinning ? bet.stake * bet.odds : 0,
+      lastScoringTeam: lastScoringTeamName,
+      lastScoringTeamType: lastScoringTeam,
+      lastGoalTime: `${lastGoal.minute}${lastGoal.extra_minute ? '+' + lastGoal.extra_minute : ''}`,
+      lastGoalPlayer: lastGoal.player_name,
+      betSelection: betSelection,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homeParticipantId: homeParticipantId,
+      awayParticipantId: awayParticipantId,
+      lastScoringParticipantId: lastScoringTeamParticipantId,
+      totalGoals: goalEvents.length,
+      reason: `Last team to score: ${lastScoringTeamName} (${lastGoal.player_name} at ${lastGoal.minute}${lastGoal.extra_minute ? '+' + lastGoal.extra_minute : ''})`,
+    };
   }
 
   /**
