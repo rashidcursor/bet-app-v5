@@ -256,7 +256,7 @@ class LiveFixturesService {
     const apiToken = process.env.SPORTSMONKS_API_KEY;
     
     // Define the same allowed market IDs as in fixture.service.js
-    const allowedMarketIds = [1, 2, 267, 268, 29, 90, 93, 95, 124, 125, 10, 14, 18, 19, 33, 38, 39, 41, 44, 50, 51];
+    const allowedMarketIds = [1, 2, 267, 268, 29, 90, 93, 95, 124, 125, 10, 14, 18, 19, 33, 38, 39, 41, 44, 50, 51,267,268,4,5,81,37,11 , 97 , 13,86,80 ,60,67,68,69];
     
     if (!apiToken) {
       console.error("❌ SPORTSMONKS_API_KEY is not set");
@@ -463,51 +463,49 @@ class LiveFixturesService {
 
   // Extract only 1, X, 2 odds for inplay display
   extractMainOdds(bettingData) {
-    if (!Array.isArray(bettingData) || bettingData.length === 0) {
+    if (!Array.isArray(bettingData)) return {};
+    
+    // Find the main market (1x2) section in betting data
+    const mainMarketSection = bettingData.find(section => 
+      section.title === 'Match Result' || 
+      section.title === '1X2' || 
+      section.market_id === 1
+    );
+    
+    if (!mainMarketSection || !mainMarketSection.options) {
+      console.log(`[extractMainOdds] No main market section found in betting data`);
       return {};
     }
     
-    // Look for the Full Time Result section in betting data
-    const fullTimeSection = bettingData.find(section => 
-      section.category === 'full-time' && 
-      (section.title?.toLowerCase().includes('result') || 
-       section.title?.toLowerCase().includes('fulltime') ||
-       section.title?.toLowerCase().includes('1x2'))
-    );
+    const result = {};
     
-    if (!fullTimeSection || !fullTimeSection.options) {
-      return {};
-    }
+    // Extract home, draw, away odds with suspended status
+    mainMarketSection.options.forEach(option => {
+      const label = option.label?.toLowerCase();
+      const name = option.name?.toLowerCase();
+      
+      if (label === "home" || label === "1" || name === "home" || name === "1") {
+        result.home = { 
+          value: option.value, 
+          oddId: option.id,
+          suspended: option.suspended || false
+        };
+      } else if (label === "draw" || label === "x" || name === "draw" || name === "x") {
+        result.draw = { 
+          value: option.value, 
+          oddId: option.id,
+          suspended: option.suspended || false
+        };
+      } else if (label === "away" || label === "2" || name === "away" || name === "2") {
+        result.away = { 
+          value: option.value, 
+          oddId: option.id,
+          suspended: option.suspended || false
+        };
+      }
+    });
     
-    // Extract home, draw, away odds from the options
-    const homeOdd = fullTimeSection.options.find(o => 
-      o.label === "1" || 
-      o.label?.toLowerCase() === "home" ||
-      o.team === "home" ||
-      // Check if label contains team name (after transformation)
-      (o.label && !o.label.toLowerCase().includes('draw') && !o.label.toLowerCase().includes('tie'))
-    );
-    
-    const drawOdd = fullTimeSection.options.find(o => 
-      o.label === "X" || 
-      o.label?.toLowerCase() === "draw" ||
-      o.label?.toLowerCase() === "tie"
-    );
-    
-    const awayOdd = fullTimeSection.options.find(o => 
-      o.label === "2" || 
-      o.label?.toLowerCase() === "away" ||
-      o.team === "away" ||
-      // For the third option that's not home or draw
-      (o !== homeOdd && o !== drawOdd && o.label && !o.label.toLowerCase().includes('draw') && !o.label.toLowerCase().includes('tie'))
-    );
-
-    const result = {
-      home: homeOdd ? { value: homeOdd.value, oddId: homeOdd.id, name: homeOdd.label || 'Home Win' } : undefined,
-      draw: drawOdd ? { value: drawOdd.value, oddId: drawOdd.id, name: drawOdd.label || 'Draw' } : undefined,
-      away: awayOdd ? { value: awayOdd.value, oddId: awayOdd.id, name: awayOdd.label || 'Away Win' } : undefined,
-    };
-    
+    console.log(`[extractMainOdds] Extracted odds with suspended status:`, result);
     return result;
   }
 

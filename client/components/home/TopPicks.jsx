@@ -15,7 +15,7 @@ const transformMatchData = (apiMatch, league) => {
     // Extract main odds (1, X, 2) from the odds data
     const odds = {};
     if (apiMatch.odds) {
-        console.log('🎲 Processing odds for match:', apiMatch.id, apiMatch.odds);
+       
         
         if (typeof apiMatch.odds === 'object' && !Array.isArray(apiMatch.odds)) {
             // Handle object format: { home: { value: 2.1, oddId: 123 }, draw: { value: 3.4, oddId: 124 } }
@@ -53,7 +53,7 @@ const transformMatchData = (apiMatch, league) => {
             });
         }
         
-        console.log('✅ Extracted odds:', odds);
+
     } else {
         console.log('⚠️ No odds found for match:', apiMatch.id);
     }
@@ -90,30 +90,15 @@ const TopPicks = () => {
     // Transform API data to MatchCard format and filter out matches without valid odds
     const transformedMatches = topPicks
         .map(match => {
-            console.log('🔍 Processing top pick match:', {
-                id: match.id,
-                name: match.name,
-                odds: match.odds,
-                league: match.league?.name
-            });
+           
             return transformMatchData(match, match.league);
         })
         .filter(match => {
             const hasValidOdds = match.odds && Object.keys(match.odds).length > 0;
-            console.log('🎯 Match odds check:', {
-                id: match.id,
-                team1: match.team1,
-                team2: match.team2,
-                hasValidOdds,
-                odds: match.odds
-            });
+
             return hasValidOdds;
         });
 
-    console.log('📊 Top picks summary:', {
-        totalTopPicks: topPicks.length,
-        transformedMatches: transformedMatches.length
-    });
 
     if (transformedMatches.length === 0) {
         return (

@@ -49,17 +49,14 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                     <div key={match.id}>
                         <div className='flex justify-between mt-2'>
                             <div className="text-xs text-gray-600">
-                                {isInPlay ? (
-                                    (() => {
-                                        console.log('[LeagueCards] Rendering LiveTimer for match:', match.id, 'startingAt:', match.starting_at);
-                                        return <LiveTimer startingAt={match.starting_at} />;
-                                    })()
+                                {isInPlay && match.isLive ? (
+                                    <LiveTimer startingAt={match.starting_at} />
                                 ) : (
                                     match.time
                                 )}
                             </div>
                             <div className="text-xs text-gray-500">
-                                {isInPlay ? '' : ''}
+                                {isInPlay && match.isLive ? 'LIVE' : ''}
                             </div>
                         </div>
                         <Link href={`/matches/${match.id}`}>
@@ -67,7 +64,7 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                         <div className="text-[12px] mb-1 flex items-center gap-2" title={match.team1}>
-                                            {isInPlay && (
+                                            {isInPlay && match.isLive && (
                                                 <span className="text-xs font-bold text-gray-900 min-w-[16px]">
                                                     {match.score?.team1 || '0'}
                                                 </span>
@@ -77,7 +74,7 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                             </span>
                                         </div>
                                         <div className="text-[12px] flex items-center gap-2" title={match.team2}>
-                                            {isInPlay && (
+                                            {isInPlay && match.isLive && (
                                                 <span className="text-xs font-bold text-gray-900 min-w-[16px]">
                                                     {match.score?.team2 || '0'}
                                                 </span>
@@ -92,8 +89,16 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                             {match.odds['1'] && (
                                                 <Button
                                                     size="sm"
-                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                    onClick={createBetHandler(match, '1', match.odds['1'].value, '1x2', match.odds['1'].oddId)}
+                                                    className={`w-14 h-8 p-0 text-xs font-bold betting-button ${
+                                                        isInPlay && match.odds['1'].suspended 
+                                                            ? 'opacity-50 cursor-not-allowed bg-gray-300 hover:bg-gray-300' 
+                                                            : ''
+                                                    }`}
+                                                    onClick={isInPlay && match.odds['1'].suspended 
+                                                        ? undefined 
+                                                        : createBetHandler(match, '1', match.odds['1'].value, '1x2', match.odds['1'].oddId)
+                                                    }
+                                                    disabled={isInPlay && match.odds['1'].suspended}
                                                 >
                                                     {match.odds['1'].value}
                                                 </Button>
@@ -101,8 +106,16 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                             {match.odds['X'] && (
                                                 <Button
                                                     size="sm"
-                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                    onClick={createBetHandler(match, 'X', match.odds['X'].value, '1x2', match.odds['X'].oddId)}
+                                                    className={`w-14 h-8 p-0 text-xs font-bold betting-button ${
+                                                        isInPlay && match.odds['X'].suspended 
+                                                            ? 'opacity-50 cursor-not-allowed bg-gray-300 hover:bg-gray-300' 
+                                                            : ''
+                                                    }`}
+                                                    onClick={isInPlay && match.odds['X'].suspended 
+                                                        ? undefined 
+                                                        : createBetHandler(match, 'X', match.odds['X'].value, '1x2', match.odds['X'].oddId)
+                                                    }
+                                                    disabled={isInPlay && match.odds['X'].suspended}
                                                 >
                                                     {match.odds['X'].value}
                                                 </Button>
@@ -110,8 +123,16 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null }) => {
                                             {match.odds['2'] && (
                                                 <Button
                                                     size="sm"
-                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                    onClick={createBetHandler(match, '2', match.odds['2'].value, '1x2', match.odds['2'].oddId)}
+                                                    className={`w-14 h-8 p-0 text-xs font-bold betting-button ${
+                                                        isInPlay && match.odds['2'].suspended 
+                                                            ? 'opacity-50 cursor-not-allowed bg-gray-300 hover:bg-gray-300' 
+                                                            : ''
+                                                    }`}
+                                                    onClick={isInPlay && match.odds['2'].suspended 
+                                                        ? undefined 
+                                                        : createBetHandler(match, '2', match.odds['2'].value, '1x2', match.odds['2'].oddId)
+                                                    }
+                                                    disabled={isInPlay && match.odds['2'].suspended}
                                                 >
                                                     {match.odds['2'].value}
                                                 </Button>
@@ -151,7 +172,7 @@ const LeagueCards = ({
 }) => {
     const scrollRef = useRef(null);
 
-    console.log("LeagueCards received reduxData:", reduxData);
+   
 
     // Transform Redux data to match the expected format
     const transformReduxData = (data) => {
@@ -171,18 +192,54 @@ const LeagueCards = ({
     
                     if (match.odds) {
                         if (typeof match.odds === 'object' && !Array.isArray(match.odds)) {
-                            // New backend format: { home: { value, oddId }, draw: { value, oddId }, away: { value, oddId } }
-                            if (match.odds.home && !isNaN(match.odds.home.value)) odds['1'] = { value: Number(match.odds.home.value).toFixed(2), oddId: match.odds.home.oddId };
-                            if (match.odds.draw && !isNaN(match.odds.draw.value)) odds['X'] = { value: Number(match.odds.draw.value).toFixed(2), oddId: match.odds.draw.oddId };
-                            if (match.odds.away && !isNaN(match.odds.away.value)) odds['2'] = { value: Number(match.odds.away.value).toFixed(2), oddId: match.odds.away.oddId };
+                            // New backend format: { home: { value, oddId, suspended }, draw: { value, oddId, suspended }, away: { value, oddId, suspended } }
+                            if (match.odds.home && !isNaN(match.odds.home.value)) {
+                                odds['1'] = { 
+                                    value: Number(match.odds.home.value).toFixed(2), 
+                                    oddId: match.odds.home.oddId,
+                                    suspended: match.odds.home.suspended || false
+                                };
+                            }
+                            if (match.odds.draw && !isNaN(match.odds.draw.value)) {
+                                odds['X'] = { 
+                                    value: Number(match.odds.draw.value).toFixed(2), 
+                                    oddId: match.odds.draw.oddId,
+                                    suspended: match.odds.draw.suspended || false
+                                };
+                            }
+                            if (match.odds.away && !isNaN(match.odds.away.value)) {
+                                odds['2'] = { 
+                                    value: Number(match.odds.away.value).toFixed(2), 
+                                    oddId: match.odds.away.oddId,
+                                    suspended: match.odds.away.suspended || false
+                                };
+                            }
                         } else if (Array.isArray(match.odds)) {
                             // Legacy array format (if still present)
                             match.odds.forEach(odd => {
                                 const value = parseFloat(odd.value);
                                 if (!isNaN(value)) {
-                                    if (odd.label === '1' || odd.label === 'Home' || odd.name === 'Home') odds['1'] = { value: value.toFixed(2), oddId: odd.oddId };
-                                    if (odd.label === 'X' || odd.label === 'Draw' || odd.name === 'Draw') odds['X'] = { value: value.toFixed(2), oddId: odd.oddId };
-                                    if (odd.label === '2' || odd.label === 'Away' || odd.name === 'Away') odds['2'] = { value: value.toFixed(2), oddId: odd.oddId };
+                                    if (odd.label === '1' || odd.label === 'Home' || odd.name === 'Home') {
+                                        odds['1'] = { 
+                                            value: value.toFixed(2), 
+                                            oddId: odd.oddId,
+                                            suspended: odd.suspended || false
+                                        };
+                                    }
+                                    if (odd.label === 'X' || odd.label === 'Draw' || odd.name === 'Draw') {
+                                        odds['X'] = { 
+                                            value: value.toFixed(2), 
+                                            oddId: odd.oddId,
+                                            suspended: odd.suspended || false
+                                        };
+                                    }
+                                    if (odd.label === '2' || odd.label === 'Away' || odd.name === 'Away') {
+                                        odds['2'] = { 
+                                            value: value.toFixed(2), 
+                                            oddId: odd.oddId,
+                                            suspended: odd.suspended || false
+                                        };
+                                    }
                                 }
                             });
                         }
@@ -192,15 +249,33 @@ const LeagueCards = ({
                     if (Object.keys(odds).length === 0) {
     
                         return null; // Don't include this match
-                    }
-    
-                    // Format the actual match time
+                    }                    // Format the actual match time and determine if it's live
                     let displayTime = 'TBD'; // Default
+                    let isMatchLive = false;
+                    
                     if (match.starting_at) {
-                        displayTime = formatToLocalTime(match.starting_at, { format: 'timeOnly' });
+                        if (isInPlay) {
+                            // For in-play section, check if match is actually live
+                            // Common live state IDs: 1 (inplay), 22 (inplay), etc.
+                            // You should verify these state IDs with your API documentation
+                            const liveStateIds = [1, 22, 5, 6, 7, 8, 9, 10, 11, 12]; // Add more as needed
+                            const now = new Date();
+                            const startTime = new Date(match.starting_at + (match.starting_at.includes('Z') ? '' : ' UTC'));
+                            const timeSinceStart = now.getTime() - startTime.getTime();
+                            const minutesSinceStart = Math.floor(timeSinceStart / (1000 * 60));
+                            
+                            // Consider match live if:
+                            // 1. State ID indicates live OR
+                            // 2. Match started within last 120 minutes (reasonable match duration)
+                            isMatchLive = liveStateIds.includes(match.state_id) || 
+                                         (timeSinceStart > 0 && minutesSinceStart <= 120);
+                        }
+                        
+                        if (!isInPlay || !isMatchLive) {
+                            displayTime = formatToLocalTime(match.starting_at, { format: 'timeOnly' });
+                        }
                     }
-    
-    
+
                     return {
                         id: match.id,
                         team1: teamNames[0],
@@ -208,7 +283,9 @@ const LeagueCards = ({
                         time: displayTime,
                         odds: odds,
                         clock: true,
-                        starting_at: match.starting_at // Add the starting_at field for live timer
+                        starting_at: match.starting_at, // Add the starting_at field for live timer
+                        state_id: match.state_id, // Add state_id for live determination
+                        isLive: isMatchLive // Add live flag
                     };
                 }).filter(match => match !== null); // Filter out null matches
     
@@ -229,7 +306,7 @@ const LeagueCards = ({
     };
 
     const transformed = transformReduxData(reduxData).filter(league=>league.matches.length > 0);
-    console.log("Transformed leagues for LeagueCards:", transformed);
+   
 
     if (!transformed || transformed.length === 0) return null;
 

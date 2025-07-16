@@ -238,10 +238,11 @@ export const getLiveMatchesFromCache = async (req, res) => {
       const odds = liveFixturesService.getLiveOdds(match.id);
       match.odds = liveFixturesService.extractMainOdds(odds);
       return match;
-    }).filter(match => {
+    })
+    // .filter(match => {
      
-      return match.odds && (match.odds.home || match.odds.draw || match.odds.away);
-    });
+    //   return match.odds && (match.odds.home || match.odds.draw || match.odds.away);
+    // });
   });
   // Remove league groups with no matches
   const filteredLiveMatches = liveMatches.filter(group => group.matches.length > 0);

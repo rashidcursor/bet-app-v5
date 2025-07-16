@@ -16,9 +16,27 @@ const LiveTimer = ({ startingAt }) => {
 
         const calculateElapsedTime = () => {
             try {
-                const startTime = new Date(startingAt);
+                // Handle UTC timestamp properly
+                let startTime;
+                if (typeof startingAt === 'string') {
+                    // If the string doesn't have timezone info, treat it as UTC
+                    if (!startingAt.includes('T') && !startingAt.includes('Z') && !startingAt.includes('+')) {
+                        // Format: "2025-07-16 09:00:00" -> treat as UTC
+                        startTime = new Date(startingAt + ' UTC');
+                    } else {
+                        // Already has timezone info
+                        startTime = new Date(startingAt);
+                    }
+                } else {
+                    startTime = new Date(startingAt);
+                }
+
                 const now = new Date();
                 const diffMs = now.getTime() - startTime.getTime();
+
+                console.log('[LiveTimer] Start time (UTC):', startTime.toISOString());
+                console.log('[LiveTimer] Current time:', now.toISOString());
+                console.log('[LiveTimer] Difference (ms):', diffMs);
 
                 // If match hasn't started yet
                 if (diffMs < 0) {
@@ -29,6 +47,20 @@ const LiveTimer = ({ startingAt }) => {
                 // Calculate minutes and seconds
                 const totalMinutes = Math.floor(diffMs / (1000 * 60));
                 const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+                console.log('[LiveTimer] Calculated minutes:', totalMinutes);
+
+                // If match started more than 120 minutes ago, it's likely finished
+                if (totalMinutes > 120) {
+                    setElapsedTime('FT');
+                    return;
+                }
+
+                // Cap at 90+ minutes for football matches (plus reasonable injury time)
+                if (totalMinutes >= 90) {
+                    setElapsedTime('90+');
+                    return;
+                }
 
                 // Format as MM:SS
                 const formattedTime = `${totalMinutes}:${seconds.toString().padStart(2, '0')}`;
