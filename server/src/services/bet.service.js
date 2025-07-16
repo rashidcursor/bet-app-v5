@@ -563,7 +563,7 @@ class BetService {
         {
           params: {
             include: 
-              "state;inplayOdds;scores;participants;lineups.details;events;statistics;odds"  
+              "state;inplayOdds;scores;participants;lineups.details;events;statistics;odds;state"  
           },
         }
       );
@@ -571,6 +571,7 @@ class BetService {
       if (!response.data?.data) {
         throw new CustomError("Match not found", 404, "MATCH_NOT_FOUND");
       }
+
 
       // Add debug logging
       console.log(
@@ -664,21 +665,21 @@ class BetService {
 
     //NOTE: Dont remove it i will uncomment it
     // Check if match is finished (state.id === 5 means finished)
-    // if (!matchData.state || matchData.state.id !== 5) {
-    //   console.log(`[checkBetOutcome] Match not finished for betId: ${betId}, state:`, matchData.state);
+    if (!matchData.state || matchData.state.id !== 5) {
+      console.log(`[checkBetOutcome] Match not finished for betId: ${betId}, state:`, matchData.state);
 
-    //   // If match hasn't started yet or is in progress, reschedule for estimated end time
-    //   if (!matchData.state || matchData.state.id === 1 || (matchData.state.id >= 2 && matchData.state.id <= 4)) {
-    //     console.log(`[checkBetOutcome] Match is not yet finished (state: ${matchData.state?.name}). Rescheduling for estimated end time.`);
-    //     agenda.schedule(bet.estimatedMatchEnd, "checkBetOutcome", { betId, matchId: bet.matchId });
-    //   } else {
-    //     // For other states, check again in 10 minutes
-    //     const runAt = new Date(Date.now() + 10 * 60 * 1000);
-    //     agenda.schedule(runAt, "checkBetOutcome", { betId, matchId: bet.matchId });
-    //   }
+      // If match hasn't started yet or is in progress, reschedule for estimated end time
+      if (!matchData.state || matchData.state.id === 1 || (matchData.state.id >= 2 && matchData.state.id <= 4)) {
+        console.log(`[checkBetOutcome] Match is not yet finished (state: ${matchData.state?.name}). Rescheduling for estimated end time.`);
+        agenda.schedule(bet.estimatedMatchEnd, "checkBetOutcome", { betId, matchId: bet.matchId });
+      } else {
+        // For other states, check again in 10 minutes
+        const runAt = new Date(Date.now() + 10 * 60 * 1000);
+        agenda.schedule(runAt, "checkBetOutcome", { betId, matchId: bet.matchId });
+      }
 
-    //   return { betId, status: bet.status, message: "Match not yet finished, rescheduled" };
-    // }
+      return { betId, status: bet.status, message: "Match not yet finished, rescheduled" };
+    }
    
    // Prepare match data for outcome calculation
    let final_match = matchData;

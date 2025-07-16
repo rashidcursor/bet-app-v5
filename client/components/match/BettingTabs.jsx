@@ -770,7 +770,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 {/* Team 1 (Left side) */}
                 <div className="flex-1">
                     <div className="text-sm text-gray-700 font-semibold  mb-2 px-2 text-center  py-1 rounded">{team1}</div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-1 gap-1">
                         {team1Options.map((option, idx) => {
                             const name = option.total || option.name;
                             return (
@@ -805,7 +805,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 {/* Team 2 (Right side) */}
                 <div className="flex-1">
                     <div className="text-sm text-gray-700 font-semibold  mb-2 px-2 text-center  py-1 rounded">{team2}</div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-1 gap-1">
                         {team2Options.map((option, idx) => {
                             const name = option.total || option.name;
                             return (
