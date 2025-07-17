@@ -919,10 +919,55 @@ class BetOutcomeCalculationService {
       };
     }
 
-    // For market 86 - simple team selection (bet on team scoring at least 1 goal)
+    // For market 86 - Team Total Goals with Over/Under logic
     if (bet.betDetails?.market_id === "86") {
-      // For now, assume it's betting on team scoring at least 1 goal
-      // This can be enhanced later if there are over/under variants
+      // Check if we have Over/Under information in betDetails.total
+      if (bet.betDetails.total) {
+        const totalText = bet.betDetails.total.toString();
+        console.log(`[calculateTeamTotalGoals] Processing Over/Under bet: ${totalText} for team ${teamIdentifier}`);
+        
+        // Parse Over/Under from total field (e.g., "Over 0.5", "Under 1.5")
+        const overMatch = totalText.match(/over\s+(\d+(?:\.\d+)?)/i);
+        const underMatch = totalText.match(/under\s+(\d+(?:\.\d+)?)/i);
+        
+        if (overMatch) {
+          const threshold = parseFloat(overMatch[1]);
+          const isWinning = teamGoals > threshold;
+          
+          console.log(`[calculateTeamTotalGoals] Over ${threshold}: Team ${teamIdentifier} scored ${teamGoals} goals, winning: ${isWinning}`);
+          
+          return {
+            status: isWinning ? "won" : "lost",
+            payout: isWinning ? bet.stake * bet.odds : 0,
+            teamGoals: teamGoals,
+            threshold: threshold,
+            betType: "Over",
+            teamIdentifier: teamIdentifier,
+            teamName: teamName,
+            reason: `Team ${teamName} goals: ${teamGoals}, Over ${threshold}: ${isWinning ? 'Won' : 'Lost'}`,
+          };
+        } else if (underMatch) {
+          const threshold = parseFloat(underMatch[1]);
+          const isWinning = teamGoals < threshold;
+          
+          console.log(`[calculateTeamTotalGoals] Under ${threshold}: Team ${teamIdentifier} scored ${teamGoals} goals, winning: ${isWinning}`);
+          
+          return {
+            status: isWinning ? "won" : "lost",
+            payout: isWinning ? bet.stake * bet.odds : 0,
+            teamGoals: teamGoals,
+            threshold: threshold,
+            betType: "Under",
+            teamIdentifier: teamIdentifier,
+            teamName: teamName,
+            reason: `Team ${teamName} goals: ${teamGoals}, Under ${threshold}: ${isWinning ? 'Won' : 'Lost'}`,
+          };
+        } else {
+          console.log(`[calculateTeamTotalGoals] Could not parse Over/Under from: ${totalText}`);
+        }
+      }
+      
+      // Fallback - simple team selection (bet on team scoring at least 1 goal)
       const isWinning = teamGoals > 0;
       
       return {
@@ -930,7 +975,8 @@ class BetOutcomeCalculationService {
         payout: isWinning ? bet.stake * bet.odds : 0,
         teamGoals: teamGoals,
         teamIdentifier: teamIdentifier,
-        reason: `Team ${teamIdentifier} goals: ${teamGoals}`,
+        teamName: teamName,
+        reason: `Team ${teamName} goals: ${teamGoals} (simple bet)`,
       };
     }
 

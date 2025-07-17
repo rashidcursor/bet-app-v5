@@ -19,7 +19,7 @@ const UpcomingMatchesPage = () => {
 
   const formatUpcomingTime = (startTime, match) => {
     if (!startTime) return "TBD";
-    return formatToLocalTime(startTime, { format: 'timeOnly' });
+    return formatToLocalTime(startTime, { format: 'default' });
   };
 
   const upcomingConfig = {

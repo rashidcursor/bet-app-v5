@@ -121,12 +121,21 @@ class BetService {
     
     console.log(`[createBetDetails] Final market ID: ${safeMarketId}, market name: ${marketName}`);
     
+    // Process the total field - keep it as string for descriptive totals like "Over 0.5", "Under 1.5"
+    let processedTotal = null;
+    if (odds.total !== undefined && odds.total !== null) {
+      // Always keep as string since it contains descriptive text like "Over 1.5", "Under 2.5"
+      processedTotal = String(odds.total);
+    }
+    
+    console.log(`[createBetDetails] Processing total: ${odds.total} -> ${processedTotal}`);
+    
     return {
       market_id: safeMarketId,
       market_name: marketName,
       label: odds.label || odds.name || '',
       value: parseFloat(odds.value) || 0,
-      total: parseFloat(odds.total) || null,
+      total: processedTotal,
       market_description: odds.market_description || null,
       handicap: odds.handicap || null,
       name: odds.name || odds.label || ''

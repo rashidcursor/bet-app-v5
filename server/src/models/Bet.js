@@ -81,7 +81,7 @@ const betSchema = new mongoose.Schema(
         required: true,
       },
       total: {
-        type: Number,
+        type: mongoose.Schema.Types.Mixed, // Allow both strings ("Over 0.5") and numbers
         default: null,
       },
       market_description: {
