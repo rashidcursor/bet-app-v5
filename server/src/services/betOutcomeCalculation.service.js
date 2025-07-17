@@ -3,6 +3,7 @@ import NodeCache from "node-cache";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { normalizePlayerName, playerNamesMatch } from "../utils/playerNameUtils.js";
 
 /**
  * Comprehensive Bet Outcome Calculation Service
@@ -516,9 +517,10 @@ class BetOutcomeCalculationService {
         // Check if the player scored the first goal
         const firstGoal = sortedGoals[0];
         console.log('[DEBUG] First Goal Event player_name:', firstGoal?.player_name, '| Bet playerName:', playerName);
+        console.log('[DEBUG] Normalized Event name:', normalizePlayerName(firstGoal?.player_name), '| Normalized Bet name:', normalizePlayerName(playerName));
         isWinning = firstGoal &&
                    firstGoal.player_name &&
-                   firstGoal.player_name.trim().toLowerCase() === playerName.trim().toLowerCase();
+                   playerNamesMatch(firstGoal.player_name, playerName);
         goalDetails = firstGoal;
         break;
 
@@ -526,9 +528,10 @@ class BetOutcomeCalculationService {
         // Check if the player scored the last goal
         const lastGoal = sortedGoals[sortedGoals.length - 1];
         console.log('[DEBUG] Last Goal Event player_name:', lastGoal?.player_name, '| Bet playerName:', playerName);
+        console.log('[DEBUG] Normalized Event name:', normalizePlayerName(lastGoal?.player_name), '| Normalized Bet name:', normalizePlayerName(playerName));
         isWinning = lastGoal &&
                    lastGoal.player_name &&
-                   lastGoal.player_name.trim().toLowerCase() === playerName.trim().toLowerCase();
+                   playerNamesMatch(lastGoal.player_name, playerName);
         goalDetails = lastGoal;
         break;
 
@@ -536,7 +539,7 @@ class BetOutcomeCalculationService {
         // Check if the player scored any goal during the match
         const playerGoals = sortedGoals.filter(goal =>
           goal.player_name &&
-          goal.player_name.trim().toLowerCase() === playerName.trim().toLowerCase()
+          playerNamesMatch(goal.player_name, playerName)
         );
         isWinning = playerGoals.length > 0;
         goalDetails = playerGoals;
@@ -1276,21 +1279,33 @@ class BetOutcomeCalculationService {
     const shotsThreshold = parseFloat(bet.betDetails?.label || "0.0");
 
     if (!playerName) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Player name not found in bet details",
+      };
     }
 
     // Check if lineups data is available
     if (!matchData.lineups || !Array.isArray(matchData.lineups)) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Lineups data not available for player shots calculation",
+      };
     }
 
     // Find the player in lineups
     const player = matchData.lineups.find(
-      (lineup) => lineup.player_name === playerName
+      (lineup) => lineup.player_name.toLowerCase() === playerName.toLowerCase()
     );
 
     if (!player) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: `Player ${playerName} not found in match lineups`,
+      };
     }
 
     // Find shots on target statistic using typeIdMapping
@@ -1299,7 +1314,11 @@ class BetOutcomeCalculationService {
     );
 
     if (!shotsOnTargetStat) {
-      return null;
+      return {
+        status: "lost",
+        payout: bet.stake,
+        reason: `Shots on target data not available for player ${playerName}`,
+      };
     }
 
     const actualShotsOnTarget = shotsOnTargetStat.data?.value || 0;
@@ -1309,6 +1328,11 @@ class BetOutcomeCalculationService {
 
     return {
       status: isWinning ? "won" : "lost",
+      payout: isWinning ? bet.stake * bet.odds : 0,
+      playerName: playerName,
+      actualShotsOnTarget: actualShotsOnTarget,
+      shotsThreshold: shotsThreshold,
+      reason: `Player ${playerName} shots on target: ${actualShotsOnTarget}, Threshold: ${shotsThreshold}`,
     };
   }
 
@@ -1318,21 +1342,33 @@ class BetOutcomeCalculationService {
     const shotsThreshold = parseFloat(bet.betDetails?.label || "0.0");
 
     if (!playerName) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Player name not found in bet details",
+      };
     }
 
     // Check if lineups data is available
     if (!matchData.lineups || !Array.isArray(matchData.lineups)) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: "Lineups data not available for player shots calculation",
+      };
     }
 
     // Find the player in lineups
     const player = matchData.lineups.find(
-      (lineup) => lineup.player_name === playerName
+      (lineup) => lineup.player_name.toLowerCase() === playerName.toLowerCase()
     );
 
     if (!player) {
-      return null;
+      return {
+        status: "canceled",
+        payout: bet.stake,
+        reason: `Player ${playerName} not found in match lineups`,
+      };
     }
 
     // Find total shots statistic using typeIdMapping
@@ -1341,7 +1377,11 @@ class BetOutcomeCalculationService {
     );
 
     if (!shotsTotalStat) {
-      return null;
+      return {
+        status: "lost",
+        payout: bet.stake,
+        reason: `Total shots data not available for player ${playerName}`,
+      };
     }
 
     const actualShotsTotal = shotsTotalStat.data?.value || 0;
@@ -1351,6 +1391,11 @@ class BetOutcomeCalculationService {
 
     return {
       status: isWinning ? "won" : "lost",
+      payout: isWinning ? bet.stake * bet.odds : 0,
+      playerName: playerName,
+      actualShotsTotal: actualShotsTotal,
+      shotsThreshold: shotsThreshold,
+      reason: `Player ${playerName} total shots: ${actualShotsTotal}, Threshold: ${shotsThreshold}`,
     };
   }
 
@@ -2502,7 +2547,53 @@ class BetOutcomeCalculationService {
     
     // Handle different market types
     if (marketId === 68) {
-      // Market 68: Total Corners - handle range bets like "6 - 8"
+      // Market 68: Total Corners - handle both range bets and Over/Under bets
+      const betLabel = bet.betDetails?.label || bet.betDetails?.name || bet.betOption || '';
+      
+      // Check if it's a range bet (e.g., "6 - 8", "10-14")
+      if (betLabel.match(/\d+\s*-\s*\d+/)) {
+        return this.calculateCornersRange(bet, cornerStats);
+      }
+      
+      // Check if it's an Over/Under bet (e.g., "Over 14", "Under 10.5")
+      if (betLabel.match(/over|under/i)) {
+        // Extract threshold from label (e.g., "Over 14" -> 14)
+        const thresholdMatch = betLabel.match(/(?:over|under)\s+(\d+(?:\.\d+)?)/i);
+        if (!thresholdMatch) {
+          return {
+            status: "canceled",
+            payout: bet.stake,
+            reason: "Unable to parse Over/Under threshold from bet label",
+          };
+        }
+        
+        const threshold = parseFloat(thresholdMatch[1]);
+        const betType = betLabel.toLowerCase().includes('over') ? 'OVER' : 'UNDER';
+        
+        let isWinning;
+        if (betType === "OVER") {
+          isWinning = cornerStats.totalCorners > threshold;
+        } else {
+          isWinning = cornerStats.totalCorners < threshold;
+        }
+        
+        console.log(`[calculateCornersOverUnder] Market 68 Over/Under: ${betType} ${threshold}, actual: ${cornerStats.totalCorners}, winning: ${isWinning}`);
+        
+        return {
+          status: isWinning ? "won" : "lost",
+          payout: isWinning ? bet.stake * bet.odds : 0,
+          actualCorners: cornerStats.totalCorners,
+          homeCorners: cornerStats.homeCorners,
+          awayCorners: cornerStats.awayCorners,
+          threshold: threshold,
+          betType: betType,
+          marketId: marketId,
+          betLabel: betLabel,
+          reason: `Total corners: ${cornerStats.totalCorners}, ${betType} ${threshold}: ${isWinning ? 'Won' : 'Lost'}`,
+        };
+      }
+      
+      // Fallback to range calculation if neither pattern is found
       return this.calculateCornersRange(bet, cornerStats);
     }
     
