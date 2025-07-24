@@ -15,7 +15,6 @@ class FixtureOptimizationService {
     this.liveCache = new NodeCache({ stdTTL: 600 });
     this.fixtureCache = new NodeCache({ stdTTL: 87200 }); // 24h + 20min
     this.leagueCache = new NodeCache({ stdTTL: 87200 }); // 24h + 20min
-   
 
     // INFO: Track API calls for rate limiting
     this.apiCallCount = 0;
@@ -88,15 +87,17 @@ class FixtureOptimizationService {
           per_page: 50,
           page: page,
         };
-        
+
         // Add retry logic for network errors
         let retries = 3;
         let response;
-        
+
         while (retries > 0) {
           try {
             // Log API pagination attempts with retry count
-      console.log(`📡 Fetching page ${page}... (attempt ${4 - retries}/3)`);
+            console.log(
+              `📡 Fetching page ${page}... (attempt ${4 - retries}/3)`
+            );
             response = await sportsMonksService.client.get(pageUrl, {
               params,
               timeout: 30000, // Increase timeout to 30 seconds
@@ -105,28 +106,26 @@ class FixtureOptimizationService {
           } catch (error) {
             retries--;
             console.error(`❌ Error fetching page ${page}:`, error.message);
-            
+
             if (retries === 0) {
               console.error(`❌ Failed to fetch page ${page} after 3 attempts`);
               throw error;
             }
-            
+
             // Wait before retrying (exponential backoff)
             const waitTime = (4 - retries) * 2000; // 2s, 4s, 6s
-            console.log(`⏳ Retrying in ${waitTime/1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            console.log(`⏳ Retrying in ${waitTime / 1000} seconds...`);
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
           }
         }
-        
+
         const data = response.data?.data || [];
         // Log the number of fixtures returned for each page during API pagination
-      console.log(`📊 Page ${page} returned ${data.length} fixtures`);
+        console.log(`📊 Page ${page} returned ${data.length} fixtures`);
         allFixtures = allFixtures.concat(data);
         const pagination = response.data?.pagination;
         if (pagination && pagination.has_more && pagination.next_page) {
           page++;
-          
-         
         } else {
           pageUrl = null;
         }
@@ -143,10 +142,10 @@ class FixtureOptimizationService {
       for (const fixture of transformedArr) {
         transformed.set(fixture.id, fixture);
       }
-              // Log caching operation with fixture count and cache key
-        console.log(
-          `💾 Caching ${transformed.size} fixtures with key: ${cacheKey}`
-        );
+      // Log caching operation with fixture count and cache key
+      console.log(
+        `💾 Caching ${transformed.size} fixtures with key: ${cacheKey}`
+      );
 
       this.fixtureCache.set(cacheKey, transformed);
       return transformed;
@@ -158,13 +157,16 @@ class FixtureOptimizationService {
 
   transformFixturesData(fixtures) {
     // Define the allowed market IDs for filtering odds
-    const allowedMarketIds = [1, 2, 267, 268, 29, 90, 93, 95, 124, 125, 10, 14, 18, 19, 33, 38, 39, 41, 44, 50, 51,267,268,4,5,81,37,11 , 97 , 13,86,80 ,60,67,68,69];
-    
+    const allowedMarketIds = [
+      1, 2, 267, 268, 29, 90, 93, 95, 124, 125, 10, 14, 18, 19, 44, 4, 5, 81,
+      37, 11, 97, 13, 86, 80, 60, 67, 68, 69,
+    ];
+
     return fixtures.map((fixture) => {
       // Extract player names from lineups for validation
       const lineupPlayerNames = new Set();
       if (Array.isArray(fixture.lineups)) {
-        fixture.lineups.forEach(lineup => {
+        fixture.lineups.forEach((lineup) => {
           if (lineup.player_name) {
             // Normalize player name for comparison (lowercase, trim spaces)
             lineupPlayerNames.add(lineup.player_name.toLowerCase().trim());
@@ -194,18 +196,18 @@ class FixtureOptimizationService {
                 }
 
                 //INFO: all players allowed
-                
+
                 // For player-related markets (267, 268), validate player is in lineups
                 // if (odd.market_id === 267 || odd.market_id === 268) {
                 //   // Check if the player name exists in lineups
                 //   if (odd.name) {
                 //     const playerName = odd.name.toLowerCase().trim();
-                    
+
                 //     // Check exact match first
                 //     if (lineupPlayerNames.has(playerName)) {
                 //       return true;
                 //     }
-                    
+
                 //     // Check partial match (in case of name variations)
                 //     for (const lineupPlayer of lineupPlayerNames) {
                 //       // Check if odd name is contained in lineup name or vice versa
@@ -213,7 +215,7 @@ class FixtureOptimizationService {
                 //         return true;
                 //       }
                 //     }
-                    
+
                 //     // Player not found in lineups, exclude this odd
                 //     // console.log(`🚫 Excluding player odd for "${odd.name}" - not in lineups for match ${fixture.id}`);
                 //     return false;
@@ -242,8 +244,8 @@ class FixtureOptimizationService {
                 suspended: odd.suspended,
               }))
           : [],
-          lineups: Array.isArray(fixture.lineups)
-          ? fixture.lineups.map(lineup => ({
+        lineups: Array.isArray(fixture.lineups)
+          ? fixture.lineups.map((lineup) => ({
               player_name: lineup.player_name,
             }))
           : [],
@@ -274,11 +276,26 @@ class FixtureOptimizationService {
 
       switch (marketId) {
         case 1: // 1X2 (Full Time Result)
-          if (label === "home" || label === "1" || name === "home" || name === "1") {
+          if (
+            label === "home" ||
+            label === "1" ||
+            name === "home" ||
+            name === "1"
+          ) {
             oddsMap.home = value;
-          } else if (label === "draw" || label === "x" || name === "draw" || name === "x") {
+          } else if (
+            label === "draw" ||
+            label === "x" ||
+            name === "draw" ||
+            name === "x"
+          ) {
             oddsMap.draw = value;
-          } else if (label === "away" || label === "2" || name === "away" || name === "2") {
+          } else if (
+            label === "away" ||
+            label === "2" ||
+            name === "away" ||
+            name === "2"
+          ) {
             oddsMap.away = value;
           }
           break;
@@ -512,7 +529,7 @@ class FixtureOptimizationService {
         usedCache = true;
       } else {
         // Log when no cached fixtures are found and API call is needed
-      console.log("🔍 No suitable cached fixtures found, making API call...");
+        console.log("🔍 No suitable cached fixtures found, making API call...");
 
         // Make a single API call for all fixtures we need (20 days, all leagues)
         const fixturesMap = await this.getOptimizedFixtures().catch(
@@ -607,7 +624,9 @@ class FixtureOptimizationService {
     if (!fixtures || fixtures.length === 0) return [];
 
     // Log when starting to select top picks from fixtures with count and limit
-    console.log(`🎯 selectTopPicks called with ${fixtures.length} fixtures, limit: ${limit}`);
+    console.log(
+      `🎯 selectTopPicks called with ${fixtures.length} fixtures, limit: ${limit}`
+    );
 
     // First filter out matches that have already started
     const now = new Date();
@@ -617,7 +636,9 @@ class FixtureOptimizationService {
     });
 
     // Log the number of fixtures after filtering out already started matches
-    console.log(`🔮 Filtered to ${upcomingFixtures.length} upcoming fixtures (excluded already started matches)`);
+    console.log(
+      `🔮 Filtered to ${upcomingFixtures.length} upcoming fixtures (excluded already started matches)`
+    );
 
     if (upcomingFixtures.length === 0) {
       console.log("⚠️ No upcoming fixtures available for top picks");
@@ -631,29 +652,38 @@ class FixtureOptimizationService {
       // Prefer matches with better odds variety (much broader range)
       if (fixture.odds && fixture.odds.length > 0) {
         const homeOdd =
-          fixture.odds.find(
-            (o) => {
-              const label = o.label?.toLowerCase();
-              const name = o.name?.toLowerCase();
-              return label === "home" || label === "1" || name === "home" || name === "1";
-            }
-          )?.value || 0;
+          fixture.odds.find((o) => {
+            const label = o.label?.toLowerCase();
+            const name = o.name?.toLowerCase();
+            return (
+              label === "home" ||
+              label === "1" ||
+              name === "home" ||
+              name === "1"
+            );
+          })?.value || 0;
         const drawOdd =
-          fixture.odds.find(
-            (o) => {
-              const label = o.label?.toLowerCase();
-              const name = o.name?.toLowerCase();
-              return label === "draw" || label === "x" || name === "draw" || name === "x";
-            }
-          )?.value || 0;
+          fixture.odds.find((o) => {
+            const label = o.label?.toLowerCase();
+            const name = o.name?.toLowerCase();
+            return (
+              label === "draw" ||
+              label === "x" ||
+              name === "draw" ||
+              name === "x"
+            );
+          })?.value || 0;
         const awayOdd =
-          fixture.odds.find(
-            (o) => {
-              const label = o.label?.toLowerCase();
-              const name = o.name?.toLowerCase();
-              return label === "away" || label === "2" || name === "away" || name === "2";
-            }
-          )?.value || 0;
+          fixture.odds.find((o) => {
+            const label = o.label?.toLowerCase();
+            const name = o.name?.toLowerCase();
+            return (
+              label === "away" ||
+              label === "2" ||
+              name === "away" ||
+              name === "2"
+            );
+          })?.value || 0;
 
         // Give points for having any odds at all
         if (homeOdd || drawOdd || awayOdd) {
@@ -668,23 +698,45 @@ class FixtureOptimizationService {
           // Much broader range for competitive matches
           const avgOdds = (homeNum + awayNum) / 2;
           if (avgOdds >= 1.2 && avgOdds <= 5.0) score += 25; // Broader range
-          else if (avgOdds >= 1.1 && avgOdds <= 8.0) score += 15; // Even broader fallback
+          else if (avgOdds >= 1.1 && avgOdds <= 8.0)
+            score += 15; // Even broader fallback
           else score += 5; // Some points for any odds
         }
       }
 
       // Prefer popular leagues (broader list and more lenient matching)
       const popularLeagueNames = [
-        "Premier League", "Champions League", "La Liga", "Serie A", "Bundesliga", 
-        "Ligue 1", "Europa League", "World Cup", "European Championship", "Copa America",
-        "Premier", "Liga", "Bundesliga", "Serie", "Champions", "Europa", "Cup",
-        "Championship", "Division", "League", "Primera", "Primeira"
+        "Premier League",
+        "Champions League",
+        "La Liga",
+        "Serie A",
+        "Bundesliga",
+        "Ligue 1",
+        "Europa League",
+        "World Cup",
+        "European Championship",
+        "Copa America",
+        "Premier",
+        "Liga",
+        "Bundesliga",
+        "Serie",
+        "Champions",
+        "Europa",
+        "Cup",
+        "Championship",
+        "Division",
+        "League",
+        "Primera",
+        "Primeira",
       ];
-      
-      const leagueName = fixture.league?.name || '';
-      if (leagueName && popularLeagueNames.some((name) =>
+
+      const leagueName = fixture.league?.name || "";
+      if (
+        leagueName &&
+        popularLeagueNames.some((name) =>
           leagueName.toLowerCase().includes(name.toLowerCase())
-        )) {
+        )
+      ) {
         score += 20;
       }
 
@@ -694,22 +746,30 @@ class FixtureOptimizationService {
       const hoursUntilMatch = (matchTime - now) / (1000 * 60 * 60);
 
       // Time-based scoring for upcoming matches only
-      if (hoursUntilMatch > 0 && hoursUntilMatch <= 6) score += 50; // Next 6 hours - highest priority
-      else if (hoursUntilMatch > 6 && hoursUntilMatch <= 24) score += 45; // Next 24 hours
-      else if (hoursUntilMatch > 24 && hoursUntilMatch <= 72) score += 35; // Next 3 days
-      else if (hoursUntilMatch > 72 && hoursUntilMatch <= 168) score += 25; // Next week
+      if (hoursUntilMatch > 0 && hoursUntilMatch <= 6)
+        score += 50; // Next 6 hours - highest priority
+      else if (hoursUntilMatch > 6 && hoursUntilMatch <= 24)
+        score += 45; // Next 24 hours
+      else if (hoursUntilMatch > 24 && hoursUntilMatch <= 72)
+        score += 35; // Next 3 days
+      else if (hoursUntilMatch > 72 && hoursUntilMatch <= 168)
+        score += 25; // Next week
       else if (hoursUntilMatch > 168) score += 15; // Beyond a week
 
       // More lenient team name scoring
       const homeTeamLength =
         fixture.localteam?.name?.length ||
-        fixture.participants?.find((p) => p.meta?.location === "home")?.name?.length ||
-        fixture.participants?.[0]?.name?.length || 0;
+        fixture.participants?.find((p) => p.meta?.location === "home")?.name
+          ?.length ||
+        fixture.participants?.[0]?.name?.length ||
+        0;
       const awayTeamLength =
         fixture.visitorteam?.name?.length ||
-        fixture.participants?.find((p) => p.meta?.location === "away")?.name?.length ||
-        fixture.participants?.[1]?.name?.length || 0;
-      
+        fixture.participants?.find((p) => p.meta?.location === "away")?.name
+          ?.length ||
+        fixture.participants?.[1]?.name?.length ||
+        0;
+
       if (homeTeamLength > 5 || awayTeamLength > 5) score += 10; // More lenient team name check
 
       // Bonus for having participants
@@ -725,7 +785,12 @@ class FixtureOptimizationService {
 
     console.log(`📊 Scored fixtures: ${scoredFixtures.length}`);
     // Log the top 3 scoring fixtures for debugging selection algorithm
-    console.log(`🏆 Top 3 scores: ${scoredFixtures.slice(0, 3).map(f => f.topPickScore).join(', ')}`);
+    console.log(
+      `🏆 Top 3 scores: ${scoredFixtures
+        .slice(0, 3)
+        .map((f) => f.topPickScore)
+        .join(", ")}`
+    );
 
     // Sort by score first, then by start time for matches with similar scores
     const sortedFixtures = scoredFixtures
@@ -750,13 +815,11 @@ class FixtureOptimizationService {
       return [];
     }
 
-    
-
     // Filter for next 3 days only (today, tomorrow, day after tomorrow)
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    
-    const next3DaysFixtures = fixtures.filter(fixture => {
+
+    const next3DaysFixtures = fixtures.filter((fixture) => {
       const matchTime = new Date(fixture.starting_at);
       return matchTime > now && matchTime <= threeDaysFromNow; // Only matches in next 3 days
     });
@@ -774,24 +837,21 @@ class FixtureOptimizationService {
       return new Date(a.starting_at) - new Date(b.starting_at);
     });
 
-    
-
-
     // Group by league for display purposes, but don't filter leagues
     const leagueMap = new Map();
 
     sortedFixtures.forEach((fixture) => {
       const leagueId = fixture.league_id || fixture.league?.id;
-      
+
       if (!leagueId) {
         console.log(`⚠️ Fixture ${fixture.id} has no league_id`);
         return;
       }
 
       // Check if fixture has valid odds before including it
-      const hasValidOdds = fixture.odds && Array.isArray(fixture.odds) && fixture.odds.length > 0;
+      const hasValidOdds =
+        fixture.odds && Array.isArray(fixture.odds) && fixture.odds.length > 0;
       if (!hasValidOdds) {
-      
         return;
       }
 
@@ -823,13 +883,13 @@ class FixtureOptimizationService {
 
     // Convert to array and sort leagues by their earliest match time
     const footballDaily = Array.from(leagueMap.values())
-      .filter(league => league.matches.length > 0)
-      .map(league => {
+      .filter((league) => league.matches.length > 0)
+      .map((league) => {
         // Sort matches within each league by start time to ensure earliest is first
         const sortedMatches = league.matches.sort((a, b) => {
           return new Date(a.starting_at) - new Date(b.starting_at);
         });
-        
+
         return {
           league: {
             id: league.id,
@@ -848,8 +908,6 @@ class FixtureOptimizationService {
         return aEarliest - bEarliest;
       });
 
-    
-
     return footballDaily;
   }
 
@@ -861,27 +919,27 @@ class FixtureOptimizationService {
 
     // Extract and standardize odds to only include home/draw/away, but do NOT overwrite the original odds array
     if (match.odds && Array.isArray(match.odds)) {
-      const homeOdd = match.odds.find(
-        (o) => {
-          const label = o.label?.toLowerCase();
-          const name = o.name?.toLowerCase();
-          return label === "home" || label === "1" || name === "home" || name === "1";
-        }
-      );
-      const drawOdd = match.odds.find(
-        (o) => {
-          const label = o.label?.toLowerCase();
-          const name = o.name?.toLowerCase();
-          return label === "draw" || label === "x" || name === "draw" || name === "x";
-        }
-      );
-      const awayOdd = match.odds.find(
-        (o) => {
-          const label = o.label?.toLowerCase();
-          const name = o.name?.toLowerCase();
-          return label === "away" || label === "2" || name === "away" || name === "2";
-        }
-      );
+      const homeOdd = match.odds.find((o) => {
+        const label = o.label?.toLowerCase();
+        const name = o.name?.toLowerCase();
+        return (
+          label === "home" || label === "1" || name === "home" || name === "1"
+        );
+      });
+      const drawOdd = match.odds.find((o) => {
+        const label = o.label?.toLowerCase();
+        const name = o.name?.toLowerCase();
+        return (
+          label === "draw" || label === "x" || name === "draw" || name === "x"
+        );
+      });
+      const awayOdd = match.odds.find((o) => {
+        const label = o.label?.toLowerCase();
+        const name = o.name?.toLowerCase();
+        return (
+          label === "away" || label === "2" || name === "away" || name === "2"
+        );
+      });
 
       const oddsObj = {};
       if (homeOdd?.value && !isNaN(parseFloat(homeOdd.value))) {
@@ -1256,25 +1314,25 @@ class FixtureOptimizationService {
       console.log("[CacheRefresh] Flushing old caches...");
       this.fixtureCache.flushAll();
       this.leagueCache.flushAll();
-      
+
       // Fetch and cache leagues with retry
       console.log("[CacheRefresh] Fetching leagues...");
       await this.getPopularLeagues();
-      
+
       // Fetch and cache fixtures with retry
       console.log("[CacheRefresh] Fetching fixtures...");
       await this.getOptimizedFixtures();
-      
+
       // Optionally, preload homepage data
       // Log when starting to preload homepage data for caching
       console.log("[CacheRefresh] Preloading homepage data...");
       await this.getHomepageData();
-      
+
       // Log successful completion of cache refresh operation
-    console.log("[CacheRefresh] All data refreshed and cached.");
+      console.log("[CacheRefresh] All data refreshed and cached.");
     } catch (err) {
       console.error("[CacheRefresh] Error refreshing all data:", err);
-      
+
       // Don't throw the error - let the system continue with cached data
       // This prevents the entire refresh from failing due to network issues
       console.log("[CacheRefresh] Continuing with existing cached data...");
@@ -1284,27 +1342,27 @@ class FixtureOptimizationService {
   // Helper to extract main odds in the expected frontend format
   extractMainOddsObject(oddsArray) {
     if (!Array.isArray(oddsArray)) return {};
-    const homeOdd = oddsArray.find(
-      (o) => {
-        const label = o.label?.toLowerCase();
-        const name = o.name?.toLowerCase();
-        return label === "home" || label === "1" || name === "home" || name === "1";
-      }
-    );
-    const drawOdd = oddsArray.find(
-      (o) => {
-        const label = o.label?.toLowerCase();
-        const name = o.name?.toLowerCase();
-        return label === "draw" || label === "x" || name === "draw" || name === "x";
-      }
-    );
-    const awayOdd = oddsArray.find(
-      (o) => {
-        const label = o.label?.toLowerCase();
-        const name = o.name?.toLowerCase();
-        return label === "away" || label === "2" || name === "away" || name === "2";
-      }
-    );
+    const homeOdd = oddsArray.find((o) => {
+      const label = o.label?.toLowerCase();
+      const name = o.name?.toLowerCase();
+      return (
+        label === "home" || label === "1" || name === "home" || name === "1"
+      );
+    });
+    const drawOdd = oddsArray.find((o) => {
+      const label = o.label?.toLowerCase();
+      const name = o.name?.toLowerCase();
+      return (
+        label === "draw" || label === "x" || name === "draw" || name === "x"
+      );
+    });
+    const awayOdd = oddsArray.find((o) => {
+      const label = o.label?.toLowerCase();
+      const name = o.name?.toLowerCase();
+      return (
+        label === "away" || label === "2" || name === "away" || name === "2"
+      );
+    });
     return {
       home: homeOdd ? { value: homeOdd.value, oddId: homeOdd.id } : undefined,
       draw: drawOdd ? { value: drawOdd.value, oddId: drawOdd.id } : undefined,
