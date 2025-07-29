@@ -35,11 +35,14 @@ export const preventConflictingBet = async (req, res, next) => {
 
     // Check for conflicts within the current request (same matchId + marketId in multiple bets)
     const seenCombos = new Set();
+    const seenMatchIds = new Set();
+    
     for (const bet of betsToCheck) {
       const matchId = bet.matchId;
       const marketId = bet.marketId || (bet.betDetails && bet.betDetails.market_id);
       const comboKey = `${matchId}:${marketId}`;
       
+      // Check for duplicate match + market combinations
       if (seenCombos.has(comboKey)) {
         console.log('[conflictingBet] Conflict within request:', comboKey);
         return res.status(400).json({ 
@@ -48,6 +51,16 @@ export const preventConflictingBet = async (req, res, next) => {
         });
       }
       seenCombos.add(comboKey);
+      
+      // Check for duplicate match IDs in combination bets
+      if (seenMatchIds.has(matchId)) {
+        console.log('[conflictingBet] Duplicate match ID in combination bet:', matchId);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Combination bets cannot contain the same match multiple times.' 
+        });
+      }
+      seenMatchIds.add(matchId);
     }
 
     // Check for conflicts with existing pending bets in the DB
