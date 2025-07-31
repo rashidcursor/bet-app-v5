@@ -145,7 +145,7 @@ async function initializeAgenda() {
     console.log('[App] Agenda started successfully');
     
     // Schedule recurring jobs
-    await agenda.every("2 seconds", "updateLiveOdds"); // Update odds every 2 seconds
+    await agenda.every("1 second", "updateLiveOdds"); // Update odds every 2 seconds
     await agenda.every("5 minutes", "updateInplayMatches"); // Update inplay matches every 5 minutes
     
     console.log('[App] All agenda jobs initialized successfully');
