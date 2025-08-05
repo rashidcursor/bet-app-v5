@@ -15,7 +15,7 @@ const InPlayPage = () => {
     
     // Check if we have both matches and odds for those matches
     const hasCompleteData = useMemo(() => {
-        if (liveMatches.length === 0) return false;
+        if (liveMatches.length === 0) return true; // No matches means no data needed
         
         // Check if we have odds for at least some matches
         const totalMatches = liveMatches.reduce((total, leagueGroup) => 
@@ -116,7 +116,7 @@ const InPlayPage = () => {
         });
     }, [liveMatches, liveOdds]);
 
-    const loading = !isConnected || (!hasCompleteData && !showMatchesAnyway);
+    const loading = !isConnected || (liveMatches.length > 0 && !hasCompleteData && !showMatchesAnyway);
     const error = !isConnected ? 'WebSocket connection failed' : null;
 
     const inPlayConfig = {
@@ -128,10 +128,8 @@ const InPlayPage = () => {
         matchTimeComponent: LiveTimer, // Use LiveTimer component for real-time updates
         PageIcon: Clock,
         noMatchesConfig: {
-            title: liveMatches.length > 0 ? 'Loading Live Matches' : 'No Live Matches',
-            message: liveMatches.length > 0 
-                ? 'Fetching live odds for matches...' 
-                : 'There are no live matches available at the moment.',
+            title: 'No Live Matches',
+            message: 'There are no live matches available at the moment. Check back later for live games.',
             buttonText: 'View All Matches',
             buttonLink: '/',
             Icon: Clock

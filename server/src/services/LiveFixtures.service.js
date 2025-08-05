@@ -11,7 +11,7 @@ class LiveFixturesService {
   constructor(fixtureCache) {
     this.fixtureCache = fixtureCache;
     this.liveOddsCache = new NodeCache({ stdTTL: 10 }); // 10 seconds for live odds (updated every 1 second, increased to prevent cache misses)
-    this.inplayMatchesCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
+    this.inplayMatchesCache = new NodeCache({ stdTTL: 600 }); // 10 minutes
     this.delayedMatchesCache = new NodeCache({ stdTTL: 3600 }); // 1 hour
     this.lastInplayUpdate = 0;
     this.updateInterval = 5 * 60 * 1000; // 5 minutes in milliseconds

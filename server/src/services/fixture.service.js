@@ -1356,6 +1356,30 @@ class FixtureOptimizationService {
       (fixture) => fixture.id == matchId || fixture.id === parseInt(matchId)
     );
 
+    // 3. If still not found, check live fixtures cache (for finished matches)
+    if (!cachedMatch && global.liveFixturesService) {
+      console.log(`🔍 Checking live fixtures cache for match ${matchId}...`);
+      const liveMatches = global.liveFixturesService.inplayMatchesCache.get('inplay_matches') || [];
+      const liveMatch = liveMatches.find(match => match.id == matchId || match.id === parseInt(matchId));
+      
+      if (liveMatch) {
+        console.log(`✅ Found match ${matchId} in live fixtures cache`);
+        cachedMatch = {
+          id: liveMatch.id,
+          starting_at: liveMatch.starting_at,
+          participants: liveMatch.participants || [],
+          state: liveMatch.state || {},
+          name: liveMatch.name,
+          league_id: liveMatch.league_id,
+          isLive: true,
+          isFinished: liveMatch.state?.status === 'finished' || liveMatch.state?.status === 'ended',
+          // Add odds data if available from live odds cache
+          odds: this.getLiveOddsForMatch(liveMatch.id),
+          betting_data: this.getLiveBettingDataForMatch(liveMatch.id)
+        };
+      }
+    }
+
     if (!cachedMatch) {
       // 3. If still not found, make API call (using getOptimizedFixtures)
       console.log("🔍 Match not found in cache, making API call...");
@@ -1650,6 +1674,31 @@ class FixtureOptimizationService {
     }
     console.log("⚠️ Unknown data type, returning empty array");
     return [];
+  }
+
+  // Helper method to get live odds for a match
+  getLiveOddsForMatch(matchId) {
+    if (!global.liveFixturesService) {
+      return {};
+    }
+    
+    const liveOdds = global.liveFixturesService.liveOddsCache.get(matchId);
+    if (!liveOdds || !liveOdds.betting_data) {
+      return {};
+    }
+    
+    // Extract main odds from betting data
+    return global.liveFixturesService.extractMainOdds(liveOdds.betting_data) || {};
+  }
+
+  // Helper method to get live betting data for a match
+  getLiveBettingDataForMatch(matchId) {
+    if (!global.liveFixturesService) {
+      return [];
+    }
+    
+    const liveOdds = global.liveFixturesService.liveOddsCache.get(matchId);
+    return liveOdds?.betting_data || [];
   }
 
   // Update league popularity status (single or multiple)

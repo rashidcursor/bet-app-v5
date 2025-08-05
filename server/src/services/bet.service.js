@@ -192,6 +192,45 @@ class BetService {
     return new Date(date).toLocaleString("en-US", options) + " UTC";
   }
 
+  // Helper method to extract teams from match data with fallbacks
+  getTeamsFromMatchData(matchData, fallbackTeams = "") {
+    // Try to get teams from matchData.participants first
+    if (matchData.participants && Array.isArray(matchData.participants) && matchData.participants.length >= 2) {
+      const team1 = matchData.participants[0]?.name || matchData.participants[0]?.meta?.name;
+      const team2 = matchData.participants[1]?.name || matchData.participants[1]?.meta?.name;
+      
+      if (team1 && team2) {
+        return `${team1} vs ${team2}`;
+      }
+    }
+    
+    // Try to get teams from matchData.name (e.g., "Team A vs Team B")
+    if (matchData.name && typeof matchData.name === 'string') {
+      if (matchData.name.includes(' vs ')) {
+        return matchData.name;
+      }
+    }
+    
+    // Try to get teams from matchData.participants with different structure
+    if (matchData.participants && Array.isArray(matchData.participants)) {
+      const teamNames = matchData.participants
+        .map(p => p?.name || p?.meta?.name || p?.display_name)
+        .filter(name => name && typeof name === 'string');
+      
+      if (teamNames.length >= 2) {
+        return `${teamNames[0]} vs ${teamNames[1]}`;
+      }
+    }
+    
+    // Return fallback teams if provided
+    if (fallbackTeams && typeof fallbackTeams === 'string' && fallbackTeams.trim() !== '') {
+      return fallbackTeams;
+    }
+    
+    // Last resort: return a generic message
+    return "Teams information not available";
+  }
+
   // Helper method to properly parse starting_at field from SportsMonks API
   parseMatchStartTime(startingAt) {
     console.log(`[DEBUG] Raw starting_at from API: ${startingAt}`);
@@ -328,9 +367,7 @@ class BetService {
           matchDate,
           estimatedMatchEnd,
           betOutcomeCheckTime,
-          teams: matchData.participants && matchData.participants.length >= 2
-            ? `${matchData.participants[0].name} vs ${matchData.participants[1].name}`
-            : ""
+          teams: this.getTeamsFromMatchData(matchData, leg.teams)
         };
 
         processedLegs.push(processedLeg);
@@ -344,9 +381,7 @@ class BetService {
             matchDate,
             estimatedMatchEnd,
             betOutcomeCheckTime,
-            teams: matchData.participants && matchData.participants.length >= 2
-              ? `${matchData.participants[0].name} vs ${matchData.participants[1].name}`
-              : ""
+            teams: this.getTeamsFromMatchData(matchData, leg.teams)
           };
         }
       }
@@ -1125,10 +1160,12 @@ class BetService {
     // For inplay bets, try to get match data from live matches cache first
     if (inplay && global.liveFixturesService) {
       const liveMatches = global.liveFixturesService.inplayMatchesCache.get('inplay_matches') || [];
+      console.log(`[getMatchDataAndOdds] Looking for match ${matchId} in live cache. Total live matches: ${liveMatches.length}`);
+      
       const liveMatch = liveMatches.find(match => match.id == matchId || match.id === parseInt(matchId));
       
       if (liveMatch) {
-        console.log(`[getMatchDataAndOdds] Using live match data from inplay cache for match ${matchId}`);
+        console.log(`[getMatchDataAndOdds] ✅ Using live match data from inplay cache for match ${matchId}`);
         matchData = {
           id: liveMatch.id,
           starting_at: liveMatch.starting_at,
@@ -1138,22 +1175,36 @@ class BetService {
           league_id: liveMatch.league_id,
           isLive: true
         };
+      } else {
+        console.log(`[getMatchDataAndOdds] ❌ Match ${matchId} not found in live cache. Available live match IDs:`, liveMatches.map(m => m.id).slice(0, 10));
       }
     }
     
     // If not found in live cache or not inplay, search all cached matches using the utility method
     if (!matchData) {
+      console.log(`[getMatchDataAndOdds] Searching for match ${matchId} in all cached matches...`);
       const allCachedMatches = FixtureOptimizationService.getAllCachedMatches();
+      console.log(`[getMatchDataAndOdds] Total cached matches: ${allCachedMatches.length}`);
+      
       matchData = allCachedMatches.find(
         (fixture) => fixture.id == matchId || fixture.id === parseInt(matchId)
       );
+      
+      if (matchData) {
+        console.log(`[getMatchDataAndOdds] ✅ Found match ${matchId} in all cached matches`);
+      } else {
+        console.log(`[getMatchDataAndOdds] ❌ Match ${matchId} not found in all cached matches. Sample IDs:`, allCachedMatches.slice(0, 5).map(m => m.id));
+      }
     }
     
     if (!matchData) {
+      console.log(`[getMatchDataAndOdds] Trying fixture cache for match ${matchId}...`);
       matchData = FixtureOptimizationService.fixtureCache.get(cacheKey);
       if (!matchData || !matchData.updatedAt || matchData.updatedAt <= new Date(Date.now() - cacheTTL)) {
+        console.log(`[getMatchDataAndOdds] Fixture cache miss for match ${matchId}, trying MongoDB cache...`);
         const cachedOdds = await MatchOdds.findOne({ matchId });
         if (cachedOdds && cachedOdds.updatedAt > new Date(Date.now() - cacheTTL)) {
+          console.log(`[getMatchDataAndOdds] ✅ Found match ${matchId} in MongoDB cache`);
           matchData = {
             id: matchId,
             odds: cachedOdds.odds.map((odd) => ({
@@ -1167,6 +1218,7 @@ class BetService {
             state: cachedOdds.state || {},
           };
         } else {
+          console.log(`[getMatchDataAndOdds] MongoDB cache miss for match ${matchId}, trying API call...`);
           const apiParams = {
             filters: `fixtureIds:${matchId}`,
             include: "odds;participants;state",
@@ -1175,12 +1227,14 @@ class BetService {
           const response = await FixtureOptimizationService.getOptimizedFixtures(apiParams);
           const matches = response.data || [];
           if (!matches || matches.length === 0) {
+            console.log(`[getMatchDataAndOdds] ❌ API returned no matches for matchId: ${matchId}`);
             throw new CustomError("Match not found", 404, "MATCH_NOT_FOUND");
           }
           matchData = matches.find(
             (match) => match.id == matchId || match.id === parseInt(matchId)
           );
           if (!matchData) {
+            console.log(`[getMatchDataAndOdds] ❌ API returned matches but none match ID: ${matchId}. Available IDs:`, matches.map(m => m.id));
             throw new CustomError("Match not found", 404, "MATCH_NOT_FOUND");
           }
           
