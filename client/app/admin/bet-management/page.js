@@ -204,6 +204,9 @@ export default function BetManagement() {
         return "text-rose-600 bg-rose-50 border-rose-200";
       case "pending":
         return "text-amber-600 bg-amber-50 border-amber-200";
+      case "cancelled":
+      case "canceled":
+        return "text-gray-600 bg-gray-50 border-gray-200";
       default:
         return "text-gray-600 bg-gray-50 border-gray-200";
     }
@@ -286,6 +289,8 @@ export default function BetManagement() {
                       return (bet.stake * leg.odds).toFixed(2);
                     } else if (leg.status.toLowerCase() === 'lost') {
                       return bet.stake.toFixed(2);
+                    } else if (leg.status.toLowerCase() === 'cancelled' || leg.status.toLowerCase() === 'canceled') {
+                      return '0.00';
                     }
                     return 0;
                   };
@@ -307,6 +312,8 @@ export default function BetManagement() {
                               ? 'text-emerald-600 bg-emerald-50 border-emerald-200 text-xs'
                               : leg.status.toLowerCase() === 'lost'
                               ? 'text-rose-600 bg-rose-50 border-rose-200 text-xs'
+                              : leg.status.toLowerCase() === 'cancelled' || leg.status.toLowerCase() === 'canceled'
+                              ? 'text-gray-600 bg-gray-50 border-gray-200 text-xs'
                               : 'text-amber-600 bg-amber-50 border-amber-200 text-xs'
                           }
                         >
@@ -1308,6 +1315,8 @@ export default function BetManagement() {
                                 </span>
                               ) : bet.status.toLowerCase() === "pending" ? (
                                 <span className="text-gray-500">Pending</span>
+                              ) : bet.status.toLowerCase() === "cancelled" || bet.status.toLowerCase() === "canceled" ? (
+                                <span className="text-gray-500">$0.00</span>
                               ) : (
                                 <span className="font-medium text-red-600">
                                   -${bet.stake.toFixed(2)}

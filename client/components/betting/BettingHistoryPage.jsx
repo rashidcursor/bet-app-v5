@@ -151,6 +151,8 @@ const BettingHistoryPage = ({ userId }) => {
                               ? 'text-emerald-600 bg-emerald-50 border-emerald-200 text-xs'
                               : leg.status.toLowerCase() === 'lost'
                               ? 'text-rose-600 bg-rose-50 border-rose-200 text-xs'
+                              : leg.status.toLowerCase() === 'cancelled' || leg.status.toLowerCase() === 'canceled'
+                              ? 'text-gray-600 bg-gray-50 border-gray-200 text-xs'
                               : 'text-amber-600 bg-amber-50 border-amber-200 text-xs'
                           }
                         >
@@ -441,6 +443,8 @@ const BettingHistoryPage = ({ userId }) => {
                                     ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
                                     : item.status.toLowerCase() === 'lost'
                                     ? 'text-rose-600 bg-rose-50 border-rose-200'
+                                    : item.status.toLowerCase() === 'cancelled' || item.status.toLowerCase() === 'canceled'
+                                    ? 'text-gray-600 bg-gray-50 border-gray-200'
                                     : 'text-amber-600 bg-amber-50 border-amber-200'
                                 }
                               >
@@ -485,6 +489,8 @@ const BettingHistoryPage = ({ userId }) => {
                                 </span>
                               ) : item.status.toLowerCase() === "pending" ? (
                                 <span className="text-gray-500">Pending</span>
+                              ) : item.status.toLowerCase() === "cancelled" || item.status.toLowerCase() === "canceled" ? (
+                                <span className="text-gray-500">$0.00</span>
                               ) : (
                                 <span className="font-medium text-red-600">
                                   -${item.stake.toFixed(2)}

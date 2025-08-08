@@ -21,6 +21,8 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
     switch (status.toLowerCase()) {
       case 'won': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
       case 'lost': return 'text-rose-600 bg-rose-50 border-rose-200';
+      case 'cancelled':
+      case 'canceled': return 'text-gray-600 bg-gray-50 border-gray-200';
       default: return 'text-amber-600 bg-amber-50 border-amber-200';
     }
   };
@@ -31,6 +33,8 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
       return (totalStake * bet.odds).toFixed(2);
     } else if (bet.status.toLowerCase() === 'lost') {
       return totalStake.toFixed(2);
+    } else if (bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled') {
+      return '0.00';
     }
     return 0;
   };
@@ -78,8 +82,14 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
               {bet.status}
             </Badge>
             {bet.status.toLowerCase() !== 'pending' && (
-              <span className={`font-semibold ${bet.status.toLowerCase() === 'won' ? 'text-green-600' : 'text-red-600'}`}>
-                {bet.status.toLowerCase() === 'won' ? '+' : '-'}${calculateProfit()}
+              <span className={`font-semibold ${
+                bet.status.toLowerCase() === 'won' ? 'text-green-600' : 
+                bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled' ? 'text-gray-500' : 
+                'text-red-600'
+              }`}>
+                {bet.status.toLowerCase() === 'won' ? '+' : 
+                 bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled' ? '' : 
+                 '-'}${calculateProfit()}
               </span>
             )}
           </div>

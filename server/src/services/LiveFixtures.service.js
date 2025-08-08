@@ -6,6 +6,13 @@ import {
   classifyOdds,
   transformToBettingData,
 } from "../utils/oddsClassification.js";
+import { Worker } from 'worker_threads';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import AsyncQueue from "../utils/asyncQueue.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 class LiveFixturesService {
   constructor(fixtureCache) {
@@ -16,6 +23,9 @@ class LiveFixturesService {
     this.lastInplayUpdate = 0;
     this.updateInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
     this.io = null; // Will be set from app.js
+    this.isUpdating = false; // Prevent multiple simultaneous updates
+    this.updateQueue = new AsyncQueue(); // Queue for update operations
+    this.matchDataCache = new NodeCache({ stdTTL: 300 }); // 5 minutes cache for match data lookups
     
     // Define allowed market IDs once in constructor
     this.allowedMarketIds = [
@@ -378,15 +388,21 @@ class LiveFixturesService {
   async getLiveMatchesFromCache() {
     console.log('[LiveFixtures] Getting live matches from cache');
     
-    // Check if we need to update inplay matches
+    // Check if we need to update inplay matches (non-blocking)
     const now = Date.now();
     if (now - this.lastInplayUpdate > this.updateInterval) {
-      console.log('[LiveFixtures] Updating inplay matches from API');
-      await this.updateInplayMatches();
-      this.lastInplayUpdate = now;
+      console.log('[LiveFixtures] Scheduling inplay matches update (non-blocking)');
+      // Schedule the update but don't wait for it
+      setImmediate(() => {
+        this.updateInplayMatches().then(() => {
+          this.lastInplayUpdate = Date.now();
+        }).catch(error => {
+          console.error('[LiveFixtures] Error in scheduled update:', error);
+        });
+      });
     }
     
-    // Get inplay matches from cache
+    // Get inplay matches from cache (return immediately)
     const inplayMatches = this.inplayMatchesCache.get('inplay_matches') || [];
     console.log(`[LiveFixtures] Found ${inplayMatches.length} inplay matches`);
     
@@ -413,8 +429,12 @@ class LiveFixturesService {
 
   // Fetch inplay matches from SportMonks API
   async updateInplayMatches() {
-    try {
-      const apiToken = process.env.SPORTSMONKS_API_KEY;
+    // Use queue to prevent multiple simultaneous updates
+    return this.updateQueue.add(async () => {
+      console.log('[LiveFixtures] Starting inplay matches update...');
+      
+      try {
+        const apiToken = process.env.SPORTSMONKS_API_KEY;
       if (!apiToken) {
         console.error('[LiveFixtures] SPORTSMONKS_API_KEY is not set');
         return;
@@ -428,74 +448,90 @@ class LiveFixturesService {
       
       console.log(`[LiveFixtures] API returned ${inplayData.length} inplay matches`);
       
-      // Process inplay matches
-      const processedMatches = [];
-      for (const match of inplayData) {
+      // Process inplay matches concurrently
+      const matchProcessingPromises = inplayData.map(async (match) => {
         // Check if match is ticking (has active timer)
         const isTicking = match.periods?.some(period => period.ticking) || false;
         const hasStarted = match.state_id && [2, 3, 4, 22, 23, 24].includes(match.state_id); // INPLAY states (2=live, 3=halftime, 4=extra time, 22=2nd half, 23=2nd half HT, 24=extra time)
         
         if (hasStarted) {
-          // Get additional match details from fixture cache
+          // Get additional match details from fixture cache (non-blocking)
           const fixtureDetails = await this.getMatchDataFromCache(match.id);
           
-                     // Create timing object for frontend using SportMonks periods data
-           const currentPeriod = match.periods?.find(p => p.ticking) || match.periods?.[0]; // Use first period if none ticking (halftime)
-           const now = Date.now();
-           
-           // Use SportMonks periods data for timing
-           const sportMonksMinutes = currentPeriod?.minutes || 0;
-           const sportMonksSeconds = currentPeriod?.seconds || 0;
-           
-           console.log(`[LiveFixtures] Match ${match.id} timing from SportMonks: ${sportMonksMinutes}:${sportMonksSeconds.toString().padStart(2, '0')} (${currentPeriod?.description}) - State: ${match.state?.name}`);
-           
-           const timing = {
-             matchStarted: match.starting_at_timestamp, // Keep for reference only
-             currentMinute: sportMonksMinutes,
-             currentSecond: sportMonksSeconds,
-             period: currentPeriod?.description || 'Unknown',
-             periodType: currentPeriod?.type_id || 0,
-             isTicking: currentPeriod?.ticking || false,
-             cacheTime: now,
-             timeSource: 'sportmonks_only',
-             matchState: match.state?.name || 'Unknown'
-           };
+          // Create timing object for frontend using SportMonks periods data
+          const currentPeriod = match.periods?.find(p => p.ticking) || match.periods?.[0]; // Use first period if none ticking (halftime)
+          const now = Date.now();
+          
+          // Use SportMonks periods data for timing
+          const sportMonksMinutes = currentPeriod?.minutes || 0;
+          const sportMonksSeconds = currentPeriod?.seconds || 0;
+          
+          console.log(`[LiveFixtures] Match ${match.id} timing from SportMonks: ${sportMonksMinutes}:${sportMonksSeconds.toString().padStart(2, '0')} (${currentPeriod?.description}) - State: ${match.state?.name}`);
+          
+          const timing = {
+            matchStarted: match.starting_at_timestamp, // Keep for reference only
+            currentMinute: sportMonksMinutes,
+            currentSecond: sportMonksSeconds,
+            period: currentPeriod?.description || 'Unknown',
+            periodType: currentPeriod?.type_id || 0,
+            isTicking: currentPeriod?.ticking || false,
+            cacheTime: now,
+            timeSource: 'sportmonks_only',
+            matchState: match.state?.name || 'Unknown'
+          };
 
-                     const processedMatch = {
-             ...match,
-             ...fixtureDetails,
-             isLive: true,
-             isTicking,
-             currentPeriod: currentPeriod,
-             matchState: match.state,
-             timing: timing,
-             state_id: match.state_id // Ensure state_id is included
-           };
+          const processedMatch = {
+            ...match,
+            ...fixtureDetails,
+            isLive: true,
+            isTicking,
+            currentPeriod: currentPeriod,
+            matchState: match.state,
+            timing: timing,
+            state_id: match.state_id // Ensure state_id is included
+          };
           
-          processedMatches.push(processedMatch);
-          
-          // Update delayed matches cache - remove if now inplay
+          // Update delayed matches cache - remove if now inplay (non-blocking)
           this.delayedMatchesCache.del(match.id);
+          
+          return processedMatch;
         }
+        return null; // Return null for matches that haven't started
+      });
+      
+      // Wait for all match processing to complete concurrently
+      const processedMatchesResults = await Promise.all(matchProcessingPromises);
+      
+      // Filter out null results (matches that haven't started)
+      const processedMatches = processedMatchesResults.filter(match => match !== null);
+      
+      // Check for delayed matches (should have started but not in inplay) - non-blocking
+      setImmediate(() => {
+        this.checkDelayedMatches().catch(error => {
+          console.error('[LiveFixtures] Error checking delayed matches:', error);
+        });
+      });
+      
+      // Cache the processed matches (non-blocking)
+      this.inplayMatchesCache.set('inplay_matches', processedMatches);
+      
+      console.log(`[LiveFixtures] Cached ${processedMatches.length} inplay matches`);
+      
+      // Update odds for the inplay matches (non-blocking)
+      if (processedMatches.length > 0) {
+        console.log(`[LiveFixtures] Updating odds for ${processedMatches.length} inplay matches`);
+        // Use setImmediate to make odds update non-blocking
+        setImmediate(() => {
+          this.updateInplayMatchesOdds(processedMatches).catch(error => {
+            console.error('[LiveFixtures] Error updating inplay matches odds:', error);
+          });
+        });
       }
       
-      // Check for delayed matches (should have started but not in inplay)
-      await this.checkDelayedMatches();
-      
-             // Cache the processed matches
-       this.inplayMatchesCache.set('inplay_matches', processedMatches);
-       
-       console.log(`[LiveFixtures] Cached ${processedMatches.length} inplay matches`);
-       
-       // Update odds for the inplay matches
-       if (processedMatches.length > 0) {
-         console.log(`[LiveFixtures] Updating odds for ${processedMatches.length} inplay matches`);
-         await this.updateInplayMatchesOdds(processedMatches);
-       }
-      
-    } catch (error) {
-      console.error('[LiveFixtures] Error fetching inplay matches:', error);
-    }
+          } catch (error) {
+        console.error('[LiveFixtures] Error fetching inplay matches:', error);
+      }
+    });
   }
 
   // Check for delayed matches that should have started
@@ -690,14 +726,19 @@ class LiveFixturesService {
       return;
     }
 
-    let successfulUpdates = 0;
-    for (const match of limitedInplayMatches) {
+    // Use worker thread for intensive odds processing if there are many matches
+    if (limitedInplayMatches.length > 3) {
+      return this.updateOddsWithWorker(limitedInplayMatches, apiToken);
+    }
+
+    // Process all matches concurrently
+    const oddsUpdatePromises = limitedInplayMatches.map(async (match) => {
       try {
-         // Update odds for matches that are live (including halftime)
-         if (!match.isLive) {
-           console.log(`[LiveFixtures] Skipping match ${match.id} - not live`);
-           continue;
-         }
+        // Update odds for matches that are live (including halftime)
+        if (!match.isLive) {
+          console.log(`[LiveFixtures] Skipping match ${match.id} - not live`);
+          return { success: false, matchId: match.id, reason: 'not_live' };
+        }
 
         // Use the fixture endpoint with inplayOdds included
         const url = `https://api.sportmonks.com/v3/football/fixtures/${match.id}?api_token=${apiToken}&include=inplayOdds&filters=bookmakers:2`;
@@ -733,8 +774,6 @@ class LiveFixturesService {
         const classified = classifyOdds({ odds_by_market });
         const betting_data = transformToBettingData(classified, match);
         
-       
-
         // Extract main odds for WebSocket emission
         const mainOdds = this.extractMainOdds(betting_data);
         
@@ -746,31 +785,91 @@ class LiveFixturesService {
           source: 'inplay_update'
         };
 
-        // Cache the result in unified format
+        // Cache the result in unified format (non-blocking)
         this.liveOddsCache.set(match.id, result);
-        successfulUpdates++;
 
-        // Emit WebSocket update for this match with extracted main odds
-        this.emitLiveOddsUpdate(match.id, {
-          ...result,
-          mainOdds: mainOdds
+        // Emit WebSocket update for this match with extracted main odds (non-blocking)
+        setImmediate(() => {
+          this.emitLiveOddsUpdate(match.id, {
+            ...result,
+            mainOdds: mainOdds
+          });
         });
 
+        return { success: true, matchId: match.id };
         
       } catch (error) {
         console.error(`[LiveFixtures] Error updating odds for match ${match.id}:`, error);
+        return { success: false, matchId: match.id, error: error.message };
       }
-    }
+    });
 
-    console.log(`[LiveFixtures] Successfully updated ${successfulUpdates}/${inplayMatches.length} inplay matches`);
+    // Wait for all odds updates to complete concurrently
+    const results = await Promise.all(oddsUpdatePromises);
     
-          // After all odds are fetched, emit the live matches update
-      // This ensures matches are only shown after odds are ready
-      const cachedMatches = this.inplayMatchesCache.get('inplay_matches') || [];
-      if (cachedMatches.length > 0) {
-        console.log(`[LiveFixtures] Emitting live matches update after odds fetch for ${cachedMatches.length} matches`);
-        await this.emitLiveMatchesUpdate(cachedMatches);
+    // Count successful updates
+    const successfulUpdates = results.filter(result => result.success).length;
+    console.log(`[LiveFixtures] Successfully updated ${successfulUpdates}/${limitedInplayMatches.length} inplay matches`);
+    
+    // After all odds are fetched, emit the live matches update (non-blocking)
+    // This ensures matches are only shown after odds are ready
+    setImmediate(async () => {
+      try {
+        const cachedMatches = this.inplayMatchesCache.get('inplay_matches') || [];
+        if (cachedMatches.length > 0) {
+          console.log(`[LiveFixtures] Emitting live matches update after odds fetch for ${cachedMatches.length} matches`);
+          await this.emitLiveMatchesUpdate(cachedMatches);
+        }
+      } catch (error) {
+        console.error('[LiveFixtures] Error emitting live matches update:', error);
       }
+    });
+  }
+
+  // Update odds using worker thread for intensive processing
+  async updateOddsWithWorker(matches, apiToken) {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(join(__dirname, 'oddsWorker.js'), {
+        workerData: {
+          matches: matches.map(match => ({
+            id: match.id,
+            isLive: match.isLive
+          })),
+          apiToken,
+          allowedMarketIds: this.allowedMarketIds
+        }
+      });
+
+      worker.on('message', (result) => {
+        // Process results and update cache
+        result.forEach(matchResult => {
+          if (matchResult.success) {
+            this.liveOddsCache.set(matchResult.matchId, matchResult.data);
+            
+            // Emit WebSocket update (non-blocking)
+            setImmediate(() => {
+              this.emitLiveOddsUpdate(matchResult.matchId, {
+                ...matchResult.data,
+                mainOdds: this.extractMainOdds(matchResult.data.betting_data)
+              });
+            });
+          }
+        });
+        
+        resolve();
+      });
+
+      worker.on('error', (error) => {
+        console.error('[LiveFixtures] Worker error:', error);
+        reject(error);
+      });
+
+      worker.on('exit', (code) => {
+        if (code !== 0) {
+          console.error(`[LiveFixtures] Worker stopped with exit code ${code}`);
+        }
+      });
+    });
   }
 
   // Update odds for fallback matches (when scheduler is not available or as backup)
@@ -1140,28 +1239,50 @@ class LiveFixturesService {
     );
   }
 
-  // Helper to get match data from cache
+  // Helper to get match data from cache (optimized)
   async getMatchDataFromCache(matchId) {
-    // Search in fixture cache
+    // Convert matchId to number for consistent comparison
+    const numericMatchId = parseInt(matchId);
+    
+    // Check our local cache first
+    const cacheKey = `match_data_${numericMatchId}`;
+    const cachedMatchData = this.matchDataCache.get(cacheKey);
+    if (cachedMatchData) {
+      return cachedMatchData;
+    }
+    
+    // Search in fixture cache (optimized)
     const cacheKeys = this.fixtureCache.keys();
     for (const key of cacheKeys) {
       if (key.startsWith("fixtures_")) {
         const cachedData = this.fixtureCache.get(key);
         let fixtures = [];
+        
+        // Handle different data structures efficiently
         if (Array.isArray(cachedData)) {
           fixtures = cachedData;
         } else if (cachedData && Array.isArray(cachedData.data)) {
           fixtures = cachedData.data;
         } else if (cachedData instanceof Map) {
+          // Use Map's get method for O(1) lookup if possible
+          const matchData = cachedData.get(numericMatchId);
+          if (matchData) {
+            // Cache the result
+            this.matchDataCache.set(cacheKey, matchData);
+            return matchData;
+          }
           fixtures = Array.from(cachedData.values());
         } else {
           continue;
         }
 
-        const matchData = fixtures.find(
-          (m) => m.id == matchId || m.id === parseInt(matchId)
-        );
-        if (matchData) return matchData;
+        // Use find with numeric comparison for better performance
+        const matchData = fixtures.find(m => m.id === numericMatchId);
+        if (matchData) {
+          // Cache the result
+          this.matchDataCache.set(cacheKey, matchData);
+          return matchData;
+        }
       }
     }
     return null;

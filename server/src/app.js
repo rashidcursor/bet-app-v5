@@ -167,7 +167,7 @@ app.set('io', io);
 // Set up Agenda listeners
 setupAgendaListeners();
 
-// Initialize live matches on startup
+// Initialize live matches on startup (non-blocking)
 const initializeLiveMatches = async () => {
   try {
     console.log('🚀 [Startup] Initializing live matches...');
@@ -179,18 +179,29 @@ const initializeLiveMatches = async () => {
         return;
       }
       
-      await liveFixturesService.updateInplayMatches();
-      const cachedMatches = liveFixturesService.inplayMatchesCache.get('inplay_matches') || [];
-      console.log(`🚀 [Startup] Cached ${cachedMatches.length} live matches on startup`);
-      
-      // Also update odds immediately
-      if (cachedMatches.length > 0) {
-        await liveFixturesService.updateInplayMatchesOdds();
-        console.log('🚀 [Startup] Updated odds for live matches on startup');
-      }
+      // Schedule the update but don't wait for it (non-blocking)
+      setImmediate(() => {
+        liveFixturesService.updateInplayMatches().then(() => {
+          const cachedMatches = liveFixturesService.inplayMatchesCache.get('inplay_matches') || [];
+          console.log(`🚀 [Startup] Cached ${cachedMatches.length} live matches on startup`);
+          
+          // Also update odds immediately (non-blocking)
+          if (cachedMatches.length > 0) {
+            setImmediate(() => {
+              liveFixturesService.updateInplayMatchesOdds().then(() => {
+                console.log('🚀 [Startup] Updated odds for live matches on startup');
+              }).catch(error => {
+                console.error('❌ [Startup] Error updating odds:', error);
+              });
+            });
+          }
+        }).catch(error => {
+          console.error('❌ [Startup] Error initializing live matches:', error);
+        });
+      });
     }
   } catch (error) {
-    console.error('❌ [Startup] Error initializing live matches:', error);
+    console.error('❌ [Startup] Error in live matches initialization:', error);
   }
 };
 

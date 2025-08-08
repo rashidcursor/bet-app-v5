@@ -49,7 +49,7 @@ const cancelHomepageCacheJob = async () => {
 const scheduleInplayMatchesJob = async () => {
   if (!inplayMatchesJobScheduled) {
     console.log('[Agenda] Scheduling updateInplayMatches job...');
-    await agenda.every("5 minutes", "updateInplayMatches");
+    await agenda.every("1 minutes", "updateInplayMatches");
     inplayMatchesJobScheduled = true;
     console.log('[Agenda] updateInplayMatches job scheduled successfully');
   }
