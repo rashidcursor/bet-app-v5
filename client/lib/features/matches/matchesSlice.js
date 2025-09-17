@@ -1,5 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "@/config/axios";
+import matchesService from "../../../services/matches.service";
+
+// ===== EXISTING ASYNC THUNKS (keeping for backward compatibility) =====
 
 // Async thunk for fetching matches by league
 export const fetchMatches = createAsyncThunk(
@@ -158,9 +161,127 @@ export const fetchTodaysMatches = createAsyncThunk(
   }
 );
 
+// ===== NEW CLEAN API ASYNC THUNKS (from unibet-api) =====
+
+// Async thunk for fetching match data using new clean API
+export const fetchMatchByIdV2 = createAsyncThunk(
+  "matches/fetchMatchByIdV2",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      console.log(`🔍 Fetching match data for ${eventId} using new clean API...`);
+      const data = await matchesService.getBetOffersV2(eventId);
+      
+      if (data.success) {
+        console.log(`✅ Successfully fetched match data for ${eventId}`);
+        return {
+          eventId,
+          matchData: data,
+          betOffers: data.data?.betOffers || [],
+          timestamp: data.timestamp,
+          source: 'unibet-api'
+        };
+      } else {
+        throw new Error(data.message || 'Failed to fetch match data');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching match data V2:', error);
+      return rejectWithValue(
+        error.message || "Failed to fetch match data"
+      );
+    }
+  }
+);
+
+// Silent background update for new clean API (no loading indicator)
+export const silentUpdateMatchByIdV2 = createAsyncThunk(
+  "matches/silentUpdateMatchByIdV2",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const data = await matchesService.getBetOffersV2(eventId, { noCache: true });
+      if (data.success) {
+        return {
+          eventId,
+          matchData: data,
+          betOffers: data.data?.betOffers || [],
+          timestamp: data.timestamp,
+          source: 'unibet-api'
+        };
+      } else {
+        throw new Error(data.message || 'Failed to fetch match data');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to fetch match data");
+    }
+  }
+);
+
+// Async thunk for fetching live matches using new clean API
+export const fetchLiveMatchesV2 = createAsyncThunk(
+  "matches/fetchLiveMatchesV2",
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('🔍 Fetching live matches using new clean API...');
+      const data = await matchesService.getLiveMatchesV2();
+      
+      if (data.success) {
+        console.log(`✅ Successfully fetched ${data.totalMatches} live matches`);
+        return {
+          liveMatches: data.matches || [],
+          allMatches: data.allMatches || [],
+          upcomingMatches: data.upcomingMatches || [],
+          totalMatches: data.totalMatches,
+          totalAllMatches: data.totalAllMatches,
+          timestamp: data.lastUpdated,
+          source: 'unibet-api'
+        };
+      } else {
+        throw new Error(data.message || 'Failed to fetch live matches');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching live matches V2:', error);
+      return rejectWithValue(
+        error.message || "Failed to fetch live matches"
+      );
+    }
+  }
+);
+
+// Async thunk for fetching all football matches using new clean API
+export const fetchAllFootballMatchesV2 = createAsyncThunk(
+  "matches/fetchAllFootballMatchesV2",
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('🔍 Fetching all football matches using new clean API...');
+      const data = await matchesService.getAllFootballMatchesV2();
+      
+      if (data.success) {
+        console.log(`✅ Successfully fetched ${data.totalAllMatches} total matches`);
+        return {
+          allMatches: data.allMatches || [],
+          liveMatches: data.matches || [],
+          upcomingMatches: data.upcomingMatches || [],
+          totalMatches: data.totalAllMatches,
+          totalLiveMatches: data.totalMatches,
+          totalUpcomingMatches: data.totalUpcomingMatches,
+          timestamp: data.lastUpdated,
+          source: 'unibet-api'
+        };
+      } else {
+        throw new Error(data.message || 'Failed to fetch all football matches');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching all football matches V2:', error);
+      return rejectWithValue(
+        error.message || "Failed to fetch all football matches"
+      );
+    }
+  }
+);
+
 const matchesSlice = createSlice({
   name: "matches",
   initialState: {
+    // Existing state
     data: {}, // matches by league
     upcomingMatches: [], // upcoming matches
     upcomingMatchesLoading: false,
@@ -179,6 +300,19 @@ const matchesSlice = createSlice({
     error: null,
     matchDetailError: null,
     selectedLeague: null,
+
+    // New clean API state
+    matchDetailsV2: {}, // individual match details by eventId (new API)
+    liveMatchesV2: [], // live matches from new API
+    allMatchesV2: [], // all football matches from new API
+    upcomingMatchesV2: [], // upcoming matches from new API
+    matchDetailV2Loading: false,
+    liveMatchesV2Loading: false,
+    allMatchesV2Loading: false,
+    matchDetailV2Error: null,
+    liveMatchesV2Error: null,
+    allMatchesV2Error: null,
+    lastUpdatedV2: null, // timestamp of last update from new API
   },
   reducers: {
     clearError: (state) => {
@@ -186,6 +320,10 @@ const matchesSlice = createSlice({
       state.matchDetailError = null;
       state.upcomingMatchesError = null;
       state.liveOddsError = null;
+      // Clear new API errors
+      state.matchDetailV2Error = null;
+      state.liveMatchesV2Error = null;
+      state.allMatchesV2Error = null;
     },
     setSelectedLeague: (state, action) => {
       state.selectedLeague = action.payload;
@@ -202,11 +340,23 @@ const matchesSlice = createSlice({
         if (state.liveOddsTimestamp[matchId]) {
           delete state.liveOddsTimestamp[matchId];
         }
+        // Clear new API data
+        if (state.matchDetailsV2[matchId]) {
+          delete state.matchDetailsV2[matchId];
+        }
+      }
+    },
+    clearMatchDetailV2: (state, action) => {
+      const eventId = action.payload;
+      if (eventId && state.matchDetailsV2[eventId]) {
+        delete state.matchDetailsV2[eventId];
       }
     },
   },
   extraReducers: (builder) => {
     builder
+      // ===== EXISTING REDUCERS (keeping for backward compatibility) =====
+      
       // Fetch matches by league
       .addCase(fetchMatches.pending, (state) => {
         state.loading = true;
@@ -220,6 +370,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      
       // Fetch upcoming matches
       .addCase(fetchUpcomingMatches.pending, (state) => {
         state.upcomingMatchesLoading = true;
@@ -233,6 +384,7 @@ const matchesSlice = createSlice({
         state.upcomingMatchesLoading = false;
         state.upcomingMatchesError = action.payload;
       })
+      
       // Fetch individual match details
       .addCase(fetchMatchById.pending, (state) => {
         state.matchDetailLoading = true;
@@ -246,6 +398,7 @@ const matchesSlice = createSlice({
         state.matchDetailLoading = false;
         state.matchDetailError = action.payload;
       })
+      
       // Fetch live odds
       .addCase(fetchLiveOdds.pending, (state, action) => {
         const matchId = action.meta.arg;
@@ -267,6 +420,7 @@ const matchesSlice = createSlice({
         state.liveOddsLoading = false;
         state.liveOddsError = action.payload;
       })
+      
       // Silent live odds update (no loading state changes)
       .addCase(silentUpdateLiveOdds.fulfilled, (state, action) => {
         state.liveOdds[action.payload.matchId] = action.payload.liveOdds;
@@ -281,6 +435,7 @@ const matchesSlice = createSlice({
         // Don't update loading state, just log the error silently
         console.warn('Silent live odds update failed:', action.payload);
       })
+      
       // Fetch today's matches
       .addCase(fetchTodaysMatches.pending, (state) => {
         state.todaysMatchesLoading = true;
@@ -293,15 +448,93 @@ const matchesSlice = createSlice({
       .addCase(fetchTodaysMatches.rejected, (state, action) => {
         state.todaysMatchesLoading = false;
         state.todaysMatchesError = action.payload;
+      })
+
+      // ===== NEW CLEAN API REDUCERS =====
+
+      // Fetch match by ID V2
+      .addCase(fetchMatchByIdV2.pending, (state) => {
+        state.matchDetailV2Loading = true;
+        state.matchDetailV2Error = null;
+      })
+      .addCase(fetchMatchByIdV2.fulfilled, (state, action) => {
+        state.matchDetailV2Loading = false;
+        state.matchDetailsV2[action.payload.eventId] = {
+          matchData: action.payload.matchData,
+          betOffers: action.payload.betOffers,
+          timestamp: action.payload.timestamp,
+          source: action.payload.source
+        };
+        state.lastUpdatedV2 = action.payload.timestamp;
+      })
+      .addCase(fetchMatchByIdV2.rejected, (state, action) => {
+        state.matchDetailV2Loading = false;
+        state.matchDetailV2Error = action.payload;
+      })
+
+      // Fetch live matches V2
+      .addCase(fetchLiveMatchesV2.pending, (state) => {
+        state.liveMatchesV2Loading = true;
+        state.liveMatchesV2Error = null;
+      })
+      .addCase(fetchLiveMatchesV2.fulfilled, (state, action) => {
+        state.liveMatchesV2Loading = false;
+        state.liveMatchesV2 = action.payload.liveMatches;
+        state.allMatchesV2 = action.payload.allMatches;
+        state.upcomingMatchesV2 = action.payload.upcomingMatches;
+        state.lastUpdatedV2 = action.payload.timestamp;
+      })
+      .addCase(fetchLiveMatchesV2.rejected, (state, action) => {
+        state.liveMatchesV2Loading = false;
+        state.liveMatchesV2Error = action.payload;
+      })
+
+      // Fetch all football matches V2
+      .addCase(fetchAllFootballMatchesV2.pending, (state) => {
+        state.allMatchesV2Loading = true;
+        state.allMatchesV2Error = null;
+      })
+      .addCase(fetchAllFootballMatchesV2.fulfilled, (state, action) => {
+        state.allMatchesV2Loading = false;
+        state.allMatchesV2 = action.payload.allMatches;
+        state.liveMatchesV2 = action.payload.liveMatches;
+        state.upcomingMatchesV2 = action.payload.upcomingMatches;
+        state.lastUpdatedV2 = action.payload.timestamp;
+      })
+      .addCase(fetchAllFootballMatchesV2.rejected, (state, action) => {
+        state.allMatchesV2Loading = false;
+        state.allMatchesV2Error = action.payload;
+      })
+
+      // Silent update reducers for V2
+      .addCase(silentUpdateMatchByIdV2.fulfilled, (state, action) => {
+        if (!action.payload) return;
+        const { eventId, matchData, betOffers, timestamp, source } = action.payload;
+        state.matchDetailsV2[eventId] = {
+          matchData,
+          betOffers,
+          timestamp,
+          source
+        };
+        state.lastUpdatedV2 = timestamp;
+      })
+      .addCase(silentUpdateMatchByIdV2.rejected, (state, action) => {
+        // keep last data; optionally store error
+        state.matchDetailV2Error = action.payload || state.matchDetailV2Error;
       });
   },
 });
 
-export const { clearError, setSelectedLeague, clearMatchDetail } =
-  matchesSlice.actions;
+export const { 
+  clearError, 
+  setSelectedLeague, 
+  clearMatchDetail, 
+  clearMatchDetailV2 
+} = matchesSlice.actions;
+
 export default matchesSlice.reducer;
 
-// Selectors
+// ===== EXISTING SELECTORS =====
 export const selectMatchesByLeague = (state, leagueId) =>
   state.matches.data[leagueId] || [];
 export const selectUpcomingMatches = (state) => state.matches.upcomingMatches;
@@ -319,3 +552,17 @@ export const selectLiveOddsTimestamp = (state, matchId) =>
   state.matches.liveOddsTimestamp[matchId];
 export const selectLiveOddsClassification = (state, matchId) =>
   state.matches.liveOddsClassification[matchId];
+
+// ===== NEW CLEAN API SELECTORS =====
+export const selectMatchDetailV2 = (state, eventId) =>
+  state.matches.matchDetailsV2[eventId];
+export const selectLiveMatchesV2 = (state) => state.matches.liveMatchesV2;
+export const selectAllMatchesV2 = (state) => state.matches.allMatchesV2;
+export const selectUpcomingMatchesV2 = (state) => state.matches.upcomingMatchesV2;
+export const selectMatchDetailV2Loading = (state) => state.matches.matchDetailV2Loading;
+export const selectLiveMatchesV2Loading = (state) => state.matches.liveMatchesV2Loading;
+export const selectAllMatchesV2Loading = (state) => state.matches.allMatchesV2Loading;
+export const selectMatchDetailV2Error = (state) => state.matches.matchDetailV2Error;
+export const selectLiveMatchesV2Error = (state) => state.matches.liveMatchesV2Error;
+export const selectAllMatchesV2Error = (state) => state.matches.allMatchesV2Error;
+export const selectLastUpdatedV2 = (state) => state.matches.lastUpdatedV2;

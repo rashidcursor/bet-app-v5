@@ -18,6 +18,9 @@ import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import betRoutes from "./routes/bet.routes.js";
+// New unibet-api routes
+import betoffersRouter from "./routes/unibet-api/betoffers.js";
+import liveMatchesRouter from "./routes/unibet-api/live-matches.js";
 import fixtureOptimizationService from "./services/fixture.service.js";
 import LiveFixturesService from "./services/LiveFixtures.service.js";
 import { initializeSocket } from "./config/socket.js";
@@ -149,6 +152,9 @@ app.use("/api/sportsmonk", sportsMonkRouter);
 app.use("/api/fixtures", fixturesRouter);
 app.use("/api/finance", authenticateToken, financeRoutes);
 app.use("/api/bet", betRoutes);
+// New unibet-api routes
+app.use("/api/v2/betoffers", betoffersRouter);
+app.use("/api/v2/live-matches", liveMatchesRouter);
 
 // 404 handler - must be after all routes
 app.use(notFound);

@@ -15,6 +15,11 @@ const BettingTabs = ({ matchData }) => {
     const [canScrollLeft, setCanScrollLeft] = useState(false)
     const [canScrollRight, setCanScrollRight] = useState(true)
 
+    // Debug logging
+    console.log('🎯 BettingTabs received matchData:', matchData);
+    console.log('🎯 BettingTabs odds_classification:', matchData?.odds_classification);
+    console.log('🎯 BettingTabs betting_data:', matchData?.betting_data);
+
     // Get the betting data and classification
     const classification = matchData?.odds_classification || {
         categories: [{ id: 'all', label: 'All', odds_count: 0 }],
@@ -25,6 +30,7 @@ const BettingTabs = ({ matchData }) => {
     // Use the categories from classification, sorted by priority
     const categories = useMemo(() => {
         const cats = classification.categories || [];
+        console.log('🎯 BettingTabs categories:', cats);
         return [...cats].sort((a, b) => (a.priority || 99) - (b.priority || 99));
     }, [classification]);
 
@@ -332,9 +338,11 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             section.title?.toLowerCase().includes('1x2') ||
             section.title?.toLowerCase().includes('double chance');
         
-        // Special handling for handicap markets
-        const isHandicapMarket = 
-            section.title?.toLowerCase().includes('handicap');
+        // Special handling for handicap markets (include Asian Line and generic "Line" markets like Cards Line)
+        const isHandicapMarket = (() => {
+            const t = section.title?.toLowerCase() || '';
+            return t.includes('handicap') || t.includes('asian line') || t.includes('asian handicap') || t.includes(' line');
+        })();
         
         // Special handling for half-time markets
         const isHalfTimeMarket =
@@ -382,14 +390,16 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             section.title?.toLowerCase().includes('team total goals');
             
         // Special handling for Over/Under markets (Alternative Total Goals, Total Goals, etc.)
-        // Exclude corners markets from being treated as Total Goals markets
+        // Exclude corners markets and Odd/Even from being treated as Total Goals markets
+        const titleLower = section.title?.toLowerCase() || '';
+        const isOddEvenMarket = titleLower.includes('odd/even') || titleLower.includes('odd even');
         const isTotalGoalsMarket = 
-            !section.title?.toLowerCase().includes('corners') && (
-                (section.title?.toLowerCase().includes('total goals') && 
-                 !section.title?.toLowerCase().includes('exact total goals')) ||
+            !titleLower.includes('corners') && !isOddEvenMarket && (
+                (titleLower.includes('total goals') && 
+                 !titleLower.includes('exact total goals')) ||
                 (options.length > 2 && 
-                 options.some(opt => opt.label.toLowerCase().includes('over')) && 
-                 options.some(opt => opt.label.toLowerCase().includes('under')))
+                 options.some(opt => (opt.label || '').toLowerCase().includes('over')) && 
+                 options.some(opt => (opt.label || '').toLowerCase().includes('under')))
             );
 
         // Use appropriate grid class based on market type
@@ -435,23 +445,13 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             section.title?.toLowerCase().includes('correct score');
 
         if (isCorrectScoreMarket) {
-            const team1 = matchData?.participants?.[0]?.name || 'Team 1';
-            const team2 = matchData?.participants?.[1]?.name || 'Team 2';
-            // Partition options by label value
-            const team1Options = options.filter(opt => opt.label === '1');
-            const team2Options = options.filter(opt => opt.label === '2');
-            const drawOptions = options.filter(opt => opt.label && (opt.label.toLowerCase() === 'x' || opt.label.toLowerCase() === 'draw'));
+            // Render all correct score options in a simple grid showing only the score text
             return (
-                <div className="flex flex-col gap-4">
-                    {/* Team 1 outcomes */}
-                    {team1Options.length > 0 && (
-                        <div className="mb-1">
-                            <div className="text-sm font-semibold text-gray-700 mb-2 px-2 py-1">{team1}</div>
-                            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1">
-                                {team1Options.map((option, idx) => (
+                <div className={`grid ${gridClass} gap-1`}>
+                    {options.map((option, idx) => (
                                     <BettingOptionButton
-                                        key={`cs-team1-${option.label}-${option.name}-${idx}`}
-                                        label={team1}
+                            key={`cs-${option.id || idx}`}
+                            label={option.label}
                                         value={option.value}
                                         sectionType={section?.type || 'market'}
                                         optionId={option?.id}
@@ -471,79 +471,38 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                                         marketId={option.marketId}
                                     />
                                 ))}
-                            </div>
-                        </div>
-                    )}
-                    {/* Draw outcomes */}
-                    {drawOptions.length > 0 && (
-                        <div className="mb-1">
-                            <div className="text-sm font-semibold text-gray-700 mb-2 px-2 py-1">Draw</div>
-                            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1">
-                                {drawOptions.map((option, idx) => (
-                                    <BettingOptionButton
-                                        key={`cs-draw-${option.label}-${option.name}-${idx}`}
-                                        label={'Draw'}
-                                        value={option.value}
-                                        sectionType={section?.type || 'market'}
-                                        optionId={option?.id}
-                                        matchData={matchData}
-                                        isResultOption={false}
-                                        isHandicapOption={false}
-                                        isHalfTimeOption={false}
-                                        isOverUnderOption={false}
-                                        isGoalScorerOption={false}
-                                        handicapValue={option.handicap}
-                                        halfIndicator={option.halfIndicator}
-                                        thresholds={option.thresholds}
-                                        total={option.total}
-                                        name={option.name}
-                                        marketDescription={section.title}
-                                        suspended={option.suspended}
-                                        marketId={option.marketId}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    {/* Team 2 outcomes */}
-                    {team2Options.length > 0 && (
-                        <div className="mb-1">
-                            <div className="text-sm font-semibold text-gray-700 mb-2 px-2 py-1">{team2}</div>
-                            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1">
-                                {team2Options.map((option, idx) => (
-                                    <BettingOptionButton
-                                        key={`cs-team2-${option.label}-${option.name}-${idx}`}
-                                        label={team2}
-                                        value={option.value}
-                                        sectionType={section?.type || 'market'}
-                                        optionId={option?.id}
-                                        matchData={matchData}
-                                        isResultOption={false}
-                                        isHandicapOption={false}
-                                        isHalfTimeOption={false}
-                                        isOverUnderOption={false}
-                                        isGoalScorerOption={false}
-                                        handicapValue={option.handicap}
-                                        halfIndicator={option.halfIndicator}
-                                        thresholds={option.thresholds}
-                                        total={option.total}
-                                        name={option.name}
-                                        marketDescription={section.title}
-                                        suspended={option.suspended}
-                                        marketId={option.marketId}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }
         
+        // Group Over/Under by participant for player shots markets
+        const isPlayerShots = section.title?.toLowerCase().includes("player's shots") || section.title?.toLowerCase().includes('shots on target');
+        let renderedOptions = options;
+        if (isPlayerShots) {
+            const byPlayer = {};
+            options.forEach(opt => {
+                const playerName = typeof opt.name === 'string' ? opt.name : undefined;
+                if (!playerName) return;
+                if (!byPlayer[playerName]) byPlayer[playerName] = { over: null, under: null };
+                const optLower = (opt.label || '').toLowerCase();
+                const isSusp = Boolean(opt.suspended) || Number.isNaN(Number(opt.value));
+                if (optLower.startsWith('over')) byPlayer[playerName].over = { ...opt, suspended: isSusp };
+                else if (optLower.startsWith('under')) byPlayer[playerName].under = { ...opt, suspended: isSusp };
+            });
+            // Flatten keeping Over above Under for same player
+            const flattened = [];
+            Object.keys(byPlayer).forEach(player => {
+                const pair = byPlayer[player];
+                if (pair.over) flattened.push(pair.over);
+                if (pair.under) flattened.push({ ...pair.under, suspended: pair.under.suspended });
+            });
+            if (flattened.length) renderedOptions = flattened;
+        }
+
         return (
             <div className={`grid ${gridClass} gap-1`}>
                 {/* Sort options for result markets to ensure Home, Draw, Away order */}
-                {(isResultMarket ? sortResultOptions(options, matchData) : options).map((option, idx) => {
+                {(isResultMarket ? sortResultOptions(renderedOptions, matchData) : renderedOptions).map((option, idx) => {
                     // For Correct Score, Corners Race, Winning Margin always use the score/race number/margin as name
                     let name;
                     if (section.title && section.title.toLowerCase().includes('correct score')) {
@@ -630,6 +589,37 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
         const underOptions = options.filter(opt => 
             opt.label && opt.label.toLowerCase().includes('under')
         );
+
+        // Fallback: if neither Over nor Under is present (e.g., Odd/Even), render a simple grid
+        if (overOptions.length === 0 && underOptions.length === 0) {
+            return (
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1">
+                    {options.map((option, idx) => (
+                        <BettingOptionButton
+                            key={`tg-generic-${option.label}-${idx}`}
+                            label={option.label}
+                            value={option.value}
+                            sectionType={section?.type || 'market'}
+                            optionId={option?.id}
+                            matchData={matchData}
+                            isResultOption={false}
+                            isHandicapOption={false}
+                            isHalfTimeOption={false}
+                            isOverUnderOption={false}
+                            isGoalScorerOption={false}
+                            handicapValue={option.handicap}
+                            halfIndicator={option.halfIndicator}
+                            thresholds={option.thresholds}
+                            total={option.total}
+                            name={option.name}
+                            marketDescription={section.title}
+                            suspended={option.suspended}
+                            marketId={option.marketId}
+                        />
+                    ))}
+                </div>
+            );
+        }
         
         return (
             <div className="flex flex-col min-[640px]:flex-row gap-2">
@@ -1179,7 +1169,10 @@ const BettingOptionButton = ({
     const dispatch = useDispatch();
     const selectedBets = useSelector(state => state.betSlip.bets);
     const isSelected = selectedBets && selectedBets.some((bet) => bet.oddId === optionId);
-    const isSuspended = suspended || false;
+    // Treat invalid/missing odds values as suspended as well
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    const isValueInvalid = Number.isNaN(numericValue) || !Number.isFinite(numericValue);
+    const isSuspended = Boolean(suspended) || isValueInvalid;
 
     // --- CONFLICTING BET LOGIC ---
     // Helper: get marketId and matchId for this option
@@ -1256,27 +1249,16 @@ const BettingOptionButton = ({
         const team1 = matchData?.participants?.[0]?.name;
         const team2 = matchData?.participants?.[1]?.name;
 
-        // For Correct Score markets: show main label and the score as a badge if name is present
+        // For Correct Score markets: show ONLY the score text (no team name)
         if (
             marketDescription &&
             marketDescription.toLowerCase().includes('correct score') &&
             name
         ) {
-            let mainLabel;
-            if (label === '1') {
-                mainLabel = team1;
-            } else if (label === '2') {
-                mainLabel = team2;
-            } else if (label && label.trim().toLowerCase() === 'draw') {
-                mainLabel = 'Draw';
-            } else {
-                mainLabel = label;
-            }
             return (
-                <div className="flex items-center gap-1">
-                    <span>{mainLabel}</span>
-                    <span className="bg-white/30 px-1 rounded text-[8px] min-[400px]:text-[9px]">{name}</span>
-                </div>
+                <span className="value">
+                    <span className="value-main">{name}</span>
+                </span>
             );
         }
 
@@ -1347,6 +1329,35 @@ const BettingOptionButton = ({
             );
         }
 
+        // For Total Cards markets (e.g., Total Red Cards, Total Yellow Cards): avoid duplicate totals
+        if (
+            marketDescription &&
+            marketDescription.toLowerCase().includes('total') &&
+            marketDescription.toLowerCase().includes('card') &&
+            !marketDescription.toLowerCase().includes('team')
+        ) {
+            const l = String(label || '').toLowerCase();
+            if (total && (l.startsWith('over') || l.startsWith('under') || l.startsWith('exactly'))) {
+                const base = l.startsWith('over') ? 'Over' : l.startsWith('under') ? 'Under' : 'Exactly';
+                return <span>{base} {total}</span>;
+            }
+            return <span>{label}</span>;
+        }
+
+        // For Team Total Cards (and generic Total Cards - <Team>) show label once (avoid duplicate totals)
+        if (
+            marketDescription &&
+            marketDescription.toLowerCase().includes('total cards')
+        ) {
+            // Force canonical "Over X.X" / "Under X.X" rendering to prevent duplicates
+            const l = String(label || '').toLowerCase();
+            if (total && (l.startsWith('over') || l.startsWith('under'))) {
+                const base = l.startsWith('over') ? 'Over' : 'Under';
+                return <span>{base} {total}</span>;
+            }
+            return <span>{label}</span>;
+        }
+
         // For Total Goals markets (Alternative Total Goals, etc.): show the full label
         if (
             marketDescription &&
@@ -1379,7 +1390,7 @@ const BettingOptionButton = ({
             );
         }
 
-        // Special handling for Over/Under markets that need to show total values
+        // Special handling for Over/Under markets that need to show total values (avoid duplicating total)
         if (
             (label === 'Over' || label === 'Under') && 
             total && 
@@ -1400,7 +1411,7 @@ const BettingOptionButton = ({
             );
         }
 
-        // For Team Total Goals markets: show team name and total as badge
+        // For Team Total Goals markets: show team name and total ONCE as badge
         if (
             marketDescription &&
             marketDescription.toLowerCase().includes('team total goals') &&
@@ -1411,21 +1422,25 @@ const BettingOptionButton = ({
             return (
                 <div className="flex items-center gap-1">
                     <span>{teamName}</span>
-                    <span className="bg-white/30 px-1 rounded text-[8px] min-[400px]:text-[9px]">{total}</span>
+                    {/* Show total only once: suppress if label already includes the number */}
+                    {!String(label).includes(String(total)) && (
+                        <span className="bg-white/30 px-1 rounded text-[8px] min-[400px]:text-[9px]">{total}</span>
+                    )}
                 </div>
             );
         }
 
-        // For Corners markets: show Over/Under/Exactly with total
+        // For Corners markets: normalize to "Over X.X" / "Under X.X" / "Exactly X.X" once
         if (
             marketDescription &&
             marketDescription.toLowerCase().includes('corners') &&
-            (label === 'Over' || label === 'Under' || label === 'Exactly') &&
             total
         ) {
-            return (
-                <span>{label} {total}</span>
-            );
+            const l = String(label || '').toLowerCase();
+            if (l.startsWith('over') || l.startsWith('under') || l.startsWith('exactly')) {
+                const base = l.startsWith('over') ? 'Over' : l.startsWith('under') ? 'Under' : 'Exactly';
+                return <span>{base} {total}</span>;
+            }
         }
 
         // For any 'team' market: show team name and total as badge if total is present
@@ -1444,10 +1459,10 @@ const BettingOptionButton = ({
             );
         }
 
-        // 2. Handicap markets: show team name or tie/draw and handicap value as badge
+        // 2. Handicap/Line markets: show team name or tie/draw and line/handicap value as badge (including "Line" markets in Other category)
         if (
             marketDescription &&
-            marketDescription.toLowerCase().includes('handicap') &&
+            (marketDescription.toLowerCase().includes('handicap') || marketDescription.toLowerCase().includes('asian line') || marketDescription.toLowerCase().includes('asian handicap') || marketDescription.toLowerCase().includes(' line') || marketDescription.toLowerCase() === 'line') &&
             handicapValue !== undefined &&
             handicapValue !== null &&
             handicapValue !== ''
@@ -1490,6 +1505,25 @@ const BettingOptionButton = ({
                     <span className="bg-white/20 px-1 rounded text-[8px] min-[400px]:text-[9px]">{name}</span>
                 </div>
             );
+        }
+
+        // Player-based markets (e.g., To Get a Card, Player's shots on target)
+        if (
+            marketDescription &&
+            (
+                marketDescription.toLowerCase().includes('to get a card') ||
+                marketDescription.toLowerCase().includes('to be booked') ||
+                marketDescription.toLowerCase().includes('player cards') ||
+                marketDescription.toLowerCase().includes("player's shots") ||
+                marketDescription.toLowerCase().includes('shots on target')
+            ) &&
+            typeof name === 'string' && name && name.toLowerCase() !== 'yes' && name.toLowerCase() !== 'no'
+        ) {
+            // Compose: Player Name + threshold for Over/Under when present
+            if ((label === 'Over' || label === 'Under') && total) {
+                return <span>{name} — {label} {total}</span>;
+            }
+            return <span>{name}</span>;
         }
 
         // For generic markets: show team name and name as badge if name is a string and not the team name
@@ -1634,7 +1668,7 @@ const PlayerCardOption = ({ player, matchData }) => {
             </div>
         );
     } else {
-        // For non-card markets, use grid layout and consistent button style
+        // For non-card player markets (e.g., Player Shots), render with BettingOptionButton to respect suspension and formatting
         // Determine grid columns based on number of options with responsive design
         const gridCols = player.options.length > 2 ? 'grid-cols-1 min-[400px]:grid-cols-2 min-[500px]:grid-cols-3' : 'grid-cols-1 min-[400px]:grid-cols-2';
         return (
@@ -1642,31 +1676,27 @@ const PlayerCardOption = ({ player, matchData }) => {
                 <div className="text-sm font-medium text-gray-700 mb-1">{player.name}</div>
                 <div className={`grid ${gridCols} gap-1`}>
                     {player.options.map((option, idx) => (
-                        <Button
+                        <BettingOptionButton
                             key={`${player.name}-${option.label}-${idx}`}
-                            className={
-                                'group relative px-1 min-[400px]:px-2 py-1 text-center transition-all duration-200 active:scale-[0.98] betting-button bg-base hover:bg-base-dark flex flex-col justify-between items-center'
-                            }
-                            onClick={createBetHandler({
-                                id: matchData.id,
-                                team1: matchData.participants[0].name,
-                                team2: matchData.participants[1].name,
-                                time: matchData.starting_at,
-                            }, option.label, option.value, 'player', option.id, {
-                                marketId: option.marketId,
-                                name: player.name,
-                                marketDescription: option.market_description || 'Player Markets'
-                            })}
-                        >
-                            <div className="relative w-full flex flex-col min-[600px]:flex-row min-[600px]:justify-between min-[600px]:items-center py-1 z-10 gap-0 min-[600px]:gap-1">
-                                <div className="text-[10px] min-[400px]:text-[12px] text-white font-medium transition-colors duration-200 leading-tight flex-1 text-left break-words min-[600px]:truncate">
-                                    {option.label}
-                                </div>
-                                <div className="text-[10px] min-[400px]:text-[12px] font-bold text-white transition-colors duration-200 flex-shrink-0 text-left min-[600px]:text-right">
-                                    {option.value}
-                                </div>
-                            </div>
-                        </Button>
+                            label={option.label}
+                            value={option.value}
+                            sectionType={'player'}
+                            optionId={option?.id}
+                            matchData={matchData}
+                            isResultOption={false}
+                            isHandicapOption={false}
+                            isHalfTimeOption={false}
+                            isOverUnderOption={true}
+                            isGoalScorerOption={false}
+                            handicapValue={option.handicap}
+                            halfIndicator={option.halfIndicator}
+                            thresholds={option.thresholds}
+                            total={option.total}
+                            name={player.name}
+                            marketDescription={option.market_description || "Player's shots on target"}
+                            suspended={Boolean(option.suspended) || Number.isNaN(Number(option.value))}
+                            marketId={option.marketId}
+                        />
                     ))}
                 </div>
             </div>

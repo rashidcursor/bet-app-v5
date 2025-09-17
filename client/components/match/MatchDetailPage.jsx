@@ -7,22 +7,28 @@ import { useCustomSidebar } from "@/contexts/SidebarContext.js"
 import { useSelector, useDispatch } from "react-redux"
 import { 
     fetchMatchById, 
-    clearError
+    fetchMatchByIdV2,
+    clearError,
+    clearMatchDetailV2,
+    silentUpdateMatchByIdV2
 } from "@/lib/features/matches/matchesSlice"
-import { selectMatchOdds, selectMatchOddsClassification } from "@/lib/features/websocket/websocketSlice"
-import { selectLiveMatches } from '@/lib/features/websocket/websocketSlice';
+import { 
+    selectMatchDetailV2, 
+    selectMatchDetailV2Loading, 
+    selectMatchDetailV2Error 
+} from "@/lib/features/matches/matchesSlice"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
 
 const isMatchLive = (match) => {
-    if (!match || !match.starting_at) return false;
+    if (!match || !match.start) return false;
     const now = new Date();
     let matchTime;
-    if (match.starting_at.includes('T')) {
-        matchTime = new Date(match.starting_at.endsWith('Z') ? match.starting_at : match.starting_at + 'Z');
+    if (match.start.includes('T')) {
+        matchTime = new Date(match.start.endsWith('Z') ? match.start : match.start + 'Z');
     } else {
-        matchTime = new Date(match.starting_at.replace(' ', 'T') + 'Z');
+        matchTime = new Date(match.start.replace(' ', 'T') + 'Z');
     }
     const matchEnd = new Date(matchTime.getTime() + 120 * 60 * 1000);
     return matchTime <= now && now < matchEnd;
@@ -30,82 +36,71 @@ const isMatchLive = (match) => {
 
 const MatchDetailPage = ({ matchId }) => {
     const dispatch = useDispatch();
+    
+    // Use new clean API by default, fallback to old API if needed
+    const useNewAPI = true;
+    
     const {
         matchData,
         loading,
         error
-    } = useSelector((state) => ({
+    } = useSelector((state) => {
+        if (useNewAPI) {
+            const v2Data = selectMatchDetailV2(state, matchId);
+            return {
+                matchData: v2Data?.matchData || null,
+                betOffers: v2Data?.betOffers || [],
+                loading: selectMatchDetailV2Loading(state),
+                error: selectMatchDetailV2Error(state),
+            };
+        } else {
+            return {
         matchData: state.matches.matchDetails[matchId],
         loading: state.matches.matchDetailLoading,
         error: state.matches.matchDetailError,
-    }));
-
-    const liveOdds = useSelector((state) => selectMatchOdds(state, matchId));
-    const liveOddsClassification = useSelector((state) => selectMatchOddsClassification(state, matchId));
-    
-    // Get live match data from WebSocket to ensure consistent timing
-    const liveMatches = useSelector(selectLiveMatches);
-    
-    // Find the live match data for this specific match
-    const liveMatchData = React.useMemo(() => {
-        if (!liveMatches || !Array.isArray(liveMatches)) return null;
-        
-        for (const leagueGroup of liveMatches) {
-            if (leagueGroup.matches && Array.isArray(leagueGroup.matches)) {
-                const match = leagueGroup.matches.find(m => m.id === parseInt(matchId));
-                if (match) {
-                    return match;
-                }
-            }
-        }
-        return null;
-    }, [liveMatches, matchId]);
-    
-    // Use live match data if available and match is live, otherwise use fetched match data
-    const displayMatchData = React.useMemo(() => {
-        if (liveMatchData && isMatchLive(liveMatchData)) {
-            // Merge live match data with fetched match data to preserve betting data
-            return {
-                ...matchData,
-                ...liveMatchData,
-                // Preserve betting data from fetched match data
-                betting_data: matchData?.betting_data || liveMatchData?.betting_data,
-                odds_classification: matchData?.odds_classification || liveMatchData?.odds_classification
             };
         }
-        return matchData;
-    }, [matchData, liveMatchData]);
+    });
 
     useEffect(() => {
         if (matchId && !matchData) {
+            if (useNewAPI) {
+                console.log(`🔍 Fetching match ${matchId} using new clean API...`);
+                dispatch(fetchMatchByIdV2(matchId)).catch((error) => {
+                    console.warn(`⚠️ New API failed for ${matchId}, falling back to old API:`, error.message);
+                    dispatch(fetchMatchById(matchId));
+                });
+            } else {
+                console.log(`🔍 Fetching match ${matchId} using old API...`);
             dispatch(fetchMatchById(matchId));
         }
-    }, [matchId, matchData, dispatch]);
+        }
+    }, [matchId, matchData, dispatch, useNewAPI]);
 
-    // Join match room for WebSocket updates when match is live
+    // Client-side polling to refresh odds every 1s (uses silent update)
     useEffect(() => {
-        if (!matchId || !displayMatchData || !isMatchLive(displayMatchData)) return;
-
-        // Import websocketService dynamically to avoid SSR issues
-        import('@/lib/services/websocketService').then(({ default: websocketService }) => {
-            websocketService.joinMatch(matchId);
-        });
-
-        return () => {
-            // Leave match room when component unmounts
-            import('@/lib/services/websocketService').then(({ default: websocketService }) => {
-                websocketService.leaveMatch(matchId);
-            });
+        if (!matchId || !useNewAPI) return;
+        let intervalId;
+        const start = () => {
+            intervalId = setInterval(() => {
+                if (typeof document !== 'undefined' && document.hidden) return; // pause when tab hidden
+                dispatch(silentUpdateMatchByIdV2(matchId));
+            }, 1000);
         };
-    }, [matchId, displayMatchData]);
+        start();
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [matchId, dispatch, useNewAPI]);
 
     const handleRetry = () => {
         dispatch(clearError());
+        if (useNewAPI) {
+            dispatch(clearMatchDetailV2(matchId));
+            dispatch(fetchMatchByIdV2(matchId));
+        } else {
         dispatch(fetchMatchById(matchId));
-    };
-
-    const handleRefreshOdds = () => {
-        // WebSocket updates are automatic, no need to manually refresh
+        }
     };
 
     if (loading) {
@@ -117,7 +112,9 @@ const MatchDetailPage = ({ matchId }) => {
                             <CardContent className="flex items-center justify-center py-12">
                                 <div className="text-center">
                                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-base" />
-                                    <p className="text-gray-600">Loading match details...</p>
+                                    <p className="text-gray-600">
+                                        {useNewAPI ? 'Loading match details from clean API...' : 'Loading match details...'}
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -151,7 +148,7 @@ const MatchDetailPage = ({ matchId }) => {
         );
     }
 
-    if (!displayMatchData) {
+    if (!matchData) {
         return (
             <div className="bg-slate-100 min-h-screen relative">
                 <div className="lg:mr-80 xl:mr-96">
@@ -170,30 +167,201 @@ const MatchDetailPage = ({ matchId }) => {
         );
     }
 
-    const isLive = isMatchLive(displayMatchData);
-    const hasLiveOdds = liveOdds && liveOdds.length > 0;
-    
-    // Determine which odds to show:
-    // For live matches: ONLY show live odds
-    // For non-live matches: Show pre-match odds
-    const bettingData = isLive 
-        ? liveOdds || [] // For live matches, only show live odds or empty array if none available
-        : displayMatchData.betting_data || []; // Try betting_data first
+    // Process match data based on API version
+    let displayMatchData;
+    let bettingData;
+    let oddsClassification;
 
-    // Get the odds classification data
-    // For live matches, use live odds classification
-    // For non-live matches, use pre-match classification
-    const oddsClassification = isLive 
-        ? liveOddsClassification || {
-            categories: [{ id: 'all', label: 'All', odds_count: 0 }],
-            classified_odds: {},
-            stats: { total_categories: 0, total_odds: 0 }
-          }
-        : displayMatchData.odds_classification || {
+    if (useNewAPI) {
+        // New clean API data structure - betOffers API response
+        console.log('🔍 Processing new API data:', matchData);
+        console.log('🔍 matchData exists:', !!matchData);
+        console.log('🔍 matchData.data exists:', !!matchData?.data);
+        console.log('🔍 matchData.data.betOffers exists:', !!matchData?.data?.betOffers);
+        console.log('🔍 matchData.data.betOffers length:', matchData?.data?.betOffers?.length);
+        
+        // Extract event info from events array
+        const eventData = matchData.data?.events?.[0];
+        const eventId = matchData.eventId;
+        
+        console.log('📊 Event data:', eventData);
+        console.log('🎯 Bet offers count:', matchData.data?.betOffers?.length || 0);
+        
+        displayMatchData = {
+            id: eventId,
+            name: eventData?.name || eventData?.englishName || `Match ${eventId}`,
+            start: eventData?.start || new Date().toISOString(),
+            state: eventData?.state || 'NOT_STARTED',
+            // Prefer full participants from payload (includes team participantIds)
+            participants: (eventData?.participants && Array.isArray(eventData.participants) && eventData.participants.length > 0)
+                ? eventData.participants
+                : [
+                    { name: eventData?.homeName || 'Home Team', position: 'home', participantType: 'TEAM' },
+                    { name: eventData?.awayName || 'Away Team', position: 'away', participantType: 'TEAM' }
+                ],
+            league: { 
+                name: eventData?.group || 'Football League',
+                id: eventData?.groupId
+            },
+            liveData: eventData?.state === 'STARTED' ? {
+                score: '0-0', // We'll get real score from live-matches API
+                period: '1st Half',
+                minute: '0'
+            } : null,
+            // Convert betOffers to betting_data format for compatibility
+            betting_data: (matchData.data?.betOffers || []).map(offer => ({
+                id: offer.id,
+                name: offer.criterion?.label || offer.betOfferType?.name,
+                outcomes: (offer.outcomes || []).map(outcome => ({
+                    id: outcome.id,
+                    name: outcome.label,
+                    odds: outcome.odds / 1000, // Convert from Unibet format (13000 -> 13.00)
+                    status: outcome.status,
+                    line: outcome.line, // Include line value for Over/Under markets (raw)
+                    participant: outcome.participant,
+                    participantId: outcome.participantId,
+                    eventParticipantId: outcome.eventParticipantId
+                }))
+            }))
+        };
+
+        bettingData = displayMatchData.betting_data;
+        console.log('🎯 Processed betting data:', bettingData);
+        console.log('📊 Number of betting offers:', bettingData.length);
+        console.log('🔍 Raw matchData:', matchData);
+        console.log('🔍 Raw betOffers:', matchData.data?.betOffers);
+        
+        // Fallback: If bettingData is empty but we have raw betOffers, try to process them directly
+        if ((!bettingData || bettingData.length === 0) && matchData.data?.betOffers?.length > 0) {
+            console.log('⚠️ Fallback: Processing raw betOffers directly');
+            bettingData = matchData.data.betOffers.map(offer => ({
+                id: offer.id,
+                name: offer.criterion?.label || offer.betOfferType?.name,
+                outcomes: (offer.outcomes || []).map(outcome => ({
+                    id: outcome.id,
+                    name: outcome.label,
+                    odds: outcome.odds / 1000,
+                    status: outcome.status,
+                    line: outcome.line // Include line value for Over/Under markets
+                }))
+            }));
+            console.log('🔄 Fallback betting data:', bettingData);
+        }
+        
+        // Create proper market categorization (like unibet-api app)
+        const categorizedMarkets = categorizeMarkets(bettingData);
+        
+        const categories = [
+            { id: 'all', label: 'All', odds_count: bettingData.length },
+            ...Object.entries(categorizedMarkets).map(([categoryId, markets]) => ({
+                id: categoryId,
+                label: getCategoryLabel(categoryId),
+                odds_count: markets.length
+            }))
+        ];
+        
+        // Transform categorized markets into the format expected by BettingTabs
+        const transformedClassifiedOdds = {};
+        Object.entries(categorizedMarkets).forEach(([categoryId, markets]) => {
+            let groupedMarkets;
+            if (categoryId === 'scorers') {
+                groupedMarkets = buildScorerMarkets(markets, displayMatchData.participants);
+            } else {
+                // Default grouping: group markets by name and flatten outcomes
+                groupedMarkets = markets.reduce((acc, market) => {
+                    const marketName = market.name;
+                    if (!acc[marketName]) {
+                        acc[marketName] = {
+                            market_description: marketName,
+                            market_id: market.id,
+                            odds: []
+                        };
+                    }
+                    market.outcomes.forEach(outcome => {
+                        const lowerMarket = String(marketName || '').toLowerCase();
+                        const lineValueNormalized = outcome.line != null ? outcome.line / 1000 : null;
+                        // Special handling for Correct Score: render flat list of scores
+                        if (lowerMarket.includes('correct score')) {
+                            // Determine score string
+                            const scoreStr = outcome.homeScore != null && outcome.awayScore != null
+                                ? `${outcome.homeScore}-${outcome.awayScore}`
+                                : (String(outcome.name || ''));
+                            acc[marketName].odds.push({
+                                id: outcome.id,
+                                label: scoreStr, // display score text
+                                value: outcome.odds,
+                                name: scoreStr,
+                                suspended: outcome.status !== 'OPEN'
+                            });
+                            return;
+                        }
+
+                        let displayLabel = outcome.name;
+                        if (outcome.line !== undefined && outcome.line !== null) {
+                            const lineValue = lineValueNormalized;
+                            if (String(outcome.name).toLowerCase().includes('over')) {
+                                displayLabel = `Over ${lineValue}`;
+                            } else if (String(outcome.name).toLowerCase().includes('under')) {
+                                displayLabel = `Under ${lineValue}`;
+                            }
+                        }
+                        // Normalize Yes/No, Odd/Even to readable labels
+                        const lowerName = String(outcome.name || '').toLowerCase();
+                        if (lowerName === 'ot_yes'.toLowerCase() || lowerName === 'yes') displayLabel = 'Yes';
+                        if (lowerName === 'ot_no'.toLowerCase() || lowerName === 'no') displayLabel = 'No';
+                        if (lowerName === 'even' || lowerName === 'ot_even'.toLowerCase()) displayLabel = 'Even';
+                        if (lowerName === 'odd' || lowerName === 'ot_odd'.toLowerCase()) displayLabel = 'Odd';
+                        // For player markets (cards, shots), prefer participant name as display name
+                        const isPlayerCardMarket = lowerMarket.includes('to get a card') || lowerMarket.includes('to be booked') || lowerMarket.includes('player cards');
+                        const isPlayerShotsMarket = (lowerMarket.includes('shot') || lowerMarket.includes('on target')) && (lowerMarket.includes("player") || Boolean(outcome.participant));
+                        // For team line markets (e.g., Cards Line), populate handicap from line
+                        const isLineMarket = lowerMarket.includes(' line') || lowerMarket === 'line';
+                        const displayName = (isPlayerCardMarket || isPlayerShotsMarket) ? (outcome.participant || displayLabel) : displayLabel;
+                        acc[marketName].odds.push({
+                            id: outcome.id,
+                            label: displayLabel,
+                            value: outcome.odds,
+                            name: displayName,
+                            suspended: outcome.status !== 'OPEN',
+                            line: lineValueNormalized,
+                            // Provide both total (for Over/Under) and handicap (for Asian/Handicap lines)
+                            total: (displayLabel.startsWith('Over ') || displayLabel.startsWith('Under ')) && lineValueNormalized != null ? lineValueNormalized : null,
+                            handicap: (lowerMarket.includes('asian') || lowerMarket.includes('handicap') || lowerMarket.includes(' line') || isLineMarket) && lineValueNormalized != null ? lineValueNormalized : null,
+                            participant: outcome.participant,
+                            eventParticipantId: outcome.eventParticipantId,
+                            participantId: outcome.participantId
+                        });
+                    });
+                    return acc;
+                }, {});
+            }
+
+            transformedClassifiedOdds[categoryId] = {
+                label: getCategoryLabel(categoryId),
+                markets_data: groupedMarkets
+            };
+        });
+        
+        oddsClassification = {
+            categories: categories,
+            classified_odds: transformedClassifiedOdds,
+            stats: {
+                total_categories: categories.length - 1,
+                total_odds: bettingData.length
+            }
+        };
+    } else {
+        // Old API data structure (fallback)
+        displayMatchData = matchData;
+        bettingData = matchData.betting_data || [];
+        oddsClassification = matchData.odds_classification || {
             categories: [{ id: 'all', label: 'All', odds_count: 0 }],
             classified_odds: {},
             stats: { total_categories: 0, total_odds: 0 }
           };
+    }
+
+    const isLive = isMatchLive(displayMatchData);
 
     // Show no betting options message only if there are truly no odds available
     if (!bettingData || bettingData.length === 0) {
@@ -244,4 +412,129 @@ const MatchDetailPage = ({ matchId }) => {
     )
 }
 
+// Helper methods for market categorization (based on unibet-api logic)
+function categorizeMarkets(bettingData) {
+    const categorized = {
+        'match': [],
+        'goals': [],
+        'asian': [],
+        'three-way-line': [],
+        'corners': [],
+        'cards': [],
+        'player-shots': [],
+        'player-cards': [],
+        'scorers': [],
+        'other': []
+    };
+
+    bettingData.forEach(offer => {
+        const marketName = offer.name.toLowerCase();
+        
+        // Enhanced categorization logic (matching unibet-api app)
+        if (marketName.includes('match') || marketName.includes('winner') || marketName.includes('head to head') || 
+            marketName.includes('full time') || marketName.includes('draw no bet') || marketName.includes('double chance')) {
+            categorized.match.push(offer);
+        } else if (marketName.includes('3-way') || marketName.includes('3 way') || marketName.includes('three way')) {
+            categorized['three-way-line'].push(offer);
+        } else if (marketName.includes('asian') || marketName.includes('handicap')) {
+            categorized.asian.push(offer);
+        } else if (marketName.includes('corner')) {
+            categorized.corners.push(offer);
+        } else if (marketName.includes('card')) {
+            if (marketName.includes('player')) {
+                categorized['player-cards'].push(offer);
+            } else {
+                categorized.cards.push(offer);
+            }
+        } else if (marketName.includes('shot')) {
+            categorized['player-shots'].push(offer);
+        } else if (marketName.includes('to score') || marketName.includes('goalscorer') || marketName.includes('scorer') || marketName.includes('first goal')) {
+            categorized.scorers.push(offer);
+        } else if (marketName.includes('goal') || marketName.includes('score') || marketName.includes('total') || 
+                   marketName.includes('both teams to score') || marketName.includes('btts') ||
+                   marketName.includes('correct score') || marketName.includes('half time')) {
+            categorized.goals.push(offer);
+        } else {
+            categorized.other.push(offer);
+        }
+    });
+
+    // Remove empty categories
+    Object.keys(categorized).forEach(key => {
+        if (categorized[key].length === 0) {
+            delete categorized[key];
+        }
+    });
+
+    return categorized;
+}
+
+function getCategoryLabel(categoryId) {
+    const labels = {
+        'match': 'Match',
+        'goals': 'Goals',
+        'asian': 'Asian Lines',
+        'three-way-line': '3-Way Line',
+        'corners': 'Corners',
+        'cards': 'Cards',
+        'player-shots': 'Player Shots',
+        'player-cards': 'Player Cards',
+        'scorers': 'Scorers',
+        'other': 'Other'
+    };
+    return labels[categoryId] || categoryId;
+}
+
 export default MatchDetailPage
+
+// Build markets for Scorers like unibet app: group by team and criterion, display player names
+function buildScorerMarkets(markets, participants = []) {
+    const teams = (participants || []).filter(p => String(p.participantType || '').toUpperCase() === 'TEAM');
+    const teamNameOf = (eventParticipantId) => {
+        const t = teams.find(tt => String(tt.participantId) === String(eventParticipantId));
+        return t?.name || t?.englishName || (teams[0]?.name || 'Team');
+    };
+
+    const byTeamCriterion = new Map();
+    const addedKeys = new Set();
+
+    markets.forEach(market => {
+        const criterionLabel = market?.name || market?.criterion?.label || market?.criterion?.englishLabel || 'To Score';
+        (market.outcomes || []).forEach(oc => {
+            const rawName = oc.participant || oc.name || oc.englishLabel || '';
+            if (!rawName || /^(yes|no)$/i.test(rawName)) return;
+            const teamName = teamNameOf(oc.eventParticipantId);
+            const key = `${teamName}|${criterionLabel}`;
+            if (!byTeamCriterion.has(key)) byTeamCriterion.set(key, []);
+            const uniqueKey = `${key}|${String(oc.participantId || '').trim() || rawName.toLowerCase()}`;
+            if (addedKeys.has(uniqueKey)) return;
+            addedKeys.add(uniqueKey);
+            byTeamCriterion.get(key).push({ player: rawName, outcome: oc, market });
+        });
+    });
+
+    const result = {};
+    Array.from(byTeamCriterion.entries()).forEach(([key, rows]) => {
+        const [teamName, criterionLabel] = key.split('|');
+        const marketKey = `${criterionLabel} — ${teamName}`;
+        result[marketKey] = {
+            market_description: marketKey,
+            market_id: rows[0]?.market?.id || 'scorer',
+            odds: rows.map(r => ({
+                id: r.outcome.id,
+                label: r.player,
+                // Odds were already converted to decimal earlier; don't divide again
+                value: Number(r.outcome.odds || 0),
+                name: r.player,
+                suspended: (r.outcome.status || '') !== 'OPEN',
+                participant: r.player,
+                participantId: r.outcome.participantId,
+                eventParticipantId: r.outcome.eventParticipantId,
+                team: teamName,
+                criterion: criterionLabel
+            }))
+        };
+    });
+
+    return result;
+}
