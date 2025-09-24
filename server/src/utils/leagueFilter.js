@@ -164,9 +164,6 @@ export function filterMatchesByAllowedLeagues(matches) {
       return true;
     }
     
-    // Debug logging for unmatched leagues
-    console.log(`🚫 Filtered out match: ${match.homeName} vs ${match.awayName}, groupId: ${match.groupId}, group: ${match.group}`);
-    
     return false;
   });
 

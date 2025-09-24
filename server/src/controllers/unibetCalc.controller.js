@@ -18,7 +18,6 @@ export class UnibetCalcController {
         try {
             const { limit = 200, onlyPending = true } = req.body;
             
-            console.log(`[processAll] Starting batch processing: limit=${limit}, onlyPending=${onlyPending}`);
 
             // Get pending bets
             const query = onlyPending ? { status: 'pending' } : {};
@@ -40,7 +39,6 @@ export class UnibetCalcController {
                 });
             }
 
-            console.log(`[processAll] Found ${bets.length} bets to process`);
 
             const stats = {
                 total: bets.length,
@@ -68,23 +66,15 @@ export class UnibetCalcController {
                     let result;
                     
                     // Debug logging for bet type detection
-                    console.log(`[processAll] Bet ${bet._id} analysis:`, {
-                        hasCombination: !!bet.combination,
-                        combinationLength: bet.combination?.length || 0,
-                        betType: bet.betType,
-                        status: bet.status
-                    });
                     
                     // Check if it's a combination bet
                     if (bet.combination && bet.combination.length > 0) {
-                        console.log(`[processAll] Processing combination bet ${bet._id} with ${bet.combination.length} legs`);
                         result = await this.processCombinationBetInternal(bet);
                         stats.combination.processed++;
                         if (result.status === 'won') stats.combination.won++;
                         else if (result.status === 'lost') stats.combination.lost++;
                         else if (result.status === 'canceled') stats.combination.canceled++;
                     } else {
-                        console.log(`[processAll] Processing single bet ${bet._id}`);
                         result = await this.processSingleBet(bet);
                         stats.single.processed++;
                         if (result.status === 'won') stats.single.won++;
@@ -105,7 +95,6 @@ export class UnibetCalcController {
                 }
             }
 
-            console.log(`[processAll] Batch processing completed:`, stats);
 
             res.json({
                 success: true,
@@ -192,7 +181,7 @@ export class UnibetCalcController {
 
     // Internal method to process a single bet
     async processSingleBet(bet) {
-        console.log('bet+++++++++++++++++++++++', bet);
+        // console.log('bet+++++++++++++++++++++++', bet);
         try {
             // Validate bet for calculator
             const validation = BetSchemaAdapter.validateBetForCalculator(bet);
@@ -203,7 +192,7 @@ export class UnibetCalcController {
             // Adapt bet for calculator
             const adaptedBet = BetSchemaAdapter.adaptBetForCalculator(bet);
             
-            console.log('adaptedBet+++++++++++++++++++++++', adaptedBet);
+            // console.log('adaptedBet+++++++++++++++++++++++', adaptedBet);
             console.log(`Processing bet ${bet._id}: ${adaptedBet.marketName} - ${adaptedBet.outcomeLabel}`);
 
             // Process with calculator (calculator already updates the database)
@@ -480,7 +469,6 @@ export class UnibetCalcController {
     // Internal method to process a combination bet
     async processCombinationBetInternal(bet) {
         try {
-            console.log(`[processCombinationBetInternal] Processing combination bet ${bet._id} with ${bet.combination.length} legs`);
             
             // Validate combination bet for calculator
             const validation = BetSchemaAdapter.validateCombinationBetForCalculator(bet);
@@ -491,7 +479,6 @@ export class UnibetCalcController {
             // Adapt combination bet for calculator (returns array of calculator bets)
             const calculatorBets = BetSchemaAdapter.adaptCombinationBetForCalculator(bet);
             
-            console.log(`[processCombinationBetInternal] Adapted ${calculatorBets.length} legs for calculator`);
 
             // Process each leg through calculator
             const results = [];
@@ -534,15 +521,15 @@ export class UnibetCalcController {
             // Adapt results back to bet-app format
             const updatedBet = BetSchemaAdapter.adaptCombinationCalculatorResult(results, bet);
 
-            console.log(`Updatedbet --------------------------------------:`,updatedBet);
+            // console.log(`Updatedbet --------------------------------------:`,updatedBet);
             
-            console.log(`[processCombinationBetInternal] Updating database for bet ${bet._id}:`, {
-                status: updatedBet.status,
-                payout: updatedBet.payout,
-                legs: updatedBet.combination.length
-            });
+            // console.log(`[processCombinationBetInternal] Updating database for bet ${bet._id}:`, {
+            //     status: updatedBet.status,
+            //     payout: updatedBet.payout,
+            //     legs: updatedBet.combination.length
+            // });
             
-            console.log(`[processCombinationBetInternal] Updated bet object:`, JSON.stringify(updatedBet, null, 2));
+            // console.log(`[processCombinationBetInternal] Updated bet object:`, JSON.stringify(updatedBet, null, 2));
             
             // Update bet in database with main fields first
             const savedBet = await Bet.findByIdAndUpdate(
@@ -558,7 +545,6 @@ export class UnibetCalcController {
                 { new: true, runValidators: true }
             );
 
-            console.log(`Savedbet --------------------------------------:`,savedBet);
             
             // Update combination array elements individually using array index notation
             for (let i = 0; i < updatedBet.combination.length; i++) {

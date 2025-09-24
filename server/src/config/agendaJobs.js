@@ -79,7 +79,7 @@ const cancelInplayMatchesJob = async () => {
 const scheduleBetProcessingJob = async () => {
   if (!betProcessingJobScheduled) {
     console.log('[Agenda] Scheduling automated bet processing job...');
-    await agenda.every("5 seconds", "processPendingBets"); // Changed from 5 minutes to 5 seconds for testing
+    await agenda.every("30 minutes", "processPendingBets");
     betProcessingJobScheduled = true;
     console.log('[Agenda] Automated bet processing job scheduled successfully');
   }

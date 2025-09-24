@@ -162,7 +162,7 @@ export default class BetOutcomeCalculator {
             }
 
             const bets = await this.db.collection('bets').find(query).toArray();
-            console.log(`Found ${bets.length} pending bets${onlyFinished ? ' (with matchFinished = true)' : ' (time-based filtering)'}`);
+            // console.log(`Found ${bets.length} pending bets${onlyFinished ? ' (with matchFinished = true)' : ' (time-based filtering)'}`);
 
             return bets;
         } catch (error) {
@@ -175,7 +175,7 @@ export default class BetOutcomeCalculator {
      * Get cached daily matches for a specific date with detailed logging
      */
     async getCachedDailyMatches(date, bet = null) {
-        console.log(bet);
+        // console.log(bet);
         try {
             const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
             const dateFormatted = date.toISOString().slice(0, 10);
@@ -202,14 +202,14 @@ export default class BetOutcomeCalculator {
             let useTestDate = false;
             
             // Debug: Log bet object structure
-            console.log(`🔍 DEBUG BET OBJECT:`, {
-                hasBet: !!bet,
-                betKeys: bet ? Object.keys(bet) : 'no bet',
-                matchId: bet?.matchId,
-                matchIdType: typeof bet?.matchId,
-                betId: bet?._id,
-                betIdType: typeof bet?._id
-            });
+            // console.log(`🔍 DEBUG BET OBJECT:`, {
+            //     hasBet: !!bet,
+            //     betKeys: bet ? Object.keys(bet) : 'no bet',
+            //     matchId: bet?.matchId,
+            //     matchIdType: typeof bet?.matchId,
+            //     betId: bet?._id,
+            //     betIdType: typeof bet?._id
+            // });
             
                 console.log('🧪 TEST EVENT DETECTED: Using fotmob-11.json for event ${bet.matchId}');
             if (bet && bet?.eventId === '1022853538') {
@@ -270,7 +270,7 @@ export default class BetOutcomeCalculator {
             return freshData;
 
         } catch (error) {
-            console.error(`❌ ERROR getting cached daily matches for ${date}:`, error.message);
+            // console.error(`❌ ERROR getting cached daily matches for ${date}:`, error.message);
             return null;
         }
     }
@@ -1811,8 +1811,6 @@ export default class BetOutcomeCalculator {
      * Process a single bet with detailed logging
      */
     async processBet(bet, updateDatabase = true) {
-        console.log('PROCESSING BET own ---------------------------------------------------');
-        console.log(bet);
         try {
             console.log(`\n🔍 ===== PROCESSING BET ${bet._id} =====`);
             console.log(`📋 Bet Details:`);
@@ -2350,7 +2348,7 @@ export default class BetOutcomeCalculator {
             };
 
             console.log(`Processing ${pendingBets.length} bets (finished matches only: ${onlyFinished})`);
-            console.log("*************aaaaaaaaaaaaa",pendingBets);
+            // console.log("*************aaaaaaaaaaaaa",pendingBets);
             for (const bet of pendingBets) {
                 const result = await this.processBet(bet);
 
@@ -2415,7 +2413,7 @@ export default class BetOutcomeCalculator {
             };
 
             console.log(`⚡ MANUAL PROCESSING: ${pendingBets.length} pending match result bets`);
-            console.log("***********************bbbbbbbbbbbbbbbb*****************",pendingBets);
+            // console.log("***********************bbbbbbbbbbbbbbbb*****************",pendingBets);
             for (const bet of pendingBets) {
                 console.log(`🔧 Processing bet: ${bet.eventName} (${bet.outcomeLabel} @ ${bet.odds})`);
 
@@ -2454,7 +2452,7 @@ export default class BetOutcomeCalculator {
      */
     async processBetWithMatchId(bet, fotmobMatchId, updateDatabase = true) {
         // Implementation similar to processBet but with specific match ID
-        console.log("****************ccccccccccccccccccccccccccccc******************",bet);
+        // console.log("****************ccccccccccccccccccccccccccccc******************",bet);
         return this.processBet(bet, updateDatabase);
     }
 
