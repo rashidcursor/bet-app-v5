@@ -14,6 +14,42 @@ router.get('/health', (req, res) => {
   });
 });
 
+// Test external API connectivity endpoint
+router.get('/test-external-api/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    console.log(`🧪 [TEST] Testing external API connectivity for event: ${eventId}`);
+    
+    const testUrl = `${API_BASE_URL}/${eventId}.json`;
+    console.log(`🧪 [TEST] Testing URL: ${testUrl}`);
+    
+    const response = await axios.get(testUrl, {
+      headers: API_HEADERS,
+      timeout: 10000
+    });
+    
+    res.json({
+      success: true,
+      message: 'External API is reachable',
+      eventId,
+      testUrl,
+      responseStatus: response.status,
+      responseDataKeys: Object.keys(response.data || {}),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`❌ [TEST] External API test failed:`, error.message);
+    res.status(500).json({
+      success: false,
+      message: 'External API test failed',
+      error: error.message,
+      errorCode: error.code,
+      errorStatus: error.response?.status,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Configuration from unibet-api/config.js (matching working implementation)
 const API_BASE_URL = 'https://oc-offering-api.kambicdn.com/offering/v2018/ubau/betoffer/event';
 const API_HEADERS = {
@@ -66,12 +102,17 @@ router.get('/:eventId', async (req, res) => {
     } catch (_) {}
 
     try {
+      console.log(`🌐 [PRODUCTION DEBUG] Making external API call to: ${API_BASE_URL}/${eventId}.json`);
+      console.log(`🌐 [PRODUCTION DEBUG] Headers:`, API_HEADERS);
+      
       const response = await axios.get(`${API_BASE_URL}/${eventId}.json`, {
         headers: API_HEADERS,
         timeout: 12000
       });
 
       console.log(`✅ Successfully fetched bet offers for event: ${eventId}`);
+      console.log(`📊 [PRODUCTION DEBUG] Response status: ${response.status}`);
+      console.log(`📊 [PRODUCTION DEBUG] Response data keys:`, Object.keys(response.data || {}));
       
       // Cache for later enrichment during bet placement
       try {
@@ -92,7 +133,12 @@ router.get('/:eventId', async (req, res) => {
         source: 'live'
       });
     } catch (apiError) {
-      console.warn(`⚠️ External API failed for event ${eventId}:`, apiError.message);
+      console.error(`❌ [PRODUCTION DEBUG] External API failed for event ${eventId}:`);
+      console.error(`❌ [PRODUCTION DEBUG] Error message:`, apiError.message);
+      console.error(`❌ [PRODUCTION DEBUG] Error code:`, apiError.code);
+      console.error(`❌ [PRODUCTION DEBUG] Error status:`, apiError.response?.status);
+      console.error(`❌ [PRODUCTION DEBUG] Error response:`, apiError.response?.data);
+      console.error(`❌ [PRODUCTION DEBUG] Full error:`, apiError);
       
       // If we have cached data, return it instead of failing
       if (cachedData?.data) {
@@ -107,13 +153,24 @@ router.get('/:eventId', async (req, res) => {
         });
       }
       
-      // No cache available, return error
+      // No cache available, return error with more details
       console.error('❌ No cached data available for event:', eventId);
+      console.error('❌ [PRODUCTION DEBUG] This might be due to:');
+      console.error('❌ [PRODUCTION DEBUG] 1. External API rate limiting');
+      console.error('❌ [PRODUCTION DEBUG] 2. Network connectivity issues');
+      console.error('❌ [PRODUCTION DEBUG] 3. IP blocking from Unibet API');
+      console.error('❌ [PRODUCTION DEBUG] 4. Event ID no longer exists');
+      
       res.status(404).json({
         success: false,
         error: 'Match not found',
-        message: `No betting offers available for event ${eventId}`,
-        timestamp: new Date().toISOString()
+        message: `No betting offers available for event ${eventId}. This might be due to external API issues or the match no longer being available.`,
+        timestamp: new Date().toISOString(),
+        debug: {
+          externalApiUrl: `${API_BASE_URL}/${eventId}.json`,
+          hasCache: !!cachedData,
+          environment: process.env.NODE_ENV || 'development'
+        }
       });
     }
   } catch (error) {
