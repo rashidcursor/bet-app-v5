@@ -568,7 +568,7 @@ class BetService {
           matchId: leg.matchId,
           oddId: leg.oddId,
           betOption: leg.betOption || leg.selection || odds.name,
-          odds: parseFloat(odds.value) / 1000, // Convert from Unibet format to decimal
+          odds: parseFloat(odds.value), // Unibet API already returns decimal odds
           stake: stake, // Same stake for all legs in combination
           payout: 0,
           status: "pending",
@@ -586,8 +586,8 @@ class BetService {
         };
 
         processedLegs.push(processedLeg);
-        // Convert odds from Unibet format (e.g., 2650) to decimal format (e.g., 2.65)
-        const decimalOdds = parseFloat(odds.value) / 1000;
+        // Unibet API already returns decimal odds
+        const decimalOdds = parseFloat(odds.value);
         totalOdds *= decimalOdds;
 
         // Store first leg data for main bet document

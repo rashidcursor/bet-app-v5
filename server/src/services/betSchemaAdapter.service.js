@@ -481,11 +481,10 @@ export class BetSchemaAdapter {
         if (hasCanceled) return stake; // Refund
         if (hasLost) return 0; // No payout
         if (allWon) {
-            // Convert odds from Unibet format (e.g., 1400) to decimal format (e.g., 1.4)
+            // Odds are already in decimal format (e.g., 1.11, 1.62)
             const totalOdds = legs.reduce((acc, leg) => {
-                const decimalOdds = leg.odds / 1000; // Convert from Unibet format to decimal
-                console.log(`[calculateCombinationPayout] Leg odds: ${leg.odds} → ${decimalOdds}`);
-                return acc * decimalOdds;
+                console.log(`[calculateCombinationPayout] Leg odds: ${leg.odds}`);
+                return acc * leg.odds;
             }, 1);
             console.log(`[calculateCombinationPayout] Total odds: ${totalOdds}, Stake: ${stake}, Payout: ${stake * totalOdds}`);
             return stake * totalOdds; // Product of all odds

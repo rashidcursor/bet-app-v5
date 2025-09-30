@@ -204,6 +204,23 @@ export class UnibetCalcController {
             // Process with calculator (calculator already updates the database)
             const calculatorResult = await this.calculator.processBetWithMatchId(adaptedBet, adaptedBet.eventId);
             
+            // Check if calculator validation failed
+            if (!calculatorResult.success) {
+                console.log(`❌ Calculator validation failed: ${calculatorResult.error}`);
+                
+                // Cancel the bet due to validation failure
+                await this.cancelBet(bet._id, calculatorResult.error);
+                
+                return {
+                    betId: bet._id,
+                    status: 'cancelled',
+                    payout: 0,
+                    reason: `Validation failed: ${calculatorResult.error}`,
+                    processedAt: new Date(),
+                    debugInfo: {}
+                };
+            }
+            
             // No need to update database again - calculator already did it
             // The calculator handles the database update with proper transaction and write concern
 
@@ -236,6 +253,42 @@ export class UnibetCalcController {
                 updatedAt: new Date()
             });
 
+            throw error;
+        }
+    }
+
+    // Helper method to cancel a bet
+    async cancelBet(betId, reason) {
+        try {
+            console.log(`🚫 Cancelling bet ${betId} due to: ${reason}`);
+            
+            // Update bet status to cancelled
+            const updatedBet = await Bet.findByIdAndUpdate(
+                betId,
+                {
+                    status: 'cancelled',
+                    result: {
+                        status: 'cancelled',
+                        payout: 0,
+                        reason: reason,
+                        processedAt: new Date()
+                    }
+                },
+                { new: true }
+            );
+
+            if (updatedBet) {
+                // Refund the stake to user's balance
+                await User.findByIdAndUpdate(
+                    updatedBet.userId,
+                    { $inc: { balance: updatedBet.stake } }
+                );
+                console.log(`✅ Bet ${betId} cancelled and stake refunded`);
+            }
+
+            return updatedBet;
+        } catch (error) {
+            console.error(`❌ Error cancelling bet ${betId}:`, error);
             throw error;
         }
     }

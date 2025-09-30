@@ -1,0 +1,2974 @@
+{
+    "viewId": "filter/football/all/allGroups",
+    "session": false,
+    "apiUrl": "https://www.unibet.com.au/sportsbook-feeds/views/filter/football/all/allGroups?includeParticipants=true&useCombined=true&ncid=1759228258",
+    "layout": {
+        "sections": [
+            {
+                "position": "TOP",
+                "widgets": []
+            },
+            {
+                "position": "MAIN",
+                "widgets": [
+                    {
+                        "widgetType": "TOURNAMENT",
+                        "name": "League widget",
+                        "contentId": "7.1120649",
+                        "groupId": "football",
+                        "translation": {
+                            "oddsNotAvailable": "Odds are not available at the moment. Please check again later.",
+                            "select": "Select",
+                            "specials": "Specials",
+                            "playersOddsNotAvailable": "Please note that Player related bets will become available closer to kick-off.",
+                            "show": "Show",
+                            "moreBoostedOdds": "more Boosted odds on this match",
+                            "outrights": "Outrights",
+                            "standings": "Standings",
+                            "otherSectionTitle": "Other",
+                            "allSports": "All",
+                            "showAll": "Show All",
+                            "allCompetitions": "All Competitions",
+                            "today": "Today",
+                            "headToHead": "H2H",
+                            "moreBetsString": "bets",
+                            "liveAndUpcoming": "Live & Upcoming",
+                            "international": "International",
+                            "live": "In-play",
+                            "oddsExpire": "",
+                            "all": "All",
+                            "specialDisclaimer": "Boosted odds offered by Unibet, applied only when picked from here",
+                            "showAllMatches": "Show more",
+                            "allGroups": "All Football",
+                            "allOutrights": "All Outrights",
+                            "players": "Players",
+                            "noEventsAvailableWithinTimeframe": "There are no events available within the selected timeframe.",
+                            "tomorrow": "Tomorrow",
+                            "spotlght": "Spotlight",
+                            "fullTime": "Full time",
+                            "selectBetTypeMatches": "Bet type: ",
+                            "draw": "Draw",
+                            "matches": "Matches",
+                            "eachWayTerm": "Each Way terms:",
+                            "allLeagues": "All Leagues",
+                            "filter": "Filter",
+                            "euroTabsOnboardingText": "",
+                            "matchDaySpecialsTitle": "Matchday Specials",
+                            "viewAllBetoffers": "View all",
+                            "featuredSpecialsTitle": "Boosted Odds",
+                            "az": "A-Z",
+                            "showAllBets": "View odds",
+                            "spotlight": "Featured"
+                        },
+                        "statisticsEnabled": true,
+                        "allGroups": {
+                            "groups": [
+                                {
+                                    "name": "International",
+                                    "englishName": "International",
+                                    "groups": [
+                                        {
+                                            "id": 1000093381,
+                                            "name": "Champions League",
+                                            "navigationUrl": "/betting/sports/filter/football/champions_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 4
+                                        },
+                                        {
+                                            "id": 2000051195,
+                                            "name": "Europa League",
+                                            "navigationUrl": "/betting/sports/filter/football/europa_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 5
+                                        },
+                                        {
+                                            "id": 2000084547,
+                                            "name": "AFC Champions League",
+                                            "navigationUrl": "/betting/sports/filter/football/afc_champions_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010203832,
+                                            "name": "AFC Champions League 2",
+                                            "navigationUrl": "/betting/sports/filter/football/afc_champions_league_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000123032,
+                                            "name": "African Nations Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/african_nations_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000121299,
+                                            "name": "CAF Champions League Qualification",
+                                            "navigationUrl": "/betting/sports/filter/football/caf_champions_league_qualification",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000130522,
+                                            "name": "Conference League",
+                                            "navigationUrl": "/betting/sports/filter/football/conference_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000093399,
+                                            "name": "Copa Libertadores",
+                                            "navigationUrl": "/betting/sports/filter/football/copa_libertadores",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000179126,
+                                            "name": "Copa Sudamericana",
+                                            "navigationUrl": "/betting/sports/filter/football/copa_sudamericana",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000093570,
+                                            "name": "International Friendly Matches",
+                                            "navigationUrl": "/betting/sports/filter/football/international_friendly_matches",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010133908,
+                                            "name": "World Cup 2026",
+                                            "navigationUrl": "/betting/sports/filter/football/world_cup_2026",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000086372,
+                                            "name": "World Cup Qualifying - Europe",
+                                            "navigationUrl": "/betting/sports/filter/football/world_cup_qualifying_-_europe",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000124075,
+                                    "name": "|Esports Soccer|",
+                                    "englishName": "|Esports Football|",
+                                    "termKey": "esports_football",
+                                    "groups": [
+                                        {
+                                            "id": 2010204808,
+                                            "name": "CLA-PL Spain Cyber Cup (2x5 min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/cla-pl_spain_cyber_cup__2x5_min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010204788,
+                                            "name": "CLA-UA Europa Cyber League (2x5 min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/cla-ua_europa_cyber_league__2x5_min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010204793,
+                                            "name": "CLA-UA World Cyber Cup (2x5 min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/cla-ua_world_cyber_cup__2x5_min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010204837,
+                                            "name": "EPC Spain Cyber Cup (UA) (2x5 min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/epc_spain_cyber_cup__ua___2x5_min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000124080,
+                                            "name": "Esports Battle (2x4min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/esports_battle__2x4min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010205461,
+                                            "name": "eSports Battle Champions League A (2x6 min)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football/esports_battle_champions_league_a__2x6_min_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (|Esports Soccer|)",
+                                            "navigationUrl": "/betting/sports/filter/football/esports_football",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050278,
+                                    "name": "Algeria",
+                                    "englishName": "Algeria",
+                                    "termKey": "algeria",
+                                    "groups": [
+                                        {
+                                            "id": 2000050279,
+                                            "name": "Ligue 1",
+                                            "navigationUrl": "/betting/sports/filter/football/algeria/ligue_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000056634,
+                                            "name": "Ligue 2",
+                                            "navigationUrl": "/betting/sports/filter/football/algeria/ligue_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Algeria)",
+                                            "navigationUrl": "/betting/sports/filter/football/algeria",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461754,
+                                    "name": "Argentina",
+                                    "englishName": "Argentina",
+                                    "termKey": "argentina",
+                                    "groups": [
+                                        {
+                                            "id": 2000056748,
+                                            "name": "Copa Argentina",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/copa_argentina",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000086127,
+                                            "name": "Femenino (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/femenino__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000050561,
+                                            "name": "Liga Profesional Argentina",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/liga_profesional_argentina",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000052332,
+                                            "name": "Primera B Metropolitana",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/primera_b_metropolitana",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000442572,
+                                            "name": "Primera B Nacional",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/primera_b_nacional",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000073003,
+                                            "name": "Primera C",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina/primera_c",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Argentina)",
+                                            "navigationUrl": "/betting/sports/filter/football/argentina",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461751,
+                                    "name": "Austria",
+                                    "englishName": "Austria",
+                                    "termKey": "austria",
+                                    "groups": [
+                                        {
+                                            "id": 1000345237,
+                                            "name": "Bundesliga",
+                                            "navigationUrl": "/betting/sports/filter/football/austria/bundesliga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000345893,
+                                            "name": "Second League",
+                                            "navigationUrl": "/betting/sports/filter/football/austria/second_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Austria)",
+                                            "navigationUrl": "/betting/sports/filter/football/austria",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461772,
+                                    "name": "Bahrain",
+                                    "englishName": "Bahrain",
+                                    "termKey": "bahrain",
+                                    "groups": [
+                                        {
+                                            "id": 1000317386,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/bahrain/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Bahrain)",
+                                            "navigationUrl": "/betting/sports/filter/football/bahrain",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461740,
+                                    "name": "Belgium",
+                                    "englishName": "Belgium",
+                                    "termKey": "belgium",
+                                    "groups": [
+                                        {
+                                            "id": 1000358593,
+                                            "name": "Challenger Pro League",
+                                            "navigationUrl": "/betting/sports/filter/football/belgium/challenger_pro_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094965,
+                                            "name": "Jupiler Pro League",
+                                            "navigationUrl": "/betting/sports/filter/football/belgium/jupiler_pro_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000060943,
+                                            "name": "Lotto Super League (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/belgium/lotto_super_league__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Belgium)",
+                                            "navigationUrl": "/betting/sports/filter/football/belgium",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000051030,
+                                    "name": "Bolivia",
+                                    "englishName": "Bolivia",
+                                    "termKey": "bolivia",
+                                    "groups": [
+                                        {
+                                            "id": 2010133988,
+                                            "name": "Copa Bolivia",
+                                            "navigationUrl": "/betting/sports/filter/football/bolivia/copa_bolivia",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Bolivia)",
+                                            "navigationUrl": "/betting/sports/filter/football/bolivia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461792,
+                                    "name": "Bosnia & Herzegovina",
+                                    "englishName": "Bosnia & Herzegovina",
+                                    "termKey": "bosnia___herzegovina",
+                                    "groups": [
+                                        {
+                                            "id": 1000453625,
+                                            "name": "Premijer Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/bosnia___herzegovina/premijer_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000057542,
+                                            "name": "Prva Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/bosnia___herzegovina/prva_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Bosnia & Herzegovina)",
+                                            "navigationUrl": "/betting/sports/filter/football/bosnia___herzegovina",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461741,
+                                    "name": "Brazil",
+                                    "englishName": "Brazil",
+                                    "termKey": "brazil",
+                                    "groups": [
+                                        {
+                                            "id": 1000094569,
+                                            "name": "Brasileirao Serie A",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil/brasileirao_serie_a",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 1000094431,
+                                            "name": "Brasileirao Serie B",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil/brasileirao_serie_b",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000055538,
+                                            "name": "Brasileirao Serie C",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil/brasileirao_serie_c",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000059106,
+                                            "name": "Brasileirao Serie D",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil/brasileirao_serie_d",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000093998,
+                                            "name": "Copa do Brasil",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil/copa_do_brasil",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Brazil)",
+                                            "navigationUrl": "/betting/sports/filter/football/brazil",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461757,
+                                    "name": "Bulgaria",
+                                    "englishName": "Bulgaria",
+                                    "termKey": "bulgaria",
+                                    "groups": [
+                                        {
+                                            "id": 1000383831,
+                                            "name": "PFL 1",
+                                            "navigationUrl": "/betting/sports/filter/football/bulgaria/pfl_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000051850,
+                                            "name": "PFL 2",
+                                            "navigationUrl": "/betting/sports/filter/football/bulgaria/pfl_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Bulgaria)",
+                                            "navigationUrl": "/betting/sports/filter/football/bulgaria",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461737,
+                                    "name": "Canada",
+                                    "englishName": "Canada",
+                                    "termKey": "canada",
+                                    "groups": [
+                                        {
+                                            "id": 2000119102,
+                                            "name": "CPL",
+                                            "navigationUrl": "/betting/sports/filter/football/canada/cpl",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Canada)",
+                                            "navigationUrl": "/betting/sports/filter/football/canada",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461738,
+                                    "name": "Chile",
+                                    "englishName": "Chile",
+                                    "termKey": "chile",
+                                    "groups": [
+                                        {
+                                            "id": 1000439335,
+                                            "name": "Primera B",
+                                            "navigationUrl": "/betting/sports/filter/football/chile/primera_b",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095155,
+                                            "name": "Primera Chile",
+                                            "navigationUrl": "/betting/sports/filter/football/chile/primera_chile",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000059471,
+                                            "name": "Segunda División",
+                                            "navigationUrl": "/betting/sports/filter/football/chile/segunda_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Chile)",
+                                            "navigationUrl": "/betting/sports/filter/football/chile",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461784,
+                                    "name": "China",
+                                    "englishName": "China",
+                                    "termKey": "china",
+                                    "groups": [
+                                        {
+                                            "id": 2000051283,
+                                            "name": "League One",
+                                            "navigationUrl": "/betting/sports/filter/football/china/league_one",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000055591,
+                                            "name": "League Two",
+                                            "navigationUrl": "/betting/sports/filter/football/china/league_two",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000338400,
+                                            "name": "Super League",
+                                            "navigationUrl": "/betting/sports/filter/football/china/super_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (China)",
+                                            "navigationUrl": "/betting/sports/filter/football/china",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461759,
+                                    "name": "Colombia",
+                                    "englishName": "Colombia",
+                                    "termKey": "colombia",
+                                    "groups": [
+                                        {
+                                            "id": 2000050211,
+                                            "name": "Copa Dimayor",
+                                            "navigationUrl": "/betting/sports/filter/football/colombia/copa_betplay_dimayor",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000449742,
+                                            "name": "Liga Dimayor",
+                                            "navigationUrl": "/betting/sports/filter/football/colombia/liga_betplay_dimayor",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000057058,
+                                            "name": "Torneo Dimayor",
+                                            "navigationUrl": "/betting/sports/filter/football/colombia/torneo_betplay_dimayor",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Colombia)",
+                                            "navigationUrl": "/betting/sports/filter/football/colombia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050275,
+                                    "name": "Costa Rica",
+                                    "englishName": "Costa Rica",
+                                    "termKey": "costa_rica",
+                                    "groups": [
+                                        {
+                                            "id": 2000050276,
+                                            "name": "Primera Division Costa Rica",
+                                            "navigationUrl": "/betting/sports/filter/football/costa_rica/primera_division_costa_rica",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Costa Rica)",
+                                            "navigationUrl": "/betting/sports/filter/football/costa_rica",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461739,
+                                    "name": "Croatia",
+                                    "englishName": "Croatia",
+                                    "termKey": "croatia",
+                                    "groups": [
+                                        {
+                                            "id": 1000095736,
+                                            "name": "1. HNL League",
+                                            "navigationUrl": "/betting/sports/filter/football/croatia/1__hnl_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Croatia)",
+                                            "navigationUrl": "/betting/sports/filter/football/croatia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461734,
+                                    "name": "Cyprus",
+                                    "englishName": "Cyprus",
+                                    "termKey": "cyprus",
+                                    "groups": [
+                                        {
+                                            "id": 1000251950,
+                                            "name": "1st Division",
+                                            "navigationUrl": "/betting/sports/filter/football/cyprus/1st_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Cyprus)",
+                                            "navigationUrl": "/betting/sports/filter/football/cyprus",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461735,
+                                    "name": "Czech Republic",
+                                    "englishName": "Czech Republic",
+                                    "termKey": "czech_republic",
+                                    "groups": [
+                                        {
+                                            "id": 1000094371,
+                                            "name": "Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic/cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094975,
+                                            "name": "First League",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic/first_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000051610,
+                                            "name": "MSFL",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic/msfl",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000154221,
+                                            "name": "National Football League",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic/national_football_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000051159,
+                                            "name": "ČFL",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic/cfl",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Czech Republic)",
+                                            "navigationUrl": "/betting/sports/filter/football/czech_republic",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461736,
+                                    "name": "Denmark",
+                                    "englishName": "Denmark",
+                                    "termKey": "denmark",
+                                    "groups": [
+                                        {
+                                            "id": 1000094976,
+                                            "name": "1st Division",
+                                            "navigationUrl": "/betting/sports/filter/football/denmark/1st_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000443738,
+                                            "name": "DBU Pokalen",
+                                            "navigationUrl": "/betting/sports/filter/football/denmark/dbu_pokalen",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094978,
+                                            "name": "Superligaen",
+                                            "navigationUrl": "/betting/sports/filter/football/denmark/superligaen",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Denmark)",
+                                            "navigationUrl": "/betting/sports/filter/football/denmark",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461732,
+                                    "name": "Ecuador",
+                                    "englishName": "Ecuador",
+                                    "termKey": "ecuador",
+                                    "groups": [
+                                        {
+                                            "id": 2000117732,
+                                            "name": "Copa Ecuador",
+                                            "navigationUrl": "/betting/sports/filter/football/ecuador/copa_ecuador",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000066780,
+                                            "name": "Serie B",
+                                            "navigationUrl": "/betting/sports/filter/football/ecuador/serie_b",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Ecuador)",
+                                            "navigationUrl": "/betting/sports/filter/football/ecuador",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461807,
+                                    "name": "Egypt",
+                                    "englishName": "Egypt",
+                                    "termKey": "egypt",
+                                    "groups": [
+                                        {
+                                            "id": 2000055763,
+                                            "name": "2nd Division",
+                                            "navigationUrl": "/betting/sports/filter/football/egypt/2nd_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000251645,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/egypt/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Egypt)",
+                                            "navigationUrl": "/betting/sports/filter/football/egypt",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000075124,
+                                    "name": "El Salvador",
+                                    "englishName": "El Salvador",
+                                    "termKey": "el_salvador",
+                                    "groups": [
+                                        {
+                                            "id": 2000075125,
+                                            "name": "Primera El Salvador",
+                                            "navigationUrl": "/betting/sports/filter/football/el_salvador/primera_el_salvador",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (El Salvador)",
+                                            "navigationUrl": "/betting/sports/filter/football/el_salvador",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461733,
+                                    "name": "England",
+                                    "englishName": "England",
+                                    "termKey": "england",
+                                    "groups": [
+                                        {
+                                            "id": 1000094986,
+                                            "name": "EFL Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/england/efl_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 1000094985,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/england/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 2
+                                        },
+                                        {
+                                            "id": 1000094981,
+                                            "name": "The Championship",
+                                            "navigationUrl": "/betting/sports/filter/football/england/the_championship",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 3
+                                        },
+                                        {
+                                            "id": 1000094984,
+                                            "name": "FA Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/england/fa_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 4
+                                        },
+                                        {
+                                            "id": 1000095137,
+                                            "name": "EFL Trophy",
+                                            "navigationUrl": "/betting/sports/filter/football/england/efl_trophy",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000054642,
+                                            "name": "Isthmian League Premier Division",
+                                            "navigationUrl": "/betting/sports/filter/football/england/isthmian_league_premier_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094982,
+                                            "name": "League One",
+                                            "navigationUrl": "/betting/sports/filter/football/england/league_one",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094987,
+                                            "name": "League Two",
+                                            "navigationUrl": "/betting/sports/filter/football/england/league_two",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095485,
+                                            "name": "National League",
+                                            "navigationUrl": "/betting/sports/filter/football/england/national_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000050126,
+                                            "name": "National League North",
+                                            "navigationUrl": "/betting/sports/filter/football/england/national_league_north",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000385084,
+                                            "name": "National League South",
+                                            "navigationUrl": "/betting/sports/filter/football/england/national_league_south",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000054030,
+                                            "name": "Northern League Premier Division",
+                                            "navigationUrl": "/betting/sports/filter/football/england/northern_league_premier_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000096351,
+                                            "name": "Premier League 2 U21 (Division 1)",
+                                            "navigationUrl": "/betting/sports/filter/football/england/premier_league_2_u21__division_1_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000096873,
+                                            "name": "Professional Development League",
+                                            "navigationUrl": "/betting/sports/filter/football/england/professional_development_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000052846,
+                                            "name": "Southern League Premier Division",
+                                            "navigationUrl": "/betting/sports/filter/football/england/southern_league_premier_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000055849,
+                                            "name": "Super League (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/england/super_league__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (England)",
+                                            "navigationUrl": "/betting/sports/filter/football/england",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "sortOrder": 3,
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461729,
+                                    "name": "Estonia",
+                                    "englishName": "Estonia",
+                                    "termKey": "estonia",
+                                    "groups": [
+                                        {
+                                            "id": 2000051949,
+                                            "name": "Esiliiga",
+                                            "navigationUrl": "/betting/sports/filter/football/estonia/esiliiga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000076686,
+                                            "name": "Esiliiga B",
+                                            "navigationUrl": "/betting/sports/filter/football/estonia/esiliiga_b",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095346,
+                                            "name": "Premium Liiga",
+                                            "navigationUrl": "/betting/sports/filter/football/estonia/premium_liiga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Estonia)",
+                                            "navigationUrl": "/betting/sports/filter/football/estonia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000053626,
+                                    "name": "Faroe Islands",
+                                    "englishName": "Faroe Islands",
+                                    "termKey": "faroe_islands",
+                                    "groups": [
+                                        {
+                                            "id": 2000057684,
+                                            "name": "1. deild",
+                                            "navigationUrl": "/betting/sports/filter/football/faroe_islands/1__deild",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000055068,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/faroe_islands/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Faroe Islands)",
+                                            "navigationUrl": "/betting/sports/filter/football/faroe_islands",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461822,
+                                    "name": "Finland",
+                                    "englishName": "Finland",
+                                    "termKey": "finland",
+                                    "groups": [
+                                        {
+                                            "id": 2000059263,
+                                            "name": "Kolmonen",
+                                            "navigationUrl": "/betting/sports/filter/football/finland/kolmonen",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094989,
+                                            "name": "Veikkausliiga",
+                                            "navigationUrl": "/betting/sports/filter/football/finland/veikkausliiga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2010201958,
+                                            "name": "Ykkösliiga",
+                                            "navigationUrl": "/betting/sports/filter/football/finland/ykkosliiga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Finland)",
+                                            "navigationUrl": "/betting/sports/filter/football/finland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461727,
+                                    "name": "France",
+                                    "englishName": "France",
+                                    "termKey": "france",
+                                    "groups": [
+                                        {
+                                            "id": 1000094991,
+                                            "name": "Ligue 1",
+                                            "navigationUrl": "/betting/sports/filter/football/france/ligue_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 1000094825,
+                                            "name": "Championnat National",
+                                            "navigationUrl": "/betting/sports/filter/football/france/championnat_national",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094990,
+                                            "name": "Coupe de France",
+                                            "navigationUrl": "/betting/sports/filter/football/france/coupe_de_france",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000190533,
+                                            "name": "Division 1 (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/france/division_1__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094568,
+                                            "name": "Ligue 2",
+                                            "navigationUrl": "/betting/sports/filter/football/france/ligue_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (France)",
+                                            "navigationUrl": "/betting/sports/filter/football/france",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "sortOrder": 8,
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000052404,
+                                    "name": "Georgia",
+                                    "englishName": "Georgia",
+                                    "termKey": "georgia",
+                                    "groups": [
+                                        {
+                                            "id": 2000052405,
+                                            "name": "Erovnuli Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/georgia/erovnuli_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Georgia)",
+                                            "navigationUrl": "/betting/sports/filter/football/georgia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461728,
+                                    "name": "Germany",
+                                    "englishName": "Germany",
+                                    "termKey": "germany",
+                                    "groups": [
+                                        {
+                                            "id": 1000094994,
+                                            "name": "Bundesliga",
+                                            "navigationUrl": "/betting/sports/filter/football/germany/bundesliga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 1000094993,
+                                            "name": "2. Bundesliga",
+                                            "navigationUrl": "/betting/sports/filter/football/germany/2__bundesliga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000355562,
+                                            "name": "3. Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/germany/3__liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094995,
+                                            "name": "DFB Pokal",
+                                            "navigationUrl": "/betting/sports/filter/football/germany/dfb_pokal",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Germany)",
+                                            "navigationUrl": "/betting/sports/filter/football/germany",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "sortOrder": 9,
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461752,
+                                    "name": "Greece",
+                                    "englishName": "Greece",
+                                    "termKey": "greece",
+                                    "groups": [
+                                        {
+                                            "id": 1000094996,
+                                            "name": "Super League",
+                                            "navigationUrl": "/betting/sports/filter/football/greece/super_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Greece)",
+                                            "navigationUrl": "/betting/sports/filter/football/greece",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050538,
+                                    "name": "Guatemala",
+                                    "englishName": "Guatemala",
+                                    "termKey": "guatemala",
+                                    "groups": [
+                                        {
+                                            "id": 2000050539,
+                                            "name": "Liga Nacional Guatemala",
+                                            "navigationUrl": "/betting/sports/filter/football/guatemala/liga_nacional_guatemala",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Guatemala)",
+                                            "navigationUrl": "/betting/sports/filter/football/guatemala",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461767,
+                                    "name": "Hong Kong",
+                                    "englishName": "Hong Kong",
+                                    "termKey": "hong_kong",
+                                    "groups": [
+                                        {
+                                            "id": 2000080187,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/hong_kong/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Hong Kong)",
+                                            "navigationUrl": "/betting/sports/filter/football/hong_kong",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461748,
+                                    "name": "Hungary",
+                                    "englishName": "Hungary",
+                                    "termKey": "hungary",
+                                    "groups": [
+                                        {
+                                            "id": 1000094997,
+                                            "name": "NB 1",
+                                            "navigationUrl": "/betting/sports/filter/football/hungary/nb_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Hungary)",
+                                            "navigationUrl": "/betting/sports/filter/football/hungary",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461749,
+                                    "name": "Iceland",
+                                    "englishName": "Iceland",
+                                    "termKey": "iceland",
+                                    "groups": [
+                                        {
+                                            "id": 1000095749,
+                                            "name": "Úrvalsdeild",
+                                            "navigationUrl": "/betting/sports/filter/football/iceland/urvalsdeild",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000051105,
+                                            "name": "Úrvalsdeild (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/iceland/urvalsdeild__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Iceland)",
+                                            "navigationUrl": "/betting/sports/filter/football/iceland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000054054,
+                                    "name": "Indonesia",
+                                    "englishName": "Indonesia",
+                                    "termKey": "indonesia",
+                                    "groups": [
+                                        {
+                                            "id": 2000095699,
+                                            "name": "Liga 1",
+                                            "navigationUrl": "/betting/sports/filter/football/indonesia/liga_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Indonesia)",
+                                            "navigationUrl": "/betting/sports/filter/football/indonesia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000051705,
+                                    "name": "Iran",
+                                    "englishName": "Iran",
+                                    "termKey": "iran",
+                                    "groups": [
+                                        {
+                                            "id": 2000052302,
+                                            "name": "Azadegan League",
+                                            "navigationUrl": "/betting/sports/filter/football/iran/azadegan_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Iran)",
+                                            "navigationUrl": "/betting/sports/filter/football/iran",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461750,
+                                    "name": "Ireland",
+                                    "englishName": "Ireland",
+                                    "termKey": "ireland",
+                                    "groups": [
+                                        {
+                                            "id": 1000157155,
+                                            "name": "1st Division",
+                                            "navigationUrl": "/betting/sports/filter/football/ireland/1st_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095601,
+                                            "name": "Premier Division",
+                                            "navigationUrl": "/betting/sports/filter/football/ireland/premier_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Ireland)",
+                                            "navigationUrl": "/betting/sports/filter/football/ireland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461745,
+                                    "name": "Italy",
+                                    "englishName": "Italy",
+                                    "termKey": "italy",
+                                    "groups": [
+                                        {
+                                            "id": 1000095001,
+                                            "name": "Serie A",
+                                            "navigationUrl": "/betting/sports/filter/football/italy/serie_a",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 1000094998,
+                                            "name": "Coppa Italia",
+                                            "navigationUrl": "/betting/sports/filter/football/italy/coppa_italia",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095002,
+                                            "name": "Serie B",
+                                            "navigationUrl": "/betting/sports/filter/football/italy/serie_b",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000079607,
+                                            "name": "Serie C Girone A",
+                                            "navigationUrl": "/betting/sports/filter/football/italy/serie_c_girone_a",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000079609,
+                                            "name": "Serie C Girone C",
+                                            "navigationUrl": "/betting/sports/filter/football/italy/serie_c_girone_c",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Italy)",
+                                            "navigationUrl": "/betting/sports/filter/football/italy",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "sortOrder": 7,
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461746,
+                                    "name": "Japan",
+                                    "englishName": "Japan",
+                                    "termKey": "japan",
+                                    "groups": [
+                                        {
+                                            "id": 1000095645,
+                                            "name": "J1-League",
+                                            "navigationUrl": "/betting/sports/filter/football/japan/j1-league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000152623,
+                                            "name": "J2-League",
+                                            "navigationUrl": "/betting/sports/filter/football/japan/j2-league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000067441,
+                                            "name": "J3-League",
+                                            "navigationUrl": "/betting/sports/filter/football/japan/j3-league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000131561,
+                                            "name": "Nadeshiko League Div. 1 (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/japan/nadeshiko_league_div__1__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Japan)",
+                                            "navigationUrl": "/betting/sports/filter/football/japan",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050579,
+                                    "name": "Jordan",
+                                    "englishName": "Jordan",
+                                    "termKey": "jordan",
+                                    "groups": [
+                                        {
+                                            "id": 2000062050,
+                                            "name": "1st Division",
+                                            "navigationUrl": "/betting/sports/filter/football/jordan/1st_division",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Jordan)",
+                                            "navigationUrl": "/betting/sports/filter/football/jordan",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461800,
+                                    "name": "Latvia",
+                                    "englishName": "Latvia",
+                                    "termKey": "latvia",
+                                    "groups": [
+                                        {
+                                            "id": 1000158930,
+                                            "name": "Virsliga",
+                                            "navigationUrl": "/betting/sports/filter/football/latvia/virsliga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Latvia)",
+                                            "navigationUrl": "/betting/sports/filter/football/latvia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461801,
+                                    "name": "Lithuania",
+                                    "englishName": "Lithuania",
+                                    "termKey": "lithuania",
+                                    "groups": [
+                                        {
+                                            "id": 2000054081,
+                                            "name": "1 Lyga",
+                                            "navigationUrl": "/betting/sports/filter/football/lithuania/1_lyga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000157714,
+                                            "name": "A Lyga",
+                                            "navigationUrl": "/betting/sports/filter/football/lithuania/a_lyga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Lithuania)",
+                                            "navigationUrl": "/betting/sports/filter/football/lithuania",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000096016,
+                                    "name": "Malawi",
+                                    "englishName": "Malawi",
+                                    "termKey": "malawi",
+                                    "groups": [
+                                        {
+                                            "id": 2000096017,
+                                            "name": "Super League",
+                                            "navigationUrl": "/betting/sports/filter/football/malawi/super_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Malawi)",
+                                            "navigationUrl": "/betting/sports/filter/football/malawi",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000051178,
+                                    "name": "Malaysia",
+                                    "englishName": "Malaysia",
+                                    "termKey": "malaysia",
+                                    "groups": [
+                                        {
+                                            "id": 2000051179,
+                                            "name": "Super League",
+                                            "navigationUrl": "/betting/sports/filter/football/malaysia/super_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Malaysia)",
+                                            "navigationUrl": "/betting/sports/filter/football/malaysia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000052683,
+                                    "name": "Malta",
+                                    "englishName": "Malta",
+                                    "termKey": "malta",
+                                    "groups": [
+                                        {
+                                            "id": 2000052684,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/malta/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Malta)",
+                                            "navigationUrl": "/betting/sports/filter/football/malta",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461742,
+                                    "name": "Mexico",
+                                    "englishName": "Mexico",
+                                    "termKey": "mexico",
+                                    "groups": [
+                                        {
+                                            "id": 1000451251,
+                                            "name": "Liga de Expansion MX",
+                                            "navigationUrl": "/betting/sports/filter/football/mexico/liga_de_expansion_mx",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094112,
+                                            "name": "Liga MX",
+                                            "navigationUrl": "/betting/sports/filter/football/mexico/liga_mx",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000109034,
+                                            "name": "Liga MX Femenil (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/mexico/liga_mx_femenil__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000092649,
+                                            "name": "Liga Premier",
+                                            "navigationUrl": "/betting/sports/filter/football/mexico/liga_premier",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Mexico)",
+                                            "navigationUrl": "/betting/sports/filter/football/mexico",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050270,
+                                    "name": "Morocco",
+                                    "englishName": "Morocco",
+                                    "termKey": "morocco",
+                                    "groups": [
+                                        {
+                                            "id": 2000050271,
+                                            "name": "Botola",
+                                            "navigationUrl": "/betting/sports/filter/football/morocco/botola",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Morocco)",
+                                            "navigationUrl": "/betting/sports/filter/football/morocco",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000088168,
+                                    "name": "Myanmar",
+                                    "englishName": "Myanmar",
+                                    "termKey": "myanmar",
+                                    "groups": [
+                                        {
+                                            "id": 2000118566,
+                                            "name": "National League U21",
+                                            "navigationUrl": "/betting/sports/filter/football/myanmar/national_league_u21",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Myanmar)",
+                                            "navigationUrl": "/betting/sports/filter/football/myanmar",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461753,
+                                    "name": "Netherlands",
+                                    "englishName": "Netherlands",
+                                    "termKey": "netherlands",
+                                    "groups": [
+                                        {
+                                            "id": 1000095127,
+                                            "name": "Eerste Divisie",
+                                            "navigationUrl": "/betting/sports/filter/football/netherlands/eerste_divisie",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094980,
+                                            "name": "Eredivisie",
+                                            "navigationUrl": "/betting/sports/filter/football/netherlands/eredivisie",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094979,
+                                            "name": "KNVB Beker",
+                                            "navigationUrl": "/betting/sports/filter/football/netherlands/knvb_beker",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000095410,
+                                            "name": "Tweede Divisie",
+                                            "navigationUrl": "/betting/sports/filter/football/netherlands/tweede_divisie",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Netherlands)",
+                                            "navigationUrl": "/betting/sports/filter/football/netherlands",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000258090,
+                                    "name": "Northern Ireland",
+                                    "englishName": "Northern Ireland",
+                                    "termKey": "northern_ireland",
+                                    "groups": [
+                                        {
+                                            "id": 1000258091,
+                                            "name": "NIFL Premiership",
+                                            "navigationUrl": "/betting/sports/filter/football/northern_ireland/nifl_premiership",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Northern Ireland)",
+                                            "navigationUrl": "/betting/sports/filter/football/northern_ireland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461744,
+                                    "name": "Norway",
+                                    "englishName": "Norway",
+                                    "termKey": "norway",
+                                    "groups": [
+                                        {
+                                            "id": 1000095010,
+                                            "name": "Eliteserien",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/eliteserien",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095003,
+                                            "name": "OBOS-ligaen",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/obos-ligaen",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000100352,
+                                            "name": "Postnordligaen avd. 1",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/postnordligaen_avd__1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000100353,
+                                            "name": "Postnordligaen avd. 2",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/postnordligaen_avd__2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000100373,
+                                            "name": "Regionsligaen avd. 3",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/regionsligaen_avd__3",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000100375,
+                                            "name": "Regionsligaen avd. 5",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/regionsligaen_avd__5",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000100376,
+                                            "name": "Regionsligaen avd. 6",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/regionsligaen_avd__6",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000176403,
+                                            "name": "Toppserien (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/norway/toppserien__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Norway)",
+                                            "navigationUrl": "/betting/sports/filter/football/norway",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050114,
+                                    "name": "Paraguay",
+                                    "englishName": "Paraguay",
+                                    "termKey": "paraguay",
+                                    "groups": [
+                                        {
+                                            "id": 2000116433,
+                                            "name": "Copa Paraguay",
+                                            "navigationUrl": "/betting/sports/filter/football/paraguay/copa_paraguay",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000050115,
+                                            "name": "Primera Paraguay",
+                                            "navigationUrl": "/betting/sports/filter/football/paraguay/primera_paraguay",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Paraguay)",
+                                            "navigationUrl": "/betting/sports/filter/football/paraguay",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461802,
+                                    "name": "Peru",
+                                    "englishName": "Peru",
+                                    "termKey": "peru",
+                                    "groups": [
+                                        {
+                                            "id": 1000237680,
+                                            "name": "Liga 1",
+                                            "navigationUrl": "/betting/sports/filter/football/peru/liga_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Peru)",
+                                            "navigationUrl": "/betting/sports/filter/football/peru",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461811,
+                                    "name": "Poland",
+                                    "englishName": "Poland",
+                                    "termKey": "poland",
+                                    "groups": [
+                                        {
+                                            "id": 1000385219,
+                                            "name": "Ekstraklasa",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/ekstraklasa",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000057675,
+                                            "name": "Ekstraklasa (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/ekstraklasa__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000348167,
+                                            "name": "I Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/i_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000077607,
+                                            "name": "II Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/ii_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000057911,
+                                            "name": "III Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/iii_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095016,
+                                            "name": "Puchar Polski",
+                                            "navigationUrl": "/betting/sports/filter/football/poland/puchar_polski",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Poland)",
+                                            "navigationUrl": "/betting/sports/filter/football/poland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461812,
+                                    "name": "Portugal",
+                                    "englishName": "Portugal",
+                                    "termKey": "portugal",
+                                    "groups": [
+                                        {
+                                            "id": 1000265213,
+                                            "name": "Liga 2",
+                                            "navigationUrl": "/betting/sports/filter/football/portugal/liga_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000116777,
+                                            "name": "Liga Revelacao U23",
+                                            "navigationUrl": "/betting/sports/filter/football/portugal/liga_revelacao_u23",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095042,
+                                            "name": "Primeira Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/portugal/primeira_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Portugal)",
+                                            "navigationUrl": "/betting/sports/filter/football/portugal",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461808,
+                                    "name": "Romania",
+                                    "englishName": "Romania",
+                                    "termKey": "romania",
+                                    "groups": [
+                                        {
+                                            "id": 1000095499,
+                                            "name": "Liga I",
+                                            "navigationUrl": "/betting/sports/filter/football/romania/liga_i",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000095935,
+                                            "name": "Liga II",
+                                            "navigationUrl": "/betting/sports/filter/football/romania/liga_ii",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Romania)",
+                                            "navigationUrl": "/betting/sports/filter/football/romania",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461819,
+                                    "name": "Saudi Arabia",
+                                    "englishName": "Saudi Arabia",
+                                    "termKey": "saudi_arabia",
+                                    "groups": [
+                                        {
+                                            "id": 1000250591,
+                                            "name": "Professional League",
+                                            "navigationUrl": "/betting/sports/filter/football/saudi_arabia/professional_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 1
+                                        },
+                                        {
+                                            "id": 2000050420,
+                                            "name": "Division 1",
+                                            "navigationUrl": "/betting/sports/filter/football/saudi_arabia/division_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Saudi Arabia)",
+                                            "navigationUrl": "/betting/sports/filter/football/saudi_arabia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461810,
+                                    "name": "Scotland",
+                                    "englishName": "Scotland",
+                                    "termKey": "scotland",
+                                    "groups": [
+                                        {
+                                            "id": 1000095045,
+                                            "name": "Championship",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/championship",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095046,
+                                            "name": "League Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/league_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000280417,
+                                            "name": "League One",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/league_one",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000280418,
+                                            "name": "League Two",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/league_two",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094254,
+                                            "name": "Scottish Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/scottish_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095047,
+                                            "name": "Scottish Premiership",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland/scottish_premiership",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Scotland)",
+                                            "navigationUrl": "/betting/sports/filter/football/scotland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050598,
+                                    "name": "Serbia",
+                                    "englishName": "Serbia",
+                                    "termKey": "serbia",
+                                    "groups": [
+                                        {
+                                            "id": 2000050599,
+                                            "name": "Super Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/serbia/super_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Serbia)",
+                                            "navigationUrl": "/betting/sports/filter/football/serbia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461762,
+                                    "name": "Singapore",
+                                    "englishName": "Singapore",
+                                    "termKey": "singapore",
+                                    "groups": [
+                                        {
+                                            "id": 1000315962,
+                                            "name": "Singapore Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/singapore/singapore_premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Singapore)",
+                                            "navigationUrl": "/betting/sports/filter/football/singapore",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461818,
+                                    "name": "Slovakia",
+                                    "englishName": "Slovakia",
+                                    "termKey": "slovakia",
+                                    "groups": [
+                                        {
+                                            "id": 2000051365,
+                                            "name": "2. Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/slovakia/2__liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094272,
+                                            "name": "Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/slovakia/cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095048,
+                                            "name": "Super Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/slovakia/super_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Slovakia)",
+                                            "navigationUrl": "/betting/sports/filter/football/slovakia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461798,
+                                    "name": "Slovenia",
+                                    "englishName": "Slovenia",
+                                    "termKey": "slovenia",
+                                    "groups": [
+                                        {
+                                            "id": 1000297434,
+                                            "name": "Prva Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/slovenia/prva_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000074146,
+                                            "name": "SNL 2",
+                                            "navigationUrl": "/betting/sports/filter/football/slovenia/snl_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Slovenia)",
+                                            "navigationUrl": "/betting/sports/filter/football/slovenia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461803,
+                                    "name": "South Africa",
+                                    "englishName": "South Africa",
+                                    "termKey": "south_africa",
+                                    "groups": [
+                                        {
+                                            "id": 2000051878,
+                                            "name": "MFC",
+                                            "navigationUrl": "/betting/sports/filter/football/south_africa/mfc",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000250636,
+                                            "name": "SA Premier Soccer League",
+                                            "navigationUrl": "/betting/sports/filter/football/south_africa/sa_premier_soccer_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (South Africa)",
+                                            "navigationUrl": "/betting/sports/filter/football/south_africa",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461799,
+                                    "name": "South Korea",
+                                    "englishName": "South Korea",
+                                    "termKey": "south_korea",
+                                    "groups": [
+                                        {
+                                            "id": 2000051288,
+                                            "name": "K-3 League",
+                                            "navigationUrl": "/betting/sports/filter/football/south_korea/k-3_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000152705,
+                                            "name": "K-League 1",
+                                            "navigationUrl": "/betting/sports/filter/football/south_korea/k-league_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000064655,
+                                            "name": "K-League 2",
+                                            "navigationUrl": "/betting/sports/filter/football/south_korea/k-league_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000056107,
+                                            "name": "K-League Women",
+                                            "navigationUrl": "/betting/sports/filter/football/south_korea/k-league_women",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (South Korea)",
+                                            "navigationUrl": "/betting/sports/filter/football/south_korea",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461813,
+                                    "name": "Spain",
+                                    "englishName": "Spain",
+                                    "termKey": "spain",
+                                    "groups": [
+                                        {
+                                            "id": 1000095049,
+                                            "name": "La Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/spain/la_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": 2
+                                        },
+                                        {
+                                            "id": 2000051123,
+                                            "name": "Copa de la Reina (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/spain/copa_de_la_reina__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095050,
+                                            "name": "Copa del Rey",
+                                            "navigationUrl": "/betting/sports/filter/football/spain/copa_del_rey",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094708,
+                                            "name": "La Liga 2",
+                                            "navigationUrl": "/betting/sports/filter/football/spain/la_liga_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000051626,
+                                            "name": "Primera División (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/spain/primera_division__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Spain)",
+                                            "navigationUrl": "/betting/sports/filter/football/spain",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "sortOrder": 2,
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461814,
+                                    "name": "Sweden",
+                                    "englishName": "Sweden",
+                                    "termKey": "sweden",
+                                    "groups": [
+                                        {
+                                            "id": 1000095057,
+                                            "name": "Allsvenskan",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/allsvenskan",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095053,
+                                            "name": "Division 2 N",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_n",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000063256,
+                                            "name": "Division 2 NG",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_ng",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094184,
+                                            "name": "Division 2 NS",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_ns",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095055,
+                                            "name": "Division 2 SG",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_sg",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000266381,
+                                            "name": "Division 2 SS",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_ss",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095056,
+                                            "name": "Division 2 VG",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/division_2_vg",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000075204,
+                                            "name": "Elitettan (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/elitettan__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094744,
+                                            "name": "Ettan Norra",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/ettan_norra",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000094745,
+                                            "name": "Ettan Södra",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/ettan_sodra",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000176396,
+                                            "name": "OBOS Damallsvenskan (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/obos_damallsvenskan__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095052,
+                                            "name": "Superettan",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden/superettan",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Sweden)",
+                                            "navigationUrl": "/betting/sports/filter/football/sweden",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461815,
+                                    "name": "Switzerland",
+                                    "englishName": "Switzerland",
+                                    "termKey": "switzerland",
+                                    "groups": [
+                                        {
+                                            "id": 1000095021,
+                                            "name": "Challenge League",
+                                            "navigationUrl": "/betting/sports/filter/football/switzerland/challenge_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000108532,
+                                            "name": "Promotion League",
+                                            "navigationUrl": "/betting/sports/filter/football/switzerland/promotion_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095020,
+                                            "name": "Super League",
+                                            "navigationUrl": "/betting/sports/filter/football/switzerland/super_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Switzerland)",
+                                            "navigationUrl": "/betting/sports/filter/football/switzerland",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461790,
+                                    "name": "Thailand",
+                                    "englishName": "Thailand",
+                                    "termKey": "thailand",
+                                    "groups": [
+                                        {
+                                            "id": 1000374584,
+                                            "name": "Thai League 1",
+                                            "navigationUrl": "/betting/sports/filter/football/thailand/thai_league_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000076226,
+                                            "name": "Thai League 2",
+                                            "navigationUrl": "/betting/sports/filter/football/thailand/thai_league_2",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Thailand)",
+                                            "navigationUrl": "/betting/sports/filter/football/thailand",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000053118,
+                                    "name": "Tunisia",
+                                    "englishName": "Tunisia",
+                                    "termKey": "tunisia",
+                                    "groups": [
+                                        {
+                                            "id": 2000053119,
+                                            "name": "Ligue 1",
+                                            "navigationUrl": "/betting/sports/filter/football/tunisia/ligue_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Tunisia)",
+                                            "navigationUrl": "/betting/sports/filter/football/tunisia",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461821,
+                                    "name": "Turkey",
+                                    "englishName": "Turkey",
+                                    "termKey": "turkey",
+                                    "groups": [
+                                        {
+                                            "id": 1000305993,
+                                            "name": "1. Lig",
+                                            "navigationUrl": "/betting/sports/filter/football/turkey/1__lig",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000095062,
+                                            "name": "Süper Lig",
+                                            "navigationUrl": "/betting/sports/filter/football/turkey/super_lig",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Turkey)",
+                                            "navigationUrl": "/betting/sports/filter/football/turkey",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461804,
+                                    "name": "Ukraine",
+                                    "englishName": "Ukraine",
+                                    "termKey": "ukraine",
+                                    "groups": [
+                                        {
+                                            "id": 2000051471,
+                                            "name": "Persha Liga",
+                                            "navigationUrl": "/betting/sports/filter/football/ukraine/persha_liga",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000171537,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/ukraine/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Ukraine)",
+                                            "navigationUrl": "/betting/sports/filter/football/ukraine",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461760,
+                                    "name": "Uruguay",
+                                    "englishName": "Uruguay",
+                                    "termKey": "uruguay",
+                                    "groups": [
+                                        {
+                                            "id": 1000450453,
+                                            "name": "Campeonato Uruguayo",
+                                            "navigationUrl": "/betting/sports/filter/football/uruguay/campeonato_uruguayo",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Uruguay)",
+                                            "navigationUrl": "/betting/sports/filter/football/uruguay",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 1000461816,
+                                    "name": "USA",
+                                    "englishName": "USA",
+                                    "termKey": "usa",
+                                    "groups": [
+                                        {
+                                            "id": 1000095063,
+                                            "name": "MLS",
+                                            "navigationUrl": "/betting/sports/filter/football/usa/mls",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000074865,
+                                            "name": "NWSL (W)",
+                                            "navigationUrl": "/betting/sports/filter/football/usa/nwsl__w_",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 1000317841,
+                                            "name": "US Open Cup",
+                                            "navigationUrl": "/betting/sports/filter/football/usa/us_open_cup",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000055612,
+                                            "name": "USL Championship",
+                                            "navigationUrl": "/betting/sports/filter/football/usa/usl_championship",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": 2000065767,
+                                            "name": "USL League 1",
+                                            "navigationUrl": "/betting/sports/filter/football/usa/usl_league_1",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (USA)",
+                                            "navigationUrl": "/betting/sports/filter/football/usa",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                },
+                                {
+                                    "id": 2000050124,
+                                    "name": "Wales",
+                                    "englishName": "Wales",
+                                    "termKey": "wales",
+                                    "groups": [
+                                        {
+                                            "id": 2000050125,
+                                            "name": "Premier League",
+                                            "navigationUrl": "/betting/sports/filter/football/wales/premier_league",
+                                            "isAllLeagues": false,
+                                            "sortOrder": null
+                                        },
+                                        {
+                                            "id": null,
+                                            "name": "All Leagues (Wales)",
+                                            "navigationUrl": "/betting/sports/filter/football/wales",
+                                            "isAllLeagues": true,
+                                            "sortOrder": null
+                                        }
+                                    ],
+                                    "isInternational": false
+                                }
+                            ],
+                            "spotlight": [
+                                {
+                                    "name": "Champions League",
+                                    "navigationUrl": "/betting/sports/filter/football/champions_league",
+                                    "parentName": "International"
+                                },
+                                {
+                                    "name": "Europa League",
+                                    "navigationUrl": "/betting/sports/filter/football/europa_league",
+                                    "parentName": "International"
+                                },
+                                {
+                                    "name": "Conference League",
+                                    "navigationUrl": "/betting/sports/filter/football/conference_league",
+                                    "parentName": "International"
+                                },
+                                {
+                                    "name": "Premier League",
+                                    "navigationUrl": "/betting/sports/filter/football/england/premier_league",
+                                    "parentName": "England"
+                                },
+                                {
+                                    "name": "The Championship",
+                                    "navigationUrl": "/betting/sports/filter/football/england/the_championship",
+                                    "parentName": "England"
+                                },
+                                {
+                                    "name": "|Esports Soccer|",
+                                    "navigationUrl": "/betting/sports/filter/football/esports_football",
+                                    "parentName": "Soccer"
+                                }
+                            ]
+                        },
+                        "fullWidth": true,
+                        "teamLogoImagesEnabled": false,
+                        "showNavigationFilters": false,
+                        "noProgressionSport": false,
+                        "useSpecificSportImage": false,
+                        "enablePopularSection": false,
+                        "enableAccordionIcons": false,
+                        "enableTimeFilter": false,
+                        "enableCategorySelect": false,
+                        "enableInternationalGroup": false,
+                        "enableLeagueCards": false,
+                        "enableFeaturedList": false,
+                        "enableEventCards": false,
+                        "enableFeaturedSectionForOutright": false,
+                        "enableExternalWidget": false,
+                        "enableCallbackWidget": false,
+                        "enablePlayersTab": false,
+                        "callback": null,
+                        "participantFilterEnabled": false,
+                        "enableSpecialsWidgets": false,
+                        "specials": [],
+                        "standingsTabEnabled": false,
+                        "matches": {
+                            "groups": [],
+                            "highlightedEvents": {
+                                "fromRelevance": false,
+                                "events": []
+                            },
+                            "categoryGroups": [],
+                            "activeCategories": [],
+                            "activeEventTypes": [],
+                            "key": null,
+                            "popularItems": {
+                                "countries": [
+                                    {
+                                        "id": 1000461813
+                                    },
+                                    {
+                                        "id": 1000461733
+                                    },
+                                    {
+                                        "id": 1000461745
+                                    },
+                                    {
+                                        "id": 1000461727
+                                    },
+                                    {
+                                        "id": 1000461728
+                                    }
+                                ],
+                                "leagues": [
+                                    {
+                                        "id": 1000095049
+                                    },
+                                    {
+                                        "id": 1000094986
+                                    },
+                                    {
+                                        "id": 1000094985
+                                    },
+                                    {
+                                        "id": 1000094981
+                                    },
+                                    {
+                                        "id": 1000094984
+                                    },
+                                    {
+                                        "id": 1000093381
+                                    },
+                                    {
+                                        "id": 2000051195
+                                    },
+                                    {
+                                        "id": 1000095001
+                                    },
+                                    {
+                                        "id": 1000094991
+                                    },
+                                    {
+                                        "id": 1000094994
+                                    }
+                                ]
+                            },
+                            "spotlight": null,
+                            "combinedLayoutEnabled": true
+                        },
+                        "outrights": {
+                            "groups": []
+                        },
+                        "popularItems": {
+                            "countries": [
+                                {
+                                    "id": 1000461813
+                                },
+                                {
+                                    "id": 1000461733
+                                },
+                                {
+                                    "id": 1000461745
+                                },
+                                {
+                                    "id": 1000461727
+                                },
+                                {
+                                    "id": 1000461728
+                                }
+                            ],
+                            "leagues": [
+                                {
+                                    "id": 1000095049
+                                },
+                                {
+                                    "id": 1000094986
+                                },
+                                {
+                                    "id": 1000094985
+                                },
+                                {
+                                    "id": 1000094981
+                                },
+                                {
+                                    "id": 1000094984
+                                },
+                                {
+                                    "id": 1000093381
+                                },
+                                {
+                                    "id": 2000051195
+                                },
+                                {
+                                    "id": 1000095001
+                                },
+                                {
+                                    "id": 1000094991
+                                },
+                                {
+                                    "id": 1000094994
+                                }
+                            ]
+                        },
+                        "_links": {
+                            "self": {
+                                "href": "https://www.unibet.com.au/sportsbook-feeds/views/filter/football/all/allGroups?contentId=7.1120649"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "position": "SECONDARY",
+                "widgets": []
+            },
+            {
+                "position": "BOTTOM",
+                "widgets": []
+            }
+        ],
+        "type": "TOURNAMENT"
+    },
+    "_links": {
+        "self": {
+            "href": "https://www.unibet.com.au/sportsbook-feeds/views/filter/football/all/allGroups"
+        }
+    }
+}
+
+

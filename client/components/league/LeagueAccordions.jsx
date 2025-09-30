@@ -12,66 +12,70 @@ const LeagueAccordions = ({ matches }) => {
     const { createBetHandler } = useBetting();
     const router = useRouter();
 
+    // Transform matches data to work with existing accordion structure
     const matchGroups = useMemo(() => {
-        const groups = {};
-        const now = new Date();
+        if (!matches || !Array.isArray(matches)) return [];
         
-        // Filter out matches that have already started
-        const upcomingMatches = (matches || []).filter((match) => {
-            if (!match.starting_at) return true; // Keep matches without starting time
-            
-            // Handle timezone properly - assume starting_at is in UTC format
-            // Convert "2025-08-06 13:00:00" to UTC Date object
-            const matchStartTime = new Date(match.starting_at + ' UTC');
-            
-            // Compare with current time
-            return matchStartTime > now; // Only keep matches that haven't started yet
-        });
-
-        upcomingMatches.forEach((match) => {
-            let groupKey = 'Today';
-            if (match.day) {
-                groupKey = match.day;
-            } else if (match.starting_at) {
-                // Format date as e.g. '2025-06-30'
-                groupKey = match.starting_at.split(' ')[0];
-            }
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    id: groupKey.toLowerCase().replace(/\s+/g, '-'),
-                    label: `${groupKey}`,
+        // Group matches by league/group
+        const groupedMatches = {};
+        matches.forEach(match => {
+            const groupKey = match.group || 'Unknown League';
+            if (!groupedMatches[groupKey]) {
+                groupedMatches[groupKey] = {
+                    id: match.groupId || Math.random().toString(36).substr(2, 9),
+                    name: groupKey,
                     matches: []
                 };
             }
-            groups[groupKey].matches.push(match);
+            groupedMatches[groupKey].matches.push(match);
         });
-        return Object.values(groups);
+        
+        return Object.values(groupedMatches);
     }, [matches]);
 
-    // Move MatchCard inside LeagueAccordions to access createBetHandler
     const MatchCard = ({ match, index, totalMatches }) => {
-        const team1 = match.participants && match.participants[0] ? match.participants[0].name : '';
-        const team2 = match.participants && match.participants[1] ? match.participants[1].name : '';
-        const odds1 = match.odds && match.odds.home ? match.odds.home.value : null;
-        const oddsX = match.odds && match.odds.draw ? match.odds.draw.value : null;
-        const odds2 = match.odds && match.odds.away ? match.odds.away.value : null;
-        const matchTime = match.starting_at ? match.starting_at.split(' ')[1]?.slice(0, 5) : '';
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
 
-
-        // Check if odds are available
+        // Extract team names and odds from Unibet API data
+        const team1 = match.homeName || 'Home Team';
+        const team2 = match.awayName || 'Away Team';
+        
+        // Extract odds from mainBetOffer
+        let odds1 = null, oddsX = null, odds2 = null;
+        if (match.mainBetOffer && match.mainBetOffer.outcomes) {
+            match.mainBetOffer.outcomes.forEach(outcome => {
+                const oddsValue = (outcome.odds / 1000).toFixed(2); // Convert from Unibet format
+                if (outcome.label === '1') {
+                    odds1 = oddsValue;
+                } else if (outcome.label === 'X') {
+                    oddsX = oddsValue;
+                } else if (outcome.label === '2') {
+                    odds2 = oddsValue;
+                }
+            });
+        }
+        
         const hasOdds = odds1 || oddsX || odds2;
 
         return (
             <div key={match.id}>
                 <div className='flex justify-between mt-2'>
-                    <div className="text-xs text-gray-600">{matchTime}</div>
-                    <div className="text-xs text-gray-500"></div>
+                    <div className="text-xs text-gray-600">{match.sport}</div>
                 </div>
                 {hasOdds ? (
                     <Link href={`/matches/${match.id}`}>
                         <div className="cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-1 rounded">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
+                                    <div className="text-xs text-gray-500 mb-1">{formatDate(match.start)}</div>
                                     <div className="text-[12px] mb-1" title={team1}>
                                         {team1.length > 18 ? `${team1.slice(0, 18)}...` : team1}
                                     </div>
@@ -79,38 +83,38 @@ const LeagueAccordions = ({ matches }) => {
                                         {team2.length > 18 ? `${team2.slice(0, 18)}...` : team2}
                                     </div>
                                 </div>
-                                <div className="flex items-center flex-shrink-0">
-                                    <div className="flex gap-1">
-                                        {odds1 && (
-                                            <Button
-                                                size={"sm"}
-                                                className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                onClick={createBetHandler(match, 'Home', odds1, '1x2', match.odds?.home?.oddId || null, { marketId: "1", label: "Home", name: `Win - ${team1}`, marketDescription: "Full Time Result" })}
-                                            >
-                                                {odds1}
-                                            </Button>
-                                        )}
-                                        {oddsX && (
-                                            <Button
-                                                className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                size={"sm"}
-                                                onClick={createBetHandler(match, 'Draw', oddsX, '1x2', match.odds?.draw?.oddId || null, { marketId: "1", label: "Draw", name: `Draw - ${team1} vs ${team2}`, marketDescription: "Full Time Result" })}
-                                            >
-                                                {oddsX}
-                                            </Button>
-                                        )}
-                                        {odds2 && (
-                                            <Button
-                                                size={"sm"}
-                                                className="w-14 h-8 p-0 text-xs font-bold betting-button"
-                                                onClick={createBetHandler(match, 'Away', odds2, '1x2', match.odds?.away?.oddId || null, { marketId: "1", label: "Away", name: `Win - ${team2}`, marketDescription: "Full Time Result" })}
-                                            >
-                                                {odds2}
-                                            </Button>
-                                        )}
+                                    <div className="flex items-center flex-shrink-0">
+                                        <div className="flex gap-1">
+                                            {odds1 && (
+                                                <Button
+                                                    size={"sm"}
+                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
+                                                    onClick={createBetHandler(match, 'Home', odds1, '1x2', match.mainBetOffer?.outcomes?.find(o => o.label === '1')?.id || null, { marketId: "1", label: "Home", name: `Win - ${team1}`, marketDescription: "Full Time Result" })}
+                                                >
+                                                    {odds1}
+                                                </Button>
+                                            )}
+                                            {oddsX && (
+                                                <Button
+                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
+                                                    size={"sm"}
+                                                    onClick={createBetHandler(match, 'Draw', oddsX, '1x2', match.mainBetOffer?.outcomes?.find(o => o.label === 'X')?.id || null, { marketId: "1", label: "Draw", name: `Draw - ${team1} vs ${team2}`, marketDescription: "Full Time Result" })}
+                                                >
+                                                    {oddsX}
+                                                </Button>
+                                            )}
+                                            {odds2 && (
+                                                <Button
+                                                    size={"sm"}
+                                                    className="w-14 h-8 p-0 text-xs font-bold betting-button"
+                                                    onClick={createBetHandler(match, 'Away', odds2, '1x2', match.mainBetOffer?.outcomes?.find(o => o.label === '2')?.id || null, { marketId: "1", label: "Away", name: `Win - ${team2}`, marketDescription: "Full Time Result" })}
+                                                >
+                                                    {odds2}
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </Link>
                 ) : (
@@ -139,7 +143,7 @@ const LeagueAccordions = ({ matches }) => {
 
     return (
         <div className="space-y-3 bg-white h-full p-3">
-            {matches && matches.length > 0 ? (
+            {matchGroups && matchGroups.length > 0 ? (
                 <Accordion type="multiple" className="space-y-2">
                     {matchGroups.map((group) => (
                         <AccordionItem
@@ -149,30 +153,32 @@ const LeagueAccordions = ({ matches }) => {
                         >
                             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50/50 transition-colors duration-200 [&[data-state=open]]:bg-gray-50/80">
                                 <div className="flex items-center justify-between w-full">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="text-sm font-semibold text-gray-900">{group.label}</h4>
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                            {group.matches.length} matches
-                                        </span>
-                                    </div>
+                                    <h4 className="text-sm font-semibold text-gray-900">{group.name}</h4>
+                                    <span className="text-xs text-gray-500">{group.matches.length} matches</span>
                                 </div>
                             </AccordionTrigger>
-                            <AccordionContent className="px-0 py-0 bg-gray-50/30">
-                                {/* Odds Header */}
-                                <div className="flex items-center px-4 py-2 bg-gray-100 border-b border-gray-200 flex-shrink-0">
-                                    <div className="flex-1 text-xs">{group.label.split(' ')[0]}</div>
-                                    <div className="flex gap-1">
-                                        <div className="w-14 text-center text-xs text-gray-600 font-medium">1</div>
-                                        <div className="w-14 text-center text-xs text-gray-600 font-medium">X</div>
-                                        <div className="w-14 text-center text-xs text-gray-600 font-medium">2</div>
+                            <AccordionContent className="p-4">
+                                {/* Column Headers */}
+                                <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
+                                    <div className="flex-1">
+                                        <div className="text-[10px] font-semibold text-gray-600">Match</div>
+                                    </div>
+                                    <div className="flex items-center flex-shrink-0">
+                                        <div className="flex gap-1">
+                                            <div className="w-14 text-center text-[10px] font-semibold text-gray-600">1</div>
+                                            <div className="w-14 text-center text-[10px] font-semibold text-gray-600">X</div>
+                                            <div className="w-14 text-center text-[10px] font-semibold text-gray-600">2</div>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* Matches */}
-                                <div className="p-4 py-0 flex-1 overflow-y-auto">
-                                    {group.matches.map((match, index) => (
-                                        <MatchCard key={match.id} match={match} index={index} totalMatches={group.matches.length} />
-                                    ))}
-                                </div>
+                                {group.matches.map((match, index) => (
+                                    <MatchCard 
+                                        key={match.id} 
+                                        match={match} 
+                                        index={index} 
+                                        totalMatches={group.matches.length} 
+                                    />
+                                ))}
                             </AccordionContent>
                         </AccordionItem>
                     ))}
@@ -182,8 +188,8 @@ const LeagueAccordions = ({ matches }) => {
                     <CardContent className="flex items-center justify-center py-12">
                         <div className="text-center">
                             <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-600" />
-                            <p className="text-red-600 font-medium mb-2">Failed to load match data</p>
-                            <p className="text-gray-600 mb-4">Match data is not available</p>
+                            <p className="text-red-600 font-medium mb-2">No matches found</p>
+                            <p className="text-gray-600 mb-4">This league has no matches available</p>
                             <Button onClick={() => router.back()} variant="outline" size="sm">
                                 Go Back
                             </Button>

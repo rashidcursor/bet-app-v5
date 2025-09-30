@@ -23,6 +23,7 @@ import betoffersRouter from "./routes/unibet-api/betoffers.js";
 import liveMatchesRouter from "./routes/unibet-api/live-matches.js";
 import fotmobRouter from "./routes/unibet-api/fotmob.routes.js";
 import unibetCalcRouter from "./routes/unibet-api/unibet-calc.routes.js";
+import breadcrumbsRouter from "./routes/unibet-api/breadcrumbs.js";
 import adminRoutes from "./routes/admin.routes.js";
 import fixtureOptimizationService from "./services/fixture.service.js";
 import LiveFixturesService from "./services/LiveFixtures.service.js";
@@ -172,6 +173,7 @@ app.use("/api/v2/betoffers", betoffersRouter);
 app.use("/api/v2/live-matches", liveMatchesRouter);
 app.use("/api/v2/fotmob", fotmobRouter);
 app.use("/api/v2/unibet-calc", unibetCalcRouter);
+app.use("/api/v2/breadcrumbs", breadcrumbsRouter);
 app.use("/api/admin", adminRoutes);
 
 // 404 handler - must be after all routes

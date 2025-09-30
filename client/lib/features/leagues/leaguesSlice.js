@@ -87,88 +87,77 @@ export const updateLeaguePopularity = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching matches by league - Updated to use Unibet API
+// Async thunk for fetching matches by league - Updated to use Unibet breadcrumbs API
 export const fetchMatchesByLeague = createAsyncThunk(
   "leagues/fetchMatchesByLeague",
   async (leagueId, { rejectWithValue }) => {
     try {
-      console.log(`🔍 Fetching matches for league: ${leagueId}`);
+      console.log(`🔍 Fetching breadcrumbs for league: ${leagueId}`);
       
-      // Use the new Unibet live matches API
-      const response = await apiClient.get('/v2/live-matches');
+      // Use the new Unibet breadcrumbs API
+      const response = await apiClient.get(`/v2/breadcrumbs/${leagueId}`);
       
       if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to fetch matches');
+        throw new Error(response.data.message || 'Failed to fetch breadcrumbs');
       }
       
-      // Filter matches by the specific league
-      const allMatches = response.data.allMatches || [];
-      console.log(`📊 Total matches available: ${allMatches.length}`);
-      console.log(`🔍 Looking for league ID: ${leagueId} (type: ${typeof leagueId})`);
+      const { league, matches } = response.data.data;
+      console.log(`✅ Successfully fetched matches for ${league.id}`);
+      console.log(`📊 Matches data:`, matches);
       
-      // Show available league IDs for debugging
-      const availableLeagueIds = [...new Set(allMatches.map(match => match.groupId))];
-      console.log(`📋 Available league IDs in matches:`, availableLeagueIds.slice(0, 10));
+      // Transform the matches data to match the expected format
+      // The matches.layout.sections[1].widgets[0].matches.events contains the actual matches
+      const transformedMatches = [];
       
-      const leagueMatches = allMatches.filter(match => {
-        // Check if match belongs to the requested league
-        const matches = match.groupId === leagueId || match.group === leagueId || match.groupId === leagueId.toString() || match.groupId === parseInt(leagueId);
-        if (matches) {
-          console.log(`✅ Found match for league: ${match.homeName} vs ${match.awayName} (groupId: ${match.groupId})`);
-        }
-        return matches;
-      });
-      
-      console.log(`📊 Matches found for league ${leagueId}: ${leagueMatches.length}`);
-      
-      // If no matches found, return empty result
-      if (leagueMatches.length === 0) {
-        console.log(`⚠️ No matches found for league ${leagueId}. Returning empty result.`);
-        return { 
-          league: { id: leagueId, name: `League ${leagueId}` }, 
-          matches: [] 
-        };
-      }
-      
-      // Transform the data to match the expected format (with participants array)
-      const transformedMatches = leagueMatches.map(match => ({
-        id: match.id,
-        starting_at: match.start,
-        participants: [
-          {
-            name: match.homeName,
-            image_path: null // Unibet API doesn't provide team images
-          },
-          {
-            name: match.awayName,
-            image_path: null
+      if (matches.layout && matches.layout.sections) {
+        const mainSection = matches.layout.sections.find(section => section.position === 'MAIN');
+        if (mainSection && mainSection.widgets && mainSection.widgets.length > 0) {
+          const tournamentWidget = mainSection.widgets.find(widget => widget.widgetType === 'TOURNAMENT');
+          if (tournamentWidget && tournamentWidget.matches && tournamentWidget.matches.events) {
+            tournamentWidget.matches.events.forEach(matchData => {
+              const event = matchData.event;
+              transformedMatches.push({
+                id: event.id,
+                name: event.name,
+                englishName: event.englishName,
+                homeName: event.homeName,
+                awayName: event.awayName,
+                start: event.start,
+                state: event.state,
+                sport: event.sport,
+                groupId: event.groupId,
+                group: event.group,
+                participants: event.participants,
+                betOffers: matchData.betOffers,
+                mainBetOffer: matchData.mainBetOffer
+              });
+            });
           }
-        ],
-        league: {
-          id: match.groupId,
-          name: match.group
         }
-      }));
+      }
       
-      // Find the league info
-      const leagueInfo = leagueMatches.length > 0 ? {
-        id: leagueMatches[0].groupId,
-        name: leagueMatches[0].group
-      } : {
-        id: leagueId,
-        name: `League ${leagueId}`
-      };
+      console.log(`📊 Transformed ${transformedMatches.length} matches`);
+      
+      // Extract league name from the first match if available
+      let leagueName = 'Football'; // Default fallback
+      if (transformedMatches.length > 0 && transformedMatches[0].group) {
+        leagueName = transformedMatches[0].group;
+      }
       
       return { 
-        league: leagueInfo, 
+        league: {
+          id: league.id,
+          url: league.url,
+          name: leagueName
+        }, 
         matches: transformedMatches 
       };
     } catch (error) {
-      console.error('❌ Error fetching matches by league:', error);
+      console.error('❌ Error fetching breadcrumbs by league:', error);
       return rejectWithValue(
         error.response?.data?.message ||
         error.message ||
-        "Failed to fetch matches for league"
+        "Failed to fetch breadcrumbs for league"
       );
     }
   }

@@ -446,6 +446,8 @@ const IMPLEMENTED_MARKETS = [
     'Half time/full time',
     'total goals by team',
     'full time result',
+    'Match Regular Time',
+    'Match (regular time)',
     'Correct score',
     'total goals odd even',
     'Draw no bet',
@@ -489,6 +491,7 @@ function isMarketImplemented(marketName) {
     
     // Exclude specific markets that should not be shown
     if (name.includes('double chance') && name.includes('1st half')) return false;
+    if (name.includes('double chance') && name.includes('2nd half')) return false;
     if (name.includes('total corner') && name.includes('1st half')) return false;
     
     // Check for exact matches first
@@ -506,6 +509,7 @@ function isMarketImplemented(marketName) {
     if (name.includes('half time') && name.includes('full time')) return true;
     if (name.includes('total goals by team') && !name.includes('2nd half') && !name.includes('30:00-59:59')) return true;
     if (name.includes('full time result') || name.includes('match result')) return true;
+    if (name.includes('match regular time') || name.includes('regular time') || name.includes('match (regular time)')) return true;
     if (name.includes('correct score')) return true;
     if (name.includes('both teams to score') || name.includes('btts')) return true;
     if (name.includes('1st half total goals') || name.includes('first half total goals')) return true;
@@ -569,7 +573,8 @@ function categorizeMarkets(bettingData) {
         
         // Enhanced categorization logic (matching unibet-api app)
         if (marketName.includes('match') || marketName.includes('winner') || marketName.includes('head to head') || 
-            marketName.includes('full time') || marketName.includes('draw no bet') || marketName.includes('double chance')) {
+            marketName.includes('full time') || marketName.includes('draw no bet') || marketName.includes('double chance') ||
+            marketName.includes('regular time') || marketName.includes('(regular time)')) {
             categorized.match.push(offer);
         } else if (marketName.includes('3-way') || marketName.includes('3 way') || marketName.includes('three way')) {
             categorized['three-way-line'].push(offer);
