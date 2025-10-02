@@ -124,9 +124,10 @@ export class FotmobController {
             const startDate = new Date();
             const cacheData = {};
 
-            console.log(`Building multi-day cache for ${days} days`);
+            console.log(`Building multi-day cache for ${days + 1} days (including 1 previous day)`);
 
-            for (let i = 0; i < days; i++) {
+            // Start from yesterday (i = -1) to include previous day
+            for (let i = -1; i < days; i++) {
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
                 const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
@@ -153,14 +154,14 @@ export class FotmobController {
             const metaFile = path.join(STORAGE_PATH, 'fotmob_cache_meta.json');
             const meta = {
                 lastRefresh: new Date().toISOString(),
-                days: days,
+                days: days + 1, // Include the previous day
                 totalMatches: Object.values(cacheData).reduce((sum, matches) => sum + (Array.isArray(matches) ? matches.length : 0), 0)
             };
             fs.writeFileSync(metaFile, JSON.stringify(meta, null, 2));
 
             res.json({
                 success: true,
-                message: `Multi-day cache built for ${days} days`,
+                message: `Multi-day cache built for ${days + 1} days (including 1 previous day)`,
                 totalMatches: meta.totalMatches,
                 cacheFile: multiDayFile
             });

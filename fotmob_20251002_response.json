@@ -1,0 +1,3386 @@
+{
+  "leagues": [
+    {
+      "ccode": "INT",
+      "id": 905100,
+      "primaryId": 73,
+      "name": "Europa League",
+      "matches": [
+        {
+          "id": 4947883,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 9857,
+            "score": 0,
+            "name": "Bologna",
+            "longName": "Bologna"
+          },
+          "away": {
+            "id": 8358,
+            "score": 0,
+            "name": "Freiburg",
+            "longName": "Freiburg"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947916,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8468,
+            "score": 0,
+            "name": "Brann",
+            "longName": "Brann"
+          },
+          "away": {
+            "id": 9908,
+            "score": 0,
+            "name": "FC Utrecht",
+            "longName": "FC Utrecht"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947837,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 9925,
+            "score": 0,
+            "name": "Celtic",
+            "longName": "Celtic"
+          },
+          "away": {
+            "id": 10264,
+            "score": 0,
+            "name": "Braga",
+            "longName": "Braga"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947874,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 9723,
+            "score": 0,
+            "name": "FCSB",
+            "longName": "FCSB"
+          },
+          "away": {
+            "id": 10192,
+            "score": 0,
+            "name": "Young Boys",
+            "longName": "Young Boys"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947810,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8695,
+            "score": 0,
+            "name": "Fenerbahçe",
+            "longName": "Fenerbahçe"
+          },
+          "away": {
+            "id": 9831,
+            "score": 0,
+            "name": "Nice",
+            "longName": "Nice"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947860,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 210173,
+            "score": 0,
+            "name": "Ludogorets Razgrad",
+            "longName": "Ludogorets Razgrad"
+          },
+          "away": {
+            "id": 8603,
+            "score": 0,
+            "name": "Real Betis",
+            "longName": "Real Betis"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947896,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 10200,
+            "score": 0,
+            "name": "Panathinaikos",
+            "longName": "Panathinaikos"
+          },
+          "away": {
+            "id": 6433,
+            "score": 0,
+            "name": "Go Ahead Eagles",
+            "longName": "Go Ahead Eagles"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947772,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8686,
+            "score": 0,
+            "name": "Roma",
+            "longName": "Roma"
+          },
+          "away": {
+            "id": 8639,
+            "score": 0,
+            "name": "Lille",
+            "longName": "Lille"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947831,
+          "leagueId": 905100,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 6033,
+            "score": 0,
+            "name": "Viktoria Plzen",
+            "longName": "Viktoria Plzen"
+          },
+          "away": {
+            "id": 10237,
+            "score": 0,
+            "name": "Malmö FF",
+            "longName": "Malmö FF"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947851,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 9931,
+            "score": 0,
+            "name": "Basel",
+            "longName": "Basel"
+          },
+          "away": {
+            "id": 10269,
+            "score": 0,
+            "name": "VfB Stuttgart",
+            "longName": "VfB Stuttgart"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947886,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 9910,
+            "score": 0,
+            "name": "Celta Vigo",
+            "longName": "Celta Vigo"
+          },
+          "away": {
+            "id": 8619,
+            "score": 0,
+            "name": "PAOK Thessaloniki FC",
+            "longName": "PAOK Thessaloniki FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947777,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 9773,
+            "score": 0,
+            "name": "FC Porto",
+            "longName": "FC Porto"
+          },
+          "away": {
+            "id": 8687,
+            "score": 0,
+            "name": "FK Crvena Zvezda",
+            "longName": "FK Crvena Zvezda"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947780,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 10235,
+            "score": 0,
+            "name": "Feyenoord",
+            "longName": "Feyenoord"
+          },
+          "away": {
+            "id": 10252,
+            "score": 0,
+            "name": "Aston Villa",
+            "longName": "Aston Villa"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947910,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 9987,
+            "score": 0,
+            "name": "Genk",
+            "longName": "Genk"
+          },
+          "away": {
+            "id": 8222,
+            "score": 0,
+            "name": "Ferencvaros",
+            "longName": "Ferencvaros"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947820,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 9748,
+            "score": 0,
+            "name": "Lyon",
+            "longName": "Lyon"
+          },
+          "away": {
+            "id": 10013,
+            "score": 0,
+            "name": "Salzburg",
+            "longName": "Salzburg"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947840,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 7855,
+            "score": 0,
+            "name": "Maccabi Tel Aviv",
+            "longName": "Maccabi Tel Aviv"
+          },
+          "away": {
+            "id": 10156,
+            "score": 0,
+            "name": "Dinamo Zagreb",
+            "longName": "Dinamo Zagreb"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947866,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 10203,
+            "score": 0,
+            "name": "Nottm Forest",
+            "longName": "Nottingham Forest"
+          },
+          "away": {
+            "id": 8113,
+            "score": 0,
+            "name": "FC Midtjylland",
+            "longName": "FC Midtjylland"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947868,
+          "leagueId": 905100,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 10014,
+            "score": 0,
+            "name": "Sturm Graz",
+            "longName": "Sturm Graz"
+          },
+          "away": {
+            "id": 8548,
+            "score": 0,
+            "name": "Rangers",
+            "longName": "Rangers"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        }
+      ],
+      "parentLeagueId": 73,
+      "internalRank": 8,
+      "liveRank": 1000,
+      "simpleLeague": false,
+      "localRank": 6
+    },
+    {
+      "ccode": "INT",
+      "id": 905113,
+      "primaryId": 10216,
+      "name": "Conference League",
+      "matches": [
+        {
+          "id": 4947960,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8688,
+            "score": 0,
+            "name": "Dynamo Kyiv",
+            "longName": "Dynamo Kyiv"
+          },
+          "away": {
+            "id": 9826,
+            "score": 0,
+            "name": "Crystal Palace",
+            "longName": "Crystal Palace"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948067,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 866111,
+            "score": 0,
+            "name": "FC Noah",
+            "longName": "FC Noah"
+          },
+          "away": {
+            "id": 10162,
+            "score": 0,
+            "name": "Rijeka",
+            "longName": "Rijeka"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948007,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 1957,
+            "score": 0,
+            "name": "Jagiellonia Bialystok",
+            "longName": "Jagiellonia Bialystok"
+          },
+          "away": {
+            "id": 4528,
+            "score": 0,
+            "name": "Hamrun Spartans",
+            "longName": "Hamrun Spartans"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948021,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 1693,
+            "score": 0,
+            "name": "KuPS",
+            "longName": "KuPS"
+          },
+          "away": {
+            "id": 784771,
+            "score": 0,
+            "name": "Drita",
+            "longName": "Drita"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948059,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 7730,
+            "score": 0,
+            "name": "Lausanne",
+            "longName": "Lausanne"
+          },
+          "away": {
+            "id": 8332,
+            "score": 0,
+            "name": "Breidablik",
+            "longName": "Breidablik"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947966,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 2182,
+            "score": 0,
+            "name": "Lech Poznan",
+            "longName": "Lech Poznan"
+          },
+          "away": {
+            "id": 10015,
+            "score": 0,
+            "name": "Rapid Wien",
+            "longName": "Rapid Wien"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947997,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8044,
+            "score": 0,
+            "name": "Omonia Nicosia",
+            "longName": "Omonia Nicosia"
+          },
+          "away": {
+            "id": 9905,
+            "score": 0,
+            "name": "Mainz",
+            "longName": "Mainz 05"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4947971,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 8370,
+            "score": 0,
+            "name": "Rayo Vallecano",
+            "longName": "Rayo Vallecano"
+          },
+          "away": {
+            "id": 2234,
+            "score": 0,
+            "name": "KF Shkendija",
+            "longName": "KF Shkendija"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948015,
+          "leagueId": 905113,
+          "time": "02.10.2025 18:45",
+          "home": {
+            "id": 10107,
+            "score": 0,
+            "name": "Zrinjski Mostar",
+            "longName": "Zrinjski Mostar"
+          },
+          "away": {
+            "id": 545012,
+            "score": 0,
+            "name": "Lincoln Red Imps FC",
+            "longName": "Lincoln Red Imps FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T16:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759423500000
+        },
+        {
+          "id": 4948026,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 8485,
+            "score": 0,
+            "name": "Aberdeen",
+            "longName": "Aberdeen"
+          },
+          "away": {
+            "id": 9728,
+            "score": 0,
+            "name": "Shakhtar Donetsk",
+            "longName": "Shakhtar Donetsk"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4948048,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 7797,
+            "score": 0,
+            "name": "AEK Larnaca",
+            "longName": "AEK Larnaca"
+          },
+          "away": {
+            "id": 10229,
+            "score": 0,
+            "name": "AZ Alkmaar",
+            "longName": "AZ Alkmaar"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947941,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 8535,
+            "score": 0,
+            "name": "Fiorentina",
+            "longName": "Fiorentina"
+          },
+          "away": {
+            "id": 6461,
+            "score": 0,
+            "name": "Sigma Olomouc",
+            "longName": "Sigma Olomouc"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947956,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 8673,
+            "score": 0,
+            "name": "Legia Warszawa",
+            "longName": "Legia Warszawa"
+          },
+          "away": {
+            "id": 9750,
+            "score": 0,
+            "name": "Samsunspor",
+            "longName": "Samsunspor"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4948009,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 4622,
+            "score": 0,
+            "name": "NK Celje",
+            "longName": "NK Celje"
+          },
+          "away": {
+            "id": 8563,
+            "score": 0,
+            "name": "AEK Athens",
+            "longName": "AEK Athens"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4948047,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 4024,
+            "score": 0,
+            "name": "Raków Częstochowa",
+            "longName": "Raków Częstochowa"
+          },
+          "away": {
+            "id": 480286,
+            "score": 0,
+            "name": "Universitatea Craiova",
+            "longName": "Universitatea Craiova"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4948071,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 5751,
+            "score": 0,
+            "name": "Shelbourne",
+            "longName": "Shelbourne"
+          },
+          "away": {
+            "id": 8428,
+            "score": 0,
+            "name": "Häcken",
+            "longName": "Häcken"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947949,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 6019,
+            "score": 0,
+            "name": "Slovan Bratislava",
+            "longName": "Slovan Bratislava"
+          },
+          "away": {
+            "id": 9848,
+            "score": 0,
+            "name": "Strasbourg",
+            "longName": "Strasbourg"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 4947957,
+          "leagueId": 905113,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 10247,
+            "score": 0,
+            "name": "Sparta Prague",
+            "longName": "Sparta Prague"
+          },
+          "away": {
+            "id": 4131,
+            "score": 0,
+            "name": "Shamrock Rovers",
+            "longName": "Shamrock Rovers"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        }
+      ],
+      "parentLeagueId": 10216,
+      "internalRank": 0,
+      "liveRank": 999,
+      "simpleLeague": false,
+      "localRank": 18
+    },
+    {
+      "ccode": "DEN",
+      "id": 900339,
+      "primaryId": 85,
+      "name": "1. Division",
+      "matches": [
+        {
+          "id": 4812094,
+          "leagueId": 900339,
+          "time": "02.10.2025 19:00",
+          "home": {
+            "id": 8470,
+            "score": 0,
+            "name": "AaB",
+            "longName": "AaB"
+          },
+          "away": {
+            "id": 8289,
+            "score": 0,
+            "name": "HB Køge",
+            "longName": "HB Køge"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "12",
+          "status": {
+            "utcTime": "2025-10-02T17:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759424400000
+        }
+      ],
+      "parentLeagueId": 85,
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "1",
+      "ccode": "NOR",
+      "id": 896743,
+      "primaryId": 205,
+      "name": "3. Divisjon Avd. 1",
+      "matches": [
+        {
+          "id": 4696810,
+          "leagueId": 896743,
+          "time": "02.10.2025 19:00",
+          "home": {
+            "id": 1599897,
+            "score": 0,
+            "name": "Ulfstind",
+            "longName": "Ulfstind"
+          },
+          "away": {
+            "id": 6543,
+            "score": 0,
+            "name": "Fløya",
+            "longName": "Fløya"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "23",
+          "status": {
+            "utcTime": "2025-10-02T17:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759424400000
+        }
+      ],
+      "parentLeagueId": 205,
+      "parentLeagueName": "Norsk Tipping-ligaen",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "6",
+      "ccode": "NOR",
+      "id": 896748,
+      "primaryId": 205,
+      "name": "3. Divisjon Avd. 6",
+      "matches": [
+        {
+          "id": 4697757,
+          "leagueId": 896748,
+          "time": "02.10.2025 17:00",
+          "home": {
+            "id": 8418,
+            "score": 0,
+            "name": "Fredrikstad 2",
+            "longName": "Fredrikstad 2"
+          },
+          "away": {
+            "id": 9845,
+            "score": 0,
+            "name": "Odd 2",
+            "longName": "Odds Ballklubb 2"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "22",
+          "status": {
+            "utcTime": "2025-10-02T15:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 17:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759417200000
+        }
+      ],
+      "parentLeagueId": 205,
+      "parentLeagueName": "Norsk Tipping-ligaen",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "E",
+      "ccode": "INT",
+      "id": 903615,
+      "primaryId": 9469,
+      "name": "AFC Champions League Two Grp. E",
+      "matches": [
+        {
+          "id": 4933569,
+          "leagueId": 903615,
+          "time": "02.10.2025 09:45",
+          "home": {
+            "id": 1209973,
+            "score": 1,
+            "name": "Macarthur FC",
+            "longName": "Macarthur FC"
+          },
+          "away": {
+            "id": 4177,
+            "score": 0,
+            "name": "Beijing Guoan",
+            "longName": "Beijing Guoan"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 2,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T07:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 09:45:35"
+            },
+            "periodLength": 45,
+            "finished": false,
+            "started": true,
+            "cancelled": false,
+            "ongoing": true,
+            "scoreStr": "1 - 0",
+            "liveTime": {
+              "short": "45’",
+              "shortKey": "",
+              "long": "44:58",
+              "longKey": "",
+              "maxTime": 45,
+              "addedTime": 0
+            }
+          },
+          "timeTS": 1759391100000
+        },
+        {
+          "id": 4933570,
+          "leagueId": 903615,
+          "time": "02.10.2025 14:15",
+          "home": {
+            "id": 614354,
+            "score": 0,
+            "name": "Cong An Ha Noi",
+            "longName": "Cong An Ha Noi"
+          },
+          "away": {
+            "id": 165169,
+            "score": 0,
+            "name": "Tai Po",
+            "longName": "Tai Po"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T12:15:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 14:15:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759407300000
+        }
+      ],
+      "parentLeagueId": 9469,
+      "parentLeagueName": "AFC Champions League Two",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "F",
+      "ccode": "INT",
+      "id": 903619,
+      "primaryId": 9469,
+      "name": "AFC Champions League Two Grp. F",
+      "matches": [
+        {
+          "id": 4933527,
+          "leagueId": 903619,
+          "time": "02.10.2025 12:00",
+          "home": {
+            "id": 165172,
+            "score": 0,
+            "name": "Eastern Sports Club",
+            "longName": "Eastern Sports Club"
+          },
+          "away": {
+            "id": 109375,
+            "score": 0,
+            "name": "Nam Dinh",
+            "longName": "Nam Dinh"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T10:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 12:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759399200000
+        },
+        {
+          "id": 4933528,
+          "leagueId": 903619,
+          "time": "02.10.2025 14:15",
+          "home": {
+            "id": 421346,
+            "score": 0,
+            "name": "Ratchaburi FC",
+            "longName": "Ratchaburi FC"
+          },
+          "away": {
+            "id": 6582,
+            "score": 0,
+            "name": "Gamba Osaka",
+            "longName": "Gamba Osaka"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T12:15:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 14:15:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759407300000
+        }
+      ],
+      "parentLeagueId": 9469,
+      "parentLeagueName": "AFC Champions League Two",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "H",
+      "ccode": "INT",
+      "id": 903623,
+      "primaryId": 9469,
+      "name": "AFC Champions League Two Grp. H",
+      "matches": [
+        {
+          "id": 4933443,
+          "leagueId": 903623,
+          "time": "02.10.2025 12:00",
+          "home": {
+            "id": 109373,
+            "score": 0,
+            "name": "Pohang Steelers",
+            "longName": "Pohang Steelers"
+          },
+          "away": {
+            "id": 612493,
+            "score": 0,
+            "name": "Kaya FC",
+            "longName": "Kaya FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T10:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 12:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759399200000
+        },
+        {
+          "id": 4933444,
+          "leagueId": 903623,
+          "time": "02.10.2025 12:00",
+          "home": {
+            "id": 67386,
+            "score": 0,
+            "name": "Tampines Rovers FC",
+            "longName": "Tampines Rovers FC"
+          },
+          "away": {
+            "id": 165250,
+            "score": 0,
+            "name": "BG Pathum United",
+            "longName": "BG Pathum United"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T10:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 12:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759399200000
+        }
+      ],
+      "parentLeagueId": 9469,
+      "parentLeagueName": "AFC Champions League Two",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "INT",
+      "id": 9875,
+      "primaryId": 9875,
+      "name": "Campeones Cup",
+      "matches": [
+        {
+          "id": 4981493,
+          "leagueId": 9875,
+          "time": "02.10.2025 04:30",
+          "home": {
+            "id": 6637,
+            "score": 2,
+            "name": "LA Galaxy",
+            "longName": "LA Galaxy"
+          },
+          "away": {
+            "id": 6618,
+            "score": 3,
+            "name": "Toluca",
+            "longName": "Toluca"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "final",
+          "status": {
+            "utcTime": "2025-10-02T02:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 04:41:17",
+              "secondHalfStarted": "02.10.2025 05:46:59"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "2 - 3",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759372200000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "INT",
+      "id": 900267,
+      "primaryId": 9682,
+      "name": "CONCACAF Central American Cup Final Stage",
+      "matches": [
+        {
+          "id": 4947725,
+          "leagueId": 900267,
+          "time": "02.10.2025 02:00",
+          "home": {
+            "id": 165476,
+            "score": 1,
+            "name": "CD Plaza Amador",
+            "longName": "CD Plaza Amador"
+          },
+          "away": {
+            "id": 49783,
+            "score": 2,
+            "name": "Real Espana",
+            "longName": "Real Espana"
+          },
+          "eliminatedTeamId": 165476,
+          "statusId": 6,
+          "tournamentStage": "1/4",
+          "status": {
+            "utcTime": "2025-10-02T00:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 02:06:40",
+              "secondHalfStarted": "02.10.2025 03:15:07"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "1 - 2",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            },
+            "aggregatedStr": "2 - 2"
+          },
+          "timeTS": 1759363200000
+        }
+      ],
+      "parentLeagueId": 9682,
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "ARG",
+      "id": 896753,
+      "primaryId": 9305,
+      "name": "Cup",
+      "matches": [
+        {
+          "id": 4947452,
+          "leagueId": 896753,
+          "time": "02.10.2025 23:00",
+          "home": {
+            "id": 10080,
+            "score": 0,
+            "name": "Racing Club",
+            "longName": "Racing Club"
+          },
+          "away": {
+            "id": 10076,
+            "score": 0,
+            "name": "River Plate",
+            "longName": "River Plate"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1/4",
+          "status": {
+            "utcTime": "2025-10-02T21:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 23:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759438800000
+        }
+      ],
+      "parentLeagueId": 9305,
+      "internalRank": 5,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "COL",
+      "id": 899808,
+      "primaryId": 9490,
+      "name": "Cup",
+      "matches": [
+        {
+          "id": 4940847,
+          "leagueId": 899808,
+          "time": "02.10.2025 02:00",
+          "home": {
+            "id": 6024,
+            "score": 4,
+            "name": "Once Caldas",
+            "longName": "Once Caldas"
+          },
+          "away": {
+            "id": 4405,
+            "score": 0,
+            "name": "Deportivo Pasto",
+            "longName": "Deportivo Pasto"
+          },
+          "eliminatedTeamId": 4405,
+          "statusId": 6,
+          "tournamentStage": "1/8",
+          "status": {
+            "utcTime": "2025-10-02T00:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 02:00:03",
+              "secondHalfStarted": "02.10.2025 03:48:53"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "4 - 0",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            },
+            "aggregatedStr": "6 - 1"
+          },
+          "timeTS": 1759363200000
+        },
+        {
+          "id": 4976883,
+          "leagueId": 899808,
+          "time": "02.10.2025 03:00",
+          "home": {
+            "id": 7818,
+            "score": 0,
+            "name": "Santa Fe",
+            "redCards": 1,
+            "longName": "Santa Fe"
+          },
+          "away": {
+            "id": 2528,
+            "score": 3,
+            "name": "Independiente Medellin",
+            "redCards": 1,
+            "longName": "Independiente Medellin"
+          },
+          "eliminatedTeamId": 7818,
+          "statusId": 6,
+          "tournamentStage": "1/4",
+          "status": {
+            "utcTime": "2025-10-02T01:00:00.000Z",
+            "numberOfHomeRedCards": 1,
+            "numberOfAwayRedCards": 1,
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 03:04:51",
+              "secondHalfStarted": "02.10.2025 04:08:26"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "0 - 3",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            },
+            "aggregatedStr": "2 - 4"
+          },
+          "timeTS": 1759366800000
+        }
+      ],
+      "parentLeagueId": 9490,
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "URU",
+      "id": 10342,
+      "primaryId": 10342,
+      "name": "Cup",
+      "matches": [
+        {
+          "id": 4969203,
+          "leagueId": 10342,
+          "time": "03.10.2025 01:30",
+          "home": {
+            "id": 7796,
+            "score": 0,
+            "name": "Defensor Sporting",
+            "longName": "Defensor Sporting"
+          },
+          "away": {
+            "id": 1834,
+            "score": 0,
+            "name": "Central Espanol",
+            "longName": "Central Espanol"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1/4",
+          "status": {
+            "utcTime": "2025-10-02T23:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759447800000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "PAR",
+      "id": 10230,
+      "primaryId": 10230,
+      "name": "Cup",
+      "matches": [
+        {
+          "id": 4971613,
+          "leagueId": 10230,
+          "time": "03.10.2025 00:00",
+          "home": {
+            "id": 59844,
+            "score": 0,
+            "name": "Sportivo Trinidense",
+            "longName": "Sportivo Trinidense"
+          },
+          "away": {
+            "id": 49689,
+            "score": 0,
+            "name": "Nacional",
+            "longName": "Nacional"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1/8",
+          "status": {
+            "utcTime": "2025-10-02T22:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 00:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759442400000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "C",
+      "ccode": "RUS",
+      "id": 901182,
+      "primaryId": 193,
+      "name": "Cup Grp. C",
+      "matches": [
+        {
+          "id": 4847449,
+          "leagueId": 901182,
+          "time": "02.10.2025 18:30",
+          "home": {
+            "id": 1068353,
+            "score": 0,
+            "name": "Dynamo Makhachkala",
+            "longName": "Dynamo Makhachkala"
+          },
+          "away": {
+            "id": 8705,
+            "score": 0,
+            "name": "Rostov",
+            "longName": "FC Rostov"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "5",
+          "status": {
+            "utcTime": "2025-10-02T16:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759422600000
+        }
+      ],
+      "parentLeagueId": 193,
+      "parentLeagueName": "Russian Cup",
+      "internalRank": 9,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "POL",
+      "id": 197,
+      "primaryId": 197,
+      "name": "I Liga",
+      "matches": [
+        {
+          "id": 4816804,
+          "leagueId": 197,
+          "time": "02.10.2025 19:00",
+          "home": {
+            "id": 1286895,
+            "score": 0,
+            "name": "Wieczysta Kraków",
+            "longName": "Wieczysta Kraków"
+          },
+          "away": {
+            "id": 10265,
+            "score": 0,
+            "name": "Wisła Kraków",
+            "longName": "Wisła Kraków"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "5",
+          "status": {
+            "utcTime": "2025-10-02T17:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759424400000
+        }
+      ],
+      "internalRank": 9,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "ENG",
+      "id": 900639,
+      "primaryId": 108,
+      "name": "League One",
+      "matches": [
+        {
+          "id": 4825705,
+          "leagueId": 900639,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 8119,
+            "score": 0,
+            "name": "Rotherham",
+            "longName": "Rotherham United"
+          },
+          "away": {
+            "id": 8484,
+            "score": 0,
+            "name": "Bradford",
+            "longName": "Bradford City"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "11",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        }
+      ],
+      "parentLeagueId": 108,
+      "internalRank": 28,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "PER",
+      "id": 901130,
+      "primaryId": 131,
+      "name": "Liga 1 Clausura",
+      "matches": [
+        {
+          "id": 4958642,
+          "leagueId": 901130,
+          "time": "02.10.2025 03:30",
+          "home": {
+            "id": 6398,
+            "score": 2,
+            "name": "Alianza Lima",
+            "longName": "Alianza Lima"
+          },
+          "away": {
+            "id": 920789,
+            "score": 1,
+            "name": "Atletico Grau",
+            "longName": "Atletico Grau"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "12",
+          "status": {
+            "utcTime": "2025-10-02T01:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 03:32:11",
+              "secondHalfStarted": "02.10.2025 04:37:23"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "2 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759368600000
+        }
+      ],
+      "parentLeagueId": 131,
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "NGA",
+      "id": 902172,
+      "primaryId": 533,
+      "name": "NPFL",
+      "matches": [
+        {
+          "id": 4933058,
+          "leagueId": 902172,
+          "time": "02.10.2025 17:00",
+          "home": {
+            "id": 520679,
+            "score": 0,
+            "name": "Abia Warriors",
+            "longName": "Abia Warriors"
+          },
+          "away": {
+            "id": 818875,
+            "score": 0,
+            "name": "Remo Stars",
+            "longName": "Remo Stars"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "6",
+          "status": {
+            "utcTime": "2025-10-02T15:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 17:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759417200000
+        },
+        {
+          "id": 4933052,
+          "leagueId": 902172,
+          "time": "02.10.2025 17:00",
+          "home": {
+            "id": 102060,
+            "score": 0,
+            "name": "Kwara United",
+            "longName": "Kwara United"
+          },
+          "away": {
+            "id": 213295,
+            "score": 0,
+            "name": "Plateau United",
+            "longName": "Plateau United"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "5",
+          "status": {
+            "utcTime": "2025-10-02T15:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 17:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759417200000
+        }
+      ],
+      "parentLeagueId": 533,
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "SIN",
+      "id": 461,
+      "primaryId": 461,
+      "name": "Premier League",
+      "matches": [
+        {
+          "id": 4890039,
+          "leagueId": 461,
+          "time": "02.10.2025 13:30",
+          "home": {
+            "id": 67381,
+            "score": 0,
+            "name": "Young Lions",
+            "longName": "Young Lions"
+          },
+          "away": {
+            "id": 67383,
+            "score": 0,
+            "name": "Hougang United FC",
+            "longName": "Hougang United FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "4",
+          "status": {
+            "utcTime": "2025-10-02T11:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 13:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759404600000
+        }
+      ],
+      "internalRank": 11,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "GER",
+      "id": 901198,
+      "primaryId": 512,
+      "name": "Regionalliga North",
+      "matches": [
+        {
+          "id": 4869233,
+          "leagueId": 901198,
+          "time": "02.10.2025 19:00",
+          "home": {
+            "id": 94931,
+            "score": 0,
+            "name": "Altonaer FC 93",
+            "longName": "Altonaer FC 93"
+          },
+          "away": {
+            "id": 1381258,
+            "score": 0,
+            "name": "Schöningen",
+            "longName": "Schöningen"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "12",
+          "status": {
+            "utcTime": "2025-10-02T17:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759424400000
+        }
+      ],
+      "parentLeagueId": 512,
+      "internalRank": 17,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "BRA",
+      "id": 268,
+      "primaryId": 268,
+      "name": "Serie A",
+      "matches": [
+        {
+          "id": 4732837,
+          "leagueId": 268,
+          "time": "02.10.2025 02:30",
+          "home": {
+            "id": 8517,
+            "score": 2,
+            "name": "Botafogo RJ",
+            "longName": "Botafogo RJ"
+          },
+          "away": {
+            "id": 7877,
+            "score": 1,
+            "name": "Bahia",
+            "redCards": 1,
+            "longName": "Bahia"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "26",
+          "status": {
+            "utcTime": "2025-10-02T00:30:00.000Z",
+            "numberOfAwayRedCards": 1,
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 03:22:12",
+              "secondHalfStarted": "02.10.2025 03:37:26"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "2 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759365000000
+        },
+        {
+          "id": 4732839,
+          "leagueId": 268,
+          "time": "02.10.2025 02:30",
+          "home": {
+            "id": 8514,
+            "score": 1,
+            "name": "Santos FC",
+            "longName": "Santos FC"
+          },
+          "away": {
+            "id": 9769,
+            "score": 1,
+            "name": "Gremio",
+            "longName": "Gremio"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "26",
+          "status": {
+            "utcTime": "2025-10-02T00:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 03:22:12",
+              "secondHalfStarted": "02.10.2025 03:39:31"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "1 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759365000000
+        },
+        {
+          "id": 4732843,
+          "leagueId": 268,
+          "time": "03.10.2025 00:00",
+          "home": {
+            "id": 7733,
+            "score": 0,
+            "name": "Vitoria",
+            "longName": "Vitoria"
+          },
+          "away": {
+            "id": 172341,
+            "score": 0,
+            "name": "Ceara",
+            "longName": "Ceara"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "26",
+          "status": {
+            "utcTime": "2025-10-02T22:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 00:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759442400000
+        },
+        {
+          "id": 4732844,
+          "leagueId": 268,
+          "time": "03.10.2025 00:30",
+          "home": {
+            "id": 8287,
+            "score": 0,
+            "name": "Fortaleza",
+            "longName": "Fortaleza"
+          },
+          "away": {
+            "id": 10277,
+            "score": 0,
+            "name": "Sao Paulo",
+            "longName": "Sao Paulo"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "26",
+          "status": {
+            "utcTime": "2025-10-02T22:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 00:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759444200000
+        },
+        {
+          "id": 4732836,
+          "leagueId": 268,
+          "time": "03.10.2025 01:30",
+          "home": {
+            "id": 9770,
+            "score": 0,
+            "name": "Flamengo",
+            "longName": "Flamengo"
+          },
+          "away": {
+            "id": 9781,
+            "score": 0,
+            "name": "Cruzeiro",
+            "longName": "Cruzeiro"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "26",
+          "status": {
+            "utcTime": "2025-10-02T23:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759447800000
+        }
+      ],
+      "internalRank": 10,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "BRA",
+      "id": 8814,
+      "primaryId": 8814,
+      "name": "Serie B",
+      "matches": [
+        {
+          "id": 4739082,
+          "leagueId": 8814,
+          "time": "03.10.2025 00:00",
+          "home": {
+            "id": 6546,
+            "score": 0,
+            "name": "Paysandu",
+            "longName": "Paysandu"
+          },
+          "away": {
+            "id": 197815,
+            "score": 0,
+            "name": "Cuiaba",
+            "longName": "Cuiaba"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "30",
+          "status": {
+            "utcTime": "2025-10-02T22:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 00:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759442400000
+        }
+      ],
+      "internalRank": 9,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "NOR",
+      "id": 896789,
+      "primaryId": 331,
+      "name": "Toppserien",
+      "matches": [
+        {
+          "id": 4699623,
+          "leagueId": 896789,
+          "time": "02.10.2025 18:00",
+          "home": {
+            "id": 4484,
+            "score": 0,
+            "name": "Rosenborg BK (W)",
+            "longName": "Rosenborg BK (W)"
+          },
+          "away": {
+            "id": 4485,
+            "score": 0,
+            "name": "Røa (W)",
+            "longName": "Røa (W)"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "22",
+          "status": {
+            "utcTime": "2025-10-02T16:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 18:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759420800000
+        }
+      ],
+      "parentLeagueId": 331,
+      "internalRank": 7,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "USA",
+      "id": 897821,
+      "primaryId": 9441,
+      "name": "US Open Cup",
+      "matches": [
+        {
+          "id": 4971674,
+          "leagueId": 897821,
+          "time": "02.10.2025 02:00",
+          "home": {
+            "id": 1218886,
+            "score": 1,
+            "name": "Austin FC",
+            "longName": "Austin FC"
+          },
+          "away": {
+            "id": 915807,
+            "score": 2,
+            "name": "Nashville SC",
+            "redCards": 1,
+            "longName": "Nashville SC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "final",
+          "status": {
+            "utcTime": "2025-10-02T00:00:00.000Z",
+            "numberOfAwayRedCards": 1,
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 02:09:28",
+              "secondHalfStarted": "02.10.2025 03:15:57"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "1 - 2",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759363200000
+        }
+      ],
+      "parentLeagueId": 9441,
+      "internalRank": 4,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "USA",
+      "id": 8972,
+      "primaryId": 8972,
+      "name": "USL Championship",
+      "matches": [
+        {
+          "id": 4699240,
+          "leagueId": 8972,
+          "time": "02.10.2025 02:00",
+          "home": {
+            "id": 1003207,
+            "score": 1,
+            "name": "Birmingham Legion FC",
+            "longName": "Birmingham Legion FC"
+          },
+          "away": {
+            "id": 162185,
+            "score": 1,
+            "name": "North Carolina FC",
+            "longName": "North Carolina FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T00:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 02:07:54",
+              "secondHalfStarted": "02.10.2025 03:12:15"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "1 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759363200000
+        },
+        {
+          "id": 4699174,
+          "leagueId": 8972,
+          "time": "02.10.2025 04:15",
+          "home": {
+            "id": 521004,
+            "score": 2,
+            "name": "Sacramento Republic FC",
+            "longName": "Sacramento Republic FC"
+          },
+          "away": {
+            "id": 267813,
+            "score": 1,
+            "name": "Orange County SC",
+            "longName": "Orange County SC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T02:15:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 04:38:22",
+              "secondHalfStarted": "02.10.2025 05:45:03"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "2 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759371300000
+        }
+      ],
+      "internalRank": 9,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "VIE",
+      "id": 9088,
+      "primaryId": 9088,
+      "name": "V-League",
+      "matches": [
+        {
+          "id": 4932144,
+          "leagueId": 9088,
+          "time": "02.10.2025 13:00",
+          "home": {
+            "id": 1235223,
+            "score": 0,
+            "name": "Ninh Binh Club",
+            "longName": "Ninh Binh Club"
+          },
+          "away": {
+            "id": 743070,
+            "score": 0,
+            "name": "Viettel",
+            "longName": "Viettel"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "6",
+          "status": {
+            "utcTime": "2025-10-02T11:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 13:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759402800000
+        },
+        {
+          "id": 4932145,
+          "leagueId": 9088,
+          "time": "02.10.2025 13:00",
+          "home": {
+            "id": 179226,
+            "score": 0,
+            "name": "Thanh Hoa FC",
+            "longName": "Thanh Hoa FC"
+          },
+          "away": {
+            "id": 109374,
+            "score": 0,
+            "name": "HCM City",
+            "longName": "HCM City"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "6",
+          "status": {
+            "utcTime": "2025-10-02T11:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 13:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759402800000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "E",
+      "ccode": "INT",
+      "id": 899846,
+      "primaryId": 296,
+      "name": "World Cup U20 Grp. E",
+      "matches": [
+        {
+          "id": 4798317,
+          "leagueId": 899846,
+          "time": "02.10.2025 22:00",
+          "home": {
+            "id": 5876,
+            "score": 0,
+            "name": "USA U20",
+            "longName": "USA U20"
+          },
+          "away": {
+            "id": 6636,
+            "score": 0,
+            "name": "France U20",
+            "longName": "France U20"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T20:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 22:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759435200000
+        },
+        {
+          "id": 4798318,
+          "leagueId": 899846,
+          "time": "03.10.2025 01:00",
+          "home": {
+            "id": 5958,
+            "score": 0,
+            "name": "South Africa U20",
+            "longName": "South Africa U20"
+          },
+          "away": {
+            "id": 1766196,
+            "score": 0,
+            "name": "New Caledonia U20",
+            "longName": "New Caledonia U20"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T23:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759446000000
+        }
+      ],
+      "parentLeagueId": 296,
+      "parentLeagueName": "World Cup U20",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "isGroup": true,
+      "groupName": "F",
+      "ccode": "INT",
+      "id": 899847,
+      "primaryId": 296,
+      "name": "World Cup U20 Grp. F",
+      "matches": [
+        {
+          "id": 4798323,
+          "leagueId": 899847,
+          "time": "02.10.2025 22:00",
+          "home": {
+            "id": 5873,
+            "score": 0,
+            "name": "Colombia U20",
+            "longName": "Colombia U20"
+          },
+          "away": {
+            "id": 1025413,
+            "score": 0,
+            "name": "Norway U20",
+            "longName": "Norway U20"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T20:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 22:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759435200000
+        },
+        {
+          "id": 4798324,
+          "leagueId": 899847,
+          "time": "03.10.2025 01:00",
+          "home": {
+            "id": 5954,
+            "score": 0,
+            "name": "Nigeria U20",
+            "longName": "Nigeria U20"
+          },
+          "away": {
+            "id": 7741,
+            "score": 0,
+            "name": "Saudi Arabia U20",
+            "longName": "Saudi Arabia U20"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "2",
+          "status": {
+            "utcTime": "2025-10-02T23:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759446000000
+        }
+      ],
+      "parentLeagueId": 296,
+      "parentLeagueName": "World Cup U20",
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "CAN",
+      "id": 9837,
+      "primaryId": 9837,
+      "name": "Canadian Championship",
+      "matches": [
+        {
+          "id": 1000004402,
+          "leagueId": 9837,
+          "time": "02.10.2025 04:00",
+          "home": {
+            "id": 307691,
+            "score": 4,
+            "name": "Vancouver",
+            "longName": "Vancouver Whitecaps"
+          },
+          "away": {
+            "id": 1436202,
+            "score": 2,
+            "name": "Vancouver FC",
+            "longName": "Vancouver FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "Final",
+          "status": {
+            "utcTime": "2025-10-02T02:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 04:10:47",
+              "secondHalfStarted": "02.10.2025 05:13:16"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "4 - 2",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759370400000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "INT",
+      "id": 11013,
+      "primaryId": 11013,
+      "name": "CONCACAF W Champions Cup",
+      "matches": [
+        {
+          "id": 1000003610,
+          "leagueId": 11013,
+          "time": "02.10.2025 03:00",
+          "home": {
+            "id": 980692,
+            "score": 5,
+            "name": "Pachuca",
+            "longName": "Pachuca"
+          },
+          "away": {
+            "id": 1798941,
+            "score": 0,
+            "name": "Alajuelense",
+            "longName": "Alajuelense"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "4",
+          "status": {
+            "utcTime": "2025-10-02T01:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 03:06:09",
+              "secondHalfStarted": "02.10.2025 04:07:39"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "5 - 0",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759366800000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "INT",
+      "id": 11021,
+      "primaryId": 11021,
+      "name": "Copa Libertadores Femenina",
+      "matches": [
+        {
+          "id": 1000004516,
+          "leagueId": 11021,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 597629,
+            "score": 0,
+            "name": "Boca Juniors",
+            "longName": "Boca Juniors"
+          },
+          "away": {
+            "id": 1812472,
+            "score": 0,
+            "name": "Alianza Lima",
+            "longName": "Alianza Lima"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 1000004523,
+          "leagueId": 11021,
+          "time": "02.10.2025 21:00",
+          "home": {
+            "id": 1812467,
+            "score": 0,
+            "name": "Corinthians",
+            "longName": "Corinthians"
+          },
+          "away": {
+            "id": 1817219,
+            "score": 0,
+            "name": "Independiente del Valle",
+            "longName": "Independiente del Valle"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T19:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 21:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759431600000
+        },
+        {
+          "id": 1000004517,
+          "leagueId": 11021,
+          "time": "03.10.2025 01:00",
+          "home": {
+            "id": 1812475,
+            "score": 0,
+            "name": "ADIFFEM",
+            "longName": "ADIFFEM"
+          },
+          "away": {
+            "id": 1812468,
+            "score": 0,
+            "name": "Ferroviaria",
+            "longName": "Ferroviaria"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T23:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759446000000
+        },
+        {
+          "id": 1000004525,
+          "leagueId": 11021,
+          "time": "03.10.2025 01:00",
+          "home": {
+            "id": 1812477,
+            "score": 0,
+            "name": "Always Ready",
+            "longName": "Always Ready"
+          },
+          "away": {
+            "id": 1817227,
+            "score": 0,
+            "name": "Santa Fe",
+            "longName": "Santa Fe"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "1",
+          "status": {
+            "utcTime": "2025-10-02T23:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 01:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759446000000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "USA",
+      "id": 10282,
+      "primaryId": 10282,
+      "name": "MLS Next Pro",
+      "matches": [
+        {
+          "id": 4727635,
+          "leagueId": 10282,
+          "time": "02.10.2025 04:00",
+          "home": {
+            "id": 1348115,
+            "score": 2,
+            "name": "The Town FC",
+            "longName": "The Town FC"
+          },
+          "away": {
+            "id": 614326,
+            "score": 1,
+            "name": "Vancouver Whitecaps 2",
+            "longName": "Vancouver Whitecaps 2"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 6,
+          "tournamentStage": "16",
+          "status": {
+            "utcTime": "2025-10-02T02:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 04:04:13",
+              "secondHalfStarted": "02.10.2025 05:07:09"
+            },
+            "periodLength": 45,
+            "finished": true,
+            "started": true,
+            "cancelled": false,
+            "awarded": false,
+            "scoreStr": "2 - 1",
+            "reason": {
+              "short": "FT",
+              "shortKey": "fulltime_short",
+              "long": "Full-Time",
+              "longKey": "finished"
+            }
+          },
+          "timeTS": 1759370400000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "CAN",
+      "id": 10872,
+      "primaryId": 10872,
+      "name": "Northern Super League",
+      "matches": [
+        {
+          "id": 1000001879,
+          "leagueId": 10872,
+          "time": "03.10.2025 00:00",
+          "home": {
+            "id": 1739714,
+            "score": 0,
+            "name": "Halifax Tides FC",
+            "longName": "Halifax Tides FC"
+          },
+          "away": {
+            "id": 1739717,
+            "score": 0,
+            "name": "Montreal Roses FC",
+            "longName": "Montreal Roses FC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "Regular Season",
+          "status": {
+            "utcTime": "2025-10-02T22:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "03.10.2025 00:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759442400000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "IRN",
+      "id": 523,
+      "primaryId": 523,
+      "name": "Persian Gulf Pro League",
+      "matches": [
+        {
+          "id": 1000003920,
+          "leagueId": 523,
+          "time": "02.10.2025 15:45",
+          "home": {
+            "id": 101612,
+            "score": 0,
+            "name": "Malavan",
+            "longName": "Malavan"
+          },
+          "away": {
+            "id": 664862,
+            "score": 0,
+            "name": "Kheybar",
+            "longName": "Kheybar Khorramabad"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "6",
+          "status": {
+            "utcTime": "2025-10-02T13:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 15:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759412700000
+        },
+        {
+          "id": 1000003921,
+          "leagueId": 523,
+          "time": "02.10.2025 16:45",
+          "home": {
+            "id": 101623,
+            "score": 0,
+            "name": "Fajr Sepasi",
+            "longName": "Fajr Sepasi"
+          },
+          "away": {
+            "id": 394619,
+            "score": 0,
+            "name": "Esteghlal Kh",
+            "longName": "Esteghlal Khuzestan"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "6",
+          "status": {
+            "utcTime": "2025-10-02T14:45:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 16:45:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759416300000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "QAT",
+      "id": 11017,
+      "primaryId": 11017,
+      "name": "QSL Cup",
+      "matches": [
+        {
+          "id": 1000004002,
+          "leagueId": 11017,
+          "time": "02.10.2025 17:00",
+          "home": {
+            "id": 568590,
+            "score": 0,
+            "name": "Al-Shahaniya",
+            "longName": "Al-Shahaniya"
+          },
+          "away": {
+            "id": 479161,
+            "score": 0,
+            "name": "Muaither SC",
+            "longName": "Muaither SC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "3",
+          "status": {
+            "utcTime": "2025-10-02T15:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 17:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759417200000
+        },
+        {
+          "id": 1000004003,
+          "leagueId": 11017,
+          "time": "02.10.2025 17:00",
+          "home": {
+            "id": 203826,
+            "score": 0,
+            "name": "Al-Duhail SC",
+            "longName": "Al-Duhail SC"
+          },
+          "away": {
+            "id": 1345067,
+            "score": 0,
+            "name": "Al-Kharaitiyat SC",
+            "longName": "Al-Kharaitiyat SC"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "3",
+          "status": {
+            "utcTime": "2025-10-02T15:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 17:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759417200000
+        },
+        {
+          "id": 1000004004,
+          "leagueId": 11017,
+          "time": "02.10.2025 19:00",
+          "home": {
+            "id": 101897,
+            "score": 0,
+            "name": "Al-Gharafa",
+            "longName": "Al-Gharafa"
+          },
+          "away": {
+            "id": 101902,
+            "score": 0,
+            "name": "Al-Khor",
+            "longName": "Al-Khor"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "3",
+          "status": {
+            "utcTime": "2025-10-02T17:00:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:00:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759424400000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    },
+    {
+      "ccode": "KSA",
+      "id": 10783,
+      "primaryId": 10783,
+      "name": "Women’s Premier League",
+      "matches": [
+        {
+          "id": 1000003730,
+          "leagueId": 10783,
+          "time": "02.10.2025 19:30",
+          "home": {
+            "id": 1712796,
+            "score": 0,
+            "name": "Al Ittihad",
+            "longName": "Al Ittihad"
+          },
+          "away": {
+            "id": 1712800,
+            "score": 0,
+            "name": "Al Hilal",
+            "longName": "Al Hilal"
+          },
+          "eliminatedTeamId": null,
+          "statusId": 1,
+          "tournamentStage": "4",
+          "status": {
+            "utcTime": "2025-10-02T17:30:00.000Z",
+            "halfs": {
+              "firstHalfStarted": "02.10.2025 19:30:00"
+            },
+            "periodLength": 45,
+            "started": false,
+            "cancelled": false,
+            "finished": false
+          },
+          "timeTS": 1759426200000
+        }
+      ],
+      "internalRank": 0,
+      "liveRank": 0,
+      "simpleLeague": false
+    }
+  ],
+  "date": "20251002"
+}

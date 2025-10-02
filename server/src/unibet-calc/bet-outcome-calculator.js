@@ -227,7 +227,7 @@ export default class BetOutcomeCalculator {
                 console.log(`🧪 TEST EVENT DETECTED: Using fotmob-11.json for event ${bet.matchId}`);
                 console.log(`🧪 TEST MODE: Will use August 11, 2025 data regardless of bet date`);
             } else {
-                multiDayCacheFile = path.join(__dirname, '../storage/fotmob/fotmob_multiday_cache.json');
+                multiDayCacheFile = path.join(__dirname, '../../storage/fotmob/fotmob_multiday_cache.json');
             }
             console.log(`   - Checking multi-day cache: ${path.basename(multiDayCacheFile)}`);
 
@@ -235,7 +235,7 @@ export default class BetOutcomeCalculator {
                 console.log(`✅ MULTI-DAY CACHE FOUND: Loading ${path.basename(multiDayCacheFile)}`);
                 const data = JSON.parse(fs.readFileSync(multiDayCacheFile, 'utf8'));
                 
-                // Handle Fotmob API format change - leagues might be returned as array directly
+                // Handle multi-day cache format - it's organized by date keys
                 let leaguesData;
                 if (Array.isArray(data)) {
                     console.log(`   - Total leagues in multi-day cache: ${data.length} (array format)`);
@@ -244,8 +244,33 @@ export default class BetOutcomeCalculator {
                     console.log(`   - Total leagues in multi-day cache: ${data.leagues.length} (object format)`);
                     leaguesData = data;
                 } else {
-                    console.log(`❌ Unexpected multi-day cached data format`);
-                    return null;
+                    // Multi-day cache format: { "20251001": { leagues: [...] }, "20251002": { leagues: [...] } }
+                    console.log(`   - Multi-day cache format detected, combining all dates`);
+                    const allLeagues = [];
+                    const dateKeys = Object.keys(data);
+                    console.log(`   - Found data for dates: ${dateKeys.join(', ')}`);
+                    
+                    dateKeys.forEach(dateKey => {
+                        if (data[dateKey] && data[dateKey].leagues) {
+                            console.log(`   - Adding ${data[dateKey].leagues.length} leagues from ${dateKey}`);
+                            allLeagues.push(...data[dateKey].leagues);
+                        }
+                    });
+                    
+                    console.log(`   - Total leagues from all dates: ${allLeagues.length}`);
+                    
+                    // Debug: Check if Copa Paraguay is in the loaded leagues
+                    const copaParaguay = allLeagues.find(league => league.id === 10230);
+                    if (copaParaguay) {
+                        console.log(`   🐛 Copa Paraguay found in loaded leagues: ${copaParaguay.matches?.length || 0} matches`);
+                        copaParaguay.matches?.forEach(match => {
+                            console.log(`     - Match: ${match.home?.name} vs ${match.away?.name} at ${match.time}`);
+                        });
+                    } else {
+                        console.log(`   ❌ Copa Paraguay (ID 10230) NOT found in loaded leagues`);
+                    }
+                    
+                    leaguesData = { leagues: allLeagues };
                 }
 
                 // For test event, use August 11, 2025 data; otherwise filter by actual date
@@ -255,11 +280,44 @@ export default class BetOutcomeCalculator {
                 let matchesForDate = 0;
                 const filteredLeagues = leaguesData.leagues.map(league => {
                     const filteredMatches = (league.matches || []).filter(match => {
-                        const matchDate = new Date(match.status?.utcTime || match.time);
+                        let matchDate;
+                        if (match.status?.utcTime) {
+                            matchDate = new Date(match.status.utcTime);
+                        } else if (match.time) {
+                            // Handle DD.MM.YYYY HH:mm format
+                            const timeStr = match.time;
+                            if (timeStr.includes('.') && timeStr.split('.').length === 3) {
+                                // Convert DD.MM.YYYY HH:mm to YYYY-MM-DD HH:mm
+                                const [datePart, timePart] = timeStr.split(' ');
+                                const [day, month, year] = datePart.split('.');
+                                const isoFormat = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00.000Z`;
+                                matchDate = new Date(isoFormat);
+                            } else {
+                                matchDate = new Date(timeStr);
+                            }
+                        } else {
+                            return false;
+                        }
                         const matchDateStr = matchDate.toISOString().slice(0, 10);
-                        const isMatch = matchDateStr === filterDate;
-                        if (isMatch) matchesForDate++;
-                        return isMatch;
+                        
+                        // Check exact date first
+                        if (matchDateStr === filterDate) {
+                            matchesForDate++;
+                            return true;
+                        }
+                        
+                        // If no exact matches found, also check within 24 hours (for timezone issues)
+                        const betDate = new Date(filterDate);
+                        const timeDifference = Math.abs(matchDate.getTime() - betDate.getTime());
+                        const hoursDifference = timeDifference / (1000 * 60 * 60);
+                        
+                        if (hoursDifference <= 24) {
+                            console.log(`   - Including match within 24h: ${match.home?.name || 'Unknown'} vs ${match.away?.name || 'Unknown'} (${hoursDifference.toFixed(1)}h difference)`);
+                            matchesForDate++;
+                            return true;
+                        }
+                        
+                        return false;
                     });
 
                     return {
@@ -269,6 +327,19 @@ export default class BetOutcomeCalculator {
                 }).filter(league => league.matches.length > 0);
 
                 console.log(`   - Matches found for ${filterDate}: ${matchesForDate} across ${filteredLeagues.length} leagues`);
+
+                // Debug: Check if Copa Paraguay survived the filtering
+                const filteredCopaParaguay = filteredLeagues.find(league => league.id === 10230);
+                if (filteredCopaParaguay) {
+                    console.log(`   ✅ Copa Paraguay survived filtering: ${filteredCopaParaguay.matches?.length || 0} matches`);
+                } else {
+                    console.log(`   ❌ Copa Paraguay was filtered out during date filtering`);
+                }
+
+                // Debug: Final check before returning
+                const finalCopaParaguay = filteredLeagues.find(league => league.id === 10230);
+                console.log(`   🔍 FINAL RETURN CHECK: Copa Paraguay in return data: ${!!finalCopaParaguay} (${finalCopaParaguay?.matches?.length || 0} matches)`);
+                console.log(`   🔍 FINAL RETURN: Returning ${filteredLeagues.length} leagues total`);
 
                 return {
                     leagues: filteredLeagues,
@@ -461,8 +532,15 @@ export default class BetOutcomeCalculator {
         // Step 3: Find Fotmob league in data
         console.log(`\n🔍 FOTMOB LEAGUE SEARCH:`);
         const fotmobLeagueId = parseInt(leagueMapping.fotmobId);
-        console.log(`   - Looking for Fotmob league ID: ${fotmobLeagueId}`);
+        console.log(`   - Looking for Fotmob league ID: ${fotmobLeagueId} (type: ${typeof fotmobLeagueId})`);
         console.log(`   - Available Fotmob leagues: ${fotmobData.leagues.length}`);
+        
+        // Debug: Check if Copa Paraguay is actually in the data
+        const copaParaguayInData = fotmobData.leagues.find(league => league.id === 10230);
+        console.log(`   🐛 Copa Paraguay (10230) in fotmobData: ${!!copaParaguayInData} (${copaParaguayInData?.matches?.length || 0} matches)`);
+        if (copaParaguayInData) {
+            console.log(`   🐛 Copa Paraguay details: id=${copaParaguayInData.id} (type: ${typeof copaParaguayInData.id}), name="${copaParaguayInData.name}"`);
+        }
 
         // List all available Fotmob leagues for debugging
         console.log(`📋 Available Fotmob leagues:`);
@@ -474,10 +552,21 @@ export default class BetOutcomeCalculator {
         }
 
         // Try to find league by both id and primaryId (Fotmob uses both)
+        console.log(`   🔍 Searching for league with id === ${fotmobLeagueId}...`);
         let fotmobLeague = fotmobData.leagues.find(league => league.id === fotmobLeagueId);
+        console.log(`   🔍 Found by id: ${!!fotmobLeague}`);
+        
         if (!fotmobLeague) {
             // Also try primaryId field
+            console.log(`   🔍 Searching for league with primaryId === ${fotmobLeagueId}...`);
             fotmobLeague = fotmobData.leagues.find(league => league.primaryId === fotmobLeagueId);
+            console.log(`   🔍 Found by primaryId: ${!!fotmobLeague}`);
+        }
+        
+        if (fotmobLeague) {
+            console.log(`   ✅ EXACT LEAGUE FOUND: ${fotmobLeague.name} (id=${fotmobLeague.id}, matches=${fotmobLeague.matches?.length || 0})`);
+        } else {
+            console.log(`   ❌ EXACT LEAGUE NOT FOUND despite Copa Paraguay being in data!`);
         }
 
         // If exact ID not found, try to find leagues with similar names (for group leagues)
@@ -488,9 +577,7 @@ export default class BetOutcomeCalculator {
                 const fotmobName = leagueMapping.fotmobName.toLowerCase();
                 
                 // Check if the league name contains the Fotmob name or vice versa
-                return leagueName.includes(fotmobName) || fotmobName.includes(leagueName) ||
-                       leagueName.includes('champions league two') || // For AFC Champions League Two groups
-                       leagueName.includes('champions league 2');
+                return leagueName.includes(fotmobName) || fotmobName.includes(leagueName);
             });
 
             if (similarLeagues.length > 0) {
@@ -509,9 +596,7 @@ export default class BetOutcomeCalculator {
         const hasMatchesToSearch = fotmobLeague || (fotmobData.leagues.some(league => {
             const leagueName = league.name.toLowerCase();
             const fotmobName = leagueMapping.fotmobName.toLowerCase();
-            return leagueName.includes(fotmobName) || fotmobName.includes(leagueName) ||
-                   leagueName.includes('champions league two') ||
-                   leagueName.includes('champions league 2');
+            return leagueName.includes(fotmobName) || fotmobName.includes(leagueName);
         }));
 
         if (!hasMatchesToSearch) {
@@ -559,27 +644,70 @@ export default class BetOutcomeCalculator {
         let bestScore = 0;
         let allMatchesToSearch = [];
 
-        // Always search through all similar leagues, even if exact league is found
-        // This ensures we find matches in all groups (A, B, C, D, etc.)
-        console.log(`🔍 Searching through all similar leagues for comprehensive match coverage...`);
-        const similarLeagues = fotmobData.leagues.filter(league => {
-            const leagueName = league.name.toLowerCase();
-            const fotmobName = leagueMapping.fotmobName.toLowerCase();
+        // Smart league detection: distinguish between complete leagues and group leagues
+        if (fotmobLeague) {
+            // Check if this is a group league (part of a larger tournament)
+            const isGroupLeague = fotmobLeague.name.toLowerCase().includes('grp.') ||
+                                fotmobLeague.name.toLowerCase().includes('group') ||
+                                fotmobLeague.name.toLowerCase().includes('grp ') ||
+                                fotmobLeague.name.toLowerCase().includes('stage') ||
+                                fotmobLeague.name.toLowerCase().includes('phase');
             
-            return leagueName.includes(fotmobName) || fotmobName.includes(leagueName) ||
-                   leagueName.includes('champions league two') ||
-                   leagueName.includes('champions league 2');
-        });
-
-        console.log(`📋 Found ${similarLeagues.length} similar leagues to search:`);
-        similarLeagues.forEach(league => {
-            console.log(`   - ${league.name}: id=${league.id}, matches=${league.matches?.length || 0}`);
-            if (league.matches && league.matches.length > 0) {
-                allMatchesToSearch.push(...league.matches);
+            if (isGroupLeague) {
+                console.log(`🔍 GROUP LEAGUE DETECTED: ${fotmobLeague.name} (id=${fotmobLeague.id})`);
+                console.log(`🔍 Searching all similar groups to ensure comprehensive match coverage...`);
+                
+                // For group leagues, search all similar groups (A, B, C, D, etc.)
+                const similarLeagues = fotmobData.leagues.filter(league => {
+                    const leagueName = league.name.toLowerCase();
+                    const fotmobName = leagueMapping.fotmobName.toLowerCase();
+                    
+                    return leagueName.includes(fotmobName) || fotmobName.includes(leagueName);
+                });
+                
+                console.log(`📋 Found ${similarLeagues.length} similar groups to search:`);
+                similarLeagues.forEach(league => {
+                    console.log(`   - ${league.name}: id=${league.id}, matches=${league.matches?.length || 0}`);
+                    if (league.matches && league.matches.length > 0) {
+                        allMatchesToSearch.push(...league.matches);
+                    }
+                });
+                
+                matchingResult.debugInfo.searchSteps.push(`✅ Group league: searching ${similarLeagues.length} groups with ${allMatchesToSearch.length} total matches`);
+            } else {
+                console.log(`✅ COMPLETE LEAGUE DETECTED: ${fotmobLeague.name} (id=${fotmobLeague.id})`);
+                console.log(`🔍 Using exact league matches only (no group search needed)`);
+                
+                // For complete leagues, use only the exact league matches
+                if (fotmobLeague.matches && fotmobLeague.matches.length > 0) {
+                    allMatchesToSearch.push(...fotmobLeague.matches);
+                }
+                console.log(`🔍 Matches from complete league: ${fotmobLeague.matches?.length || 0}`);
+                
+                matchingResult.debugInfo.searchSteps.push(`✅ Complete league: using exact league with ${allMatchesToSearch.length} matches`);
             }
-        });
+        } else {
+            // Fallback: exact league not found, search similar leagues
+            console.log(`❌ EXACT LEAGUE NOT FOUND: Searching similar leagues as fallback...`);
+            const similarLeagues = fotmobData.leagues.filter(league => {
+                const leagueName = league.name.toLowerCase();
+                const fotmobName = leagueMapping.fotmobName.toLowerCase();
+                
+                return leagueName.includes(fotmobName) || fotmobName.includes(leagueName);
+            });
+
+            console.log(`📋 Found ${similarLeagues.length} similar leagues to search:`);
+            similarLeagues.forEach(league => {
+                console.log(`   - ${league.name}: id=${league.id}, matches=${league.matches?.length || 0}`);
+                if (league.matches && league.matches.length > 0) {
+                    allMatchesToSearch.push(...league.matches);
+                }
+            });
+            
+            matchingResult.debugInfo.searchSteps.push(`✅ Fallback: searching ${similarLeagues.length} similar leagues with ${allMatchesToSearch.length} total matches`);
+        }
         console.log(`🔍 Total matches to search: ${allMatchesToSearch.length}`);
-        matchingResult.debugInfo.searchSteps.push(`✅ Searching through ${similarLeagues.length} similar leagues with ${allMatchesToSearch.length} total matches`);
+        // Debug info already added in the logic above
 
         console.log(`🔍 DEBUGGING MATCH MATCHING:`);
         console.log(`   - Bet teams: "${bet.homeName}" vs "${bet.awayName}"`);
@@ -2589,6 +2717,10 @@ export default class BetOutcomeCalculator {
                 throw new Error('Failed to fetch Fotmob data - API format issue');
             }
             console.log(`✅ Fotmob data loaded: ${fotmobData.leagues?.length || 0} leagues available`);
+
+            // Debug: Check if Copa Paraguay is in the received data
+            const receivedCopaParaguay = fotmobData.leagues?.find(league => league.id === 10230);
+            console.log(`   🔍 RECEIVED DATA CHECK: Copa Paraguay in received data: ${!!receivedCopaParaguay} (${receivedCopaParaguay?.matches?.length || 0} matches)`);
 
             // Step 3: Find matching Fotmob match
             console.log(`\n🔍 STEP 3: Finding matching Fotmob match...`);
