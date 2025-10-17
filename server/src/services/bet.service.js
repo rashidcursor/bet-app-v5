@@ -1356,7 +1356,8 @@ class BetService {
         { 
           ...(unibetMetaPayload || {}), 
           ...v2ExtraMeta,
-          start: matchId === '1022853538' ? '2025-08-11T23:00:00Z' : matchData?.starting_at
+          start: matchId === '1022853538' ? '2025-08-11T23:00:00Z' : 
+                 matchId === '1024730101' ? '2025-09-24T22:00:00Z' : matchData?.starting_at
         },
         {
           eventName: matchData?.name || teams,

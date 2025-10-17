@@ -67,6 +67,15 @@ export const checkBetResult = (matchData, betData) => {
       const bothTeamsScored2H = secondHalfHomeScore() > 0 && secondHalfAwayScore() > 0;
       return selection.toLowerCase() === 'yes' ? bothTeamsScored2H : !bothTeamsScored2H;
 
+    case 'goal in both halves':
+      // Check if the selected team scored in both halves
+      if (selection.toLowerCase() === 'home') {
+        return halfTimeHomeScore > 0 && secondHalfHomeScore() > 0;
+      } else if (selection.toLowerCase() === 'away') {
+        return halfTimeAwayScore > 0 && secondHalfAwayScore() > 0;
+      }
+      return false;
+
     case 'home team exact goals':
       return isExact(homeScore, parseInt(selection));
 

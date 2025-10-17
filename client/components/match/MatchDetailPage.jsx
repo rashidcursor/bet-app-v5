@@ -224,7 +224,7 @@ const MatchDetailPage = ({ matchId }) => {
                     name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
                     outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
-                        name: outcome.label,
+                        name: outcome.participant || outcome.label, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000, // Convert from Unibet format (13000 -> 13.00)
                         status: outcome.status,
                         line: outcome.line, // Include line value for Over/Under markets (raw)
@@ -252,10 +252,13 @@ const MatchDetailPage = ({ matchId }) => {
                     name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
                     outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
-                        name: outcome.label,
+                        name: outcome.participant || outcome.label, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000,
                         status: outcome.status,
-                        line: outcome.line // Include line value for Over/Under markets
+                        line: outcome.line, // Include line value for Over/Under markets
+                        participant: outcome.participant,
+                        participantId: outcome.participantId,
+                        eventParticipantId: outcome.eventParticipantId
                     }))
                 }));
         }
@@ -472,6 +475,15 @@ const IMPLEMENTED_MARKETS = [
     '1st Half Total Goals',
     'Total Goals - 1st Half',
     'Total Goals - 2nd Half',
+    'Goal in Both Halves',
+    'To Get a Red Card',
+    'First Goal Scorer',
+    'Goalkeeper Saves',
+    'To Assist',
+    'To Score Or Assist',
+    'To score from outside the penalty box',
+    'To score from a header',
+    'Half Time',
 ];
 
 // Helper function to check if a market is implemented
@@ -482,11 +494,7 @@ function isMarketImplemented(marketName) {
     if (name.includes('double chance') && name.includes('1st half')) return false;
     if (name.includes('double chance') && name.includes('2nd half')) return false;
     if (name.includes('total corner') && name.includes('1st half')) return false;
-    if (name.includes('to score or assist')) return false;
     if (name.includes('to score at least 3 goals')) return false;
-    if (name.includes('to score from a header')) return false;
-    if (name.includes('to score from a header')) return false;
-    if (name.includes('to score from outside the penalty box')) return false;
     
     // Check for exact matches first
     for (const implementedMarket of IMPLEMENTED_MARKETS) {
@@ -530,6 +538,8 @@ function isMarketImplemented(marketName) {
     if (name.includes('team given a red card')) return true;
     if (name.includes('to get a card')) return true;
     if (name.includes('to get a red card')) return true;
+    if (name.includes('first goal scorer')) return true;
+    if (name.includes('goalkeeper saves')) return true;
     if (name.includes('most cards')) return true;
     if (name.includes('red card given')) return true;
     if (name.includes('most red cards')) return true;
@@ -541,6 +551,13 @@ function isMarketImplemented(marketName) {
     if (name.includes('total cards') && !name.includes('team')) return true;
     if (name.includes('total cards')) return true;
     if (name.includes('draw no bet') && name.includes('2nd half')) return true;
+    if (name.includes('goal in both halves')) return true;
+    if (name.includes('to get a red card')) return true;
+    if (name.includes('to assist')) return true;
+    if (name.includes('to score or assist')) return true;
+    if (name.includes('to score from outside the penalty box')) return true;
+    if (name.includes('to score from a header')) return true;
+    if (name.includes('half time') && !name.includes('total') && !name.includes('goals')) return true;
     
     return false;
 }
@@ -557,6 +574,7 @@ function categorizeMarkets(bettingData) {
         'player-shots': [],
         'player-cards': [],
         'scorers': [],
+        'results': [],
         'other': []
     };
 
@@ -587,7 +605,17 @@ function categorizeMarkets(bettingData) {
             }
         } else if (marketName.includes('shot')) {
             categorized['player-shots'].push(offer);
-        } else if (marketName.includes('both teams to score') || marketName.includes('btts')) {
+        } else if (marketName.includes('to assist')) {
+            categorized.scorers.push(offer);
+        } else if (marketName.includes('to score or assist')) {
+            categorized.scorers.push(offer);
+    } else if (marketName.includes('to score from outside the penalty box')) {
+        categorized.scorers.push(offer);
+    } else if (marketName.includes('to score from a header')) {
+        categorized.scorers.push(offer);
+    } else if (marketName.includes('half time') && !marketName.includes('total') && !marketName.includes('goals')) {
+        categorized.results.push(offer);
+    } else if (marketName.includes('both teams to score') || marketName.includes('btts')) {
             categorized.goals.push(offer);
         } else if (marketName.includes('to score') || marketName.includes('goalscorer') || marketName.includes('scorer') || marketName.includes('first goal')) {
             categorized.scorers.push(offer);

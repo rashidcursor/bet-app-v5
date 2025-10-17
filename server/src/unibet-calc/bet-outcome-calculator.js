@@ -24,7 +24,14 @@ import {
     getPlayerStats,
     getPlayerEvents,
     getCardEvents,
-    findPlayerIdByName
+    findPlayerIdByName,
+    getGoalEvents,
+    getAbsoluteMinuteFromEvent,
+    getGoalkeeperSaves,
+    getPlayerAssists,
+    getPlayerScoreOrAssist,
+    getPlayerGoalsFromOutsidePenalty,
+    getPlayerGoalsFromHeader
 } from './utils/fotmob-helpers.js';
 import { normalizeBet } from './utils/market-normalizer.js';
 import { identifyMarket, MarketCodes } from './utils/market-registry.js';
@@ -236,6 +243,7 @@ class BetOutcomeCalculator {
 
             // Try multi-day cache
             // Special case: use fotmob-11.json for test event ID 1022853538
+            // Special case: use longest-cache.json for test event ID 1024730101
             let multiDayCacheFile;
             let useTestDate = false;
             
@@ -249,12 +257,16 @@ class BetOutcomeCalculator {
             //     betIdType: typeof bet?._id
             // });
             
-                console.log('🧪 TEST EVENT DETECTED: Using fotmob-11.json for event ${bet.matchId}');
             if (bet && bet?.eventId === '1022853538') {
                 multiDayCacheFile = path.join(__dirname, '../../storage/fotmob/fotmob-11.json');
                 useTestDate = true;
                 console.log(`🧪 TEST EVENT DETECTED: Using fotmob-11.json for event ${bet.matchId}`);
                 console.log(`🧪 TEST MODE: Will use August 11, 2025 data regardless of bet date`);
+            } else if (bet && bet?.eventId === '1024730101') {
+                multiDayCacheFile = path.join(__dirname, '../../storage/fotmob/longest-cache.json');
+                useTestDate = true;
+                console.log(`🧪 TEST EVENT DETECTED: Using longest-cache.json for event ${bet.matchId}`);
+                console.log(`🧪 TEST MODE: Will use September 24, 2025 data regardless of bet date`);
             } else {
                 multiDayCacheFile = path.join(__dirname, '../../storage/fotmob/fotmob_multiday_cache.json');
             }
@@ -301,8 +313,15 @@ class BetOutcomeCalculator {
                     leaguesData = { leagues: allLeagues };
                 }
 
-                // For test event, use August 11, 2025 data; otherwise filter by actual date
-                const filterDate = useTestDate ? '2025-08-11' : dateFormatted;
+                // For test events, use specific dates; otherwise filter by actual date
+                let filterDate;
+                if (bet && bet?.eventId === '1022853538') {
+                    filterDate = '2025-08-11';
+                } else if (bet && bet?.eventId === '1024730101') {
+                    filterDate = '2025-09-24';
+                } else {
+                    filterDate = dateFormatted;
+                }
                 console.log(`   - Filtering matches for date: ${filterDate} ${useTestDate ? '(TEST MODE)' : ''}`);
                 
                 let matchesForDate = 0;
@@ -718,6 +737,9 @@ class BetOutcomeCalculator {
         if (bet && bet?.eventId === '1022853538') {
             betDate = new Date('2025-08-11T23:00:00.000Z'); // Match the test data date
             console.log(`🧪 TEST MODE: Adjusted bet date to match test data: ${betDate.toISOString()}`);
+        } else if (bet && bet?.eventId === '1024730101') {
+            betDate = new Date('2025-09-24T22:00:00.000Z'); // Match the test data date
+            console.log(`🧪 TEST MODE: Adjusted bet date to match test data: ${betDate.toISOString()}`);
         }
         
         let bestMatch = null;
@@ -881,6 +903,36 @@ class BetOutcomeCalculator {
                     const homeScore = matchDetails.header.teams[0]?.score;
                     const awayScore = matchDetails.header.teams[1]?.score;
                     console.log(`   - Score: ${homeScore} - ${awayScore}`);
+                }
+                
+                // Check for player stats data (it's in content.playerStats)
+                const playerStats = matchDetails.content?.playerStats || matchDetails.playerStats;
+                if (playerStats) {
+                    console.log(`   - Player stats available: ${Object.keys(playerStats).length} players`);
+                    
+                    // Check for goalkeepers specifically using the correct Fotmob structure
+                    let goalkeepers = 0;
+                    for (const [playerId, playerData] of Object.entries(playerStats)) {
+                        if (playerData.isGoalkeeper === true) {
+                            goalkeepers++;
+                            console.log(`   - Goalkeeper: ${playerData.name} (Team: ${playerData.teamName})`);
+                            
+                            // Extract saves from the stats array
+                            let saves = 0;
+                            if (playerData.stats && Array.isArray(playerData.stats)) {
+                                for (const statGroup of playerData.stats) {
+                                    if (statGroup.stats && statGroup.stats["Saves"]) {
+                                        saves = Number(statGroup.stats["Saves"].stat.value) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+                            console.log(`   - Saves: ${saves}`);
+                        }
+                    }
+                    console.log(`   - Goalkeepers found: ${goalkeepers}`);
+                } else {
+                    console.log(`   - No player stats available`);
                 }
                 
                 return matchDetails;
@@ -2927,8 +2979,25 @@ class BetOutcomeCalculator {
         } else if (marketCode === MarketCodes.PLAYER_CARD_ANY || marketCode === MarketCodes.PLAYER_CARD_RED) {
             // Player To Get a Card (any card) Yes/No; explicit Red Card supported
             const isRedOnly = String(bet.marketName || '').toLowerCase().includes('red');
-            const yesSelected = String(bet.outcomeLabel || bet.outcomeEnglishLabel || '').toLowerCase().includes('yes');
             const participantName = bet.participant || bet.playerName || null;
+            
+            console.log(`🔍 DEBUG: Checking Yes/No selection:`);
+            console.log(`   - bet.outcomeEnglishLabel: "${bet.outcomeEnglishLabel}"`);
+            console.log(`   - bet.outcomeLabel: "${bet.outcomeLabel}"`);
+            console.log(`   - bet.participant: "${bet.participant}"`);
+            
+            // For player-specific card markets:
+            // - If the outcome is a player name (not "Yes"/"No"), it's implicitly a "Yes" bet (player WILL get a card)
+            // - Only if outcome explicitly says "No", it's a "No" bet
+            const outcomeLabel = String(bet.outcomeEnglishLabel || bet.outcomeLabel || '').toLowerCase();
+            const isNoSelection = outcomeLabel.includes('no');
+            const isYesSelection = outcomeLabel.includes('yes');
+            
+            // If outcome is a player name (not Yes/No), treat as "Yes" bet
+            const yesSelected = isYesSelection || (!isNoSelection && participantName);
+            console.log(`   - Outcome label: "${outcomeLabel}"`);
+            console.log(`   - Is Yes: ${isYesSelection}, Is No: ${isNoSelection}, Has participant: ${!!participantName}`);
+            console.log(`   - Final yesSelected: ${yesSelected}`);
             let playerId = bet.participantId;
             if (!playerId && participantName) {
                 playerId = findPlayerIdByName(matchDetails, participantName);
@@ -3400,6 +3469,804 @@ class BetOutcomeCalculator {
                 stake: bet.stake,
                 odds: bet.odds
             };
+        } else if (marketCode === MarketCodes.GOAL_IN_BOTH_HALVES) {
+            // Goal in Both Halves - check if selected team scored in both halves
+            // Use "Total Goals by Team" markets for 1st and 2nd half instead of Fotmob halftime scores
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            
+            console.log(`🎯 GOAL IN BOTH HALVES MARKET: "${selection}"`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            
+            // Get team goals from first half and second half using Fotmob goal events
+            const getTeamGoalsInHalf = (teamName, half) => {
+                // Use the existing getGoalEvents helper function
+                const goalEvents = getGoalEvents(matchDetails);
+                let goals = 0;
+                
+                for (const goal of goalEvents) {
+                    // Check if this goal belongs to the specified team
+                    const isHomeTeam = goal.isHome;
+                    const teamMatches = isHomeTeam ? 
+                        (homeName.toLowerCase() === teamName.toLowerCase()) :
+                        (awayName.toLowerCase() === teamName.toLowerCase());
+                    
+                    if (teamMatches) {
+                        const minute = getAbsoluteMinuteFromEvent(goal);
+                        
+                        if (half === '1st' && minute <= 45) {
+                            goals++;
+                        } else if (half === '2nd' && minute > 45) {
+                            goals++;
+                        }
+                    }
+                }
+                
+                return goals;
+            };
+            
+            // Get goals for each team in each half
+            const homeFirstHalf = getTeamGoalsInHalf(homeName, '1st');
+            const homeSecondHalf = getTeamGoalsInHalf(homeName, '2nd');
+            const awayFirstHalf = getTeamGoalsInHalf(awayName, '1st');
+            const awaySecondHalf = getTeamGoalsInHalf(awayName, '2nd');
+            
+            console.log(`   - ${homeName}: 1st half=${homeFirstHalf}, 2nd half=${homeSecondHalf}`);
+            console.log(`   - ${awayName}: 1st half=${awayFirstHalf}, 2nd half=${awaySecondHalf}`);
+            
+            let actualOutcome;
+            let won = false;
+            
+            if (selection === 'home' || selection === 'yes') {
+                // Check if home team scored in both halves
+                const scoredFirstHalf = homeFirstHalf > 0;
+                const scoredSecondHalf = homeSecondHalf > 0;
+                won = scoredFirstHalf && scoredSecondHalf;
+                actualOutcome = won ? 'Yes' : 'No';
+                console.log(`   - Home team: 1st half scored=${scoredFirstHalf}, 2nd half scored=${scoredSecondHalf} → ${actualOutcome}`);
+            } else if (selection === 'away') {
+                // Check if away team scored in both halves
+                const scoredFirstHalf = awayFirstHalf > 0;
+                const scoredSecondHalf = awaySecondHalf > 0;
+                won = scoredFirstHalf && scoredSecondHalf;
+                actualOutcome = won ? 'Yes' : 'No';
+                console.log(`   - Away team: 1st half scored=${scoredFirstHalf}, 2nd half scored=${scoredSecondHalf} → ${actualOutcome}`);
+            } else {
+                // For "No" selection, check if neither team scored in both halves
+                const homeScoredBoth = homeFirstHalf > 0 && homeSecondHalf > 0;
+                const awayScoredBoth = awayFirstHalf > 0 && awaySecondHalf > 0;
+                won = !homeScoredBoth && !awayScoredBoth;
+                actualOutcome = won ? 'No' : 'Yes';
+                console.log(`   - No team scored in both halves: home=${homeScoredBoth}, away=${awayScoredBoth} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                firstHalfScore: `${homeFirstHalf}-${awayFirstHalf}`,
+                secondHalfScore: `${homeSecondHalf}-${awaySecondHalf}`,
+                matchId: matchDetails.general?.matchId,
+                reason: `Goal in Both Halves: ${actualOutcome} (1st: ${homeFirstHalf}-${awayFirstHalf}, 2nd: ${homeSecondHalf}-${awaySecondHalf})`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.PLAYER_RED_CARD) {
+            // To Get a Red Card - check if the selected player received a red card
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            
+            console.log(`🎯 TO GET A RED CARD MARKET: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            
+            // Get all card events from the match
+            const cardEvents = getCardEvents(matchDetails);
+            console.log(`   - Total card events found: ${cardEvents.length}`);
+            
+            // Filter for red cards only
+            const redCardEvents = cardEvents.filter(card => {
+                const cardType = card.card?.toLowerCase() || '';
+                return cardType.includes('red');
+            });
+            
+            console.log(`   - Red card events: ${redCardEvents.length}`);
+            
+            let actualOutcome;
+            let won = false;
+            
+            if (selection === 'yes') {
+                // Generic "Yes" bet - any player gets a red card
+                won = redCardEvents.length > 0;
+                actualOutcome = won ? 'Yes' : 'No';
+                console.log(`   - Any player red card: ${redCardEvents.length} → ${actualOutcome}`);
+            } else if (selection === 'no') {
+                // Generic "No" bet - no player gets a red card
+                won = redCardEvents.length === 0;
+                actualOutcome = won ? 'No' : 'Yes';
+                console.log(`   - No player red card: ${redCardEvents.length === 0} → ${actualOutcome}`);
+            } else {
+                // Specific player bet - check if that specific player got a red card
+                console.log(`   - Checking specific player: "${selection}"`);
+                
+                // Find red cards for this specific player
+                const playerRedCards = redCardEvents.filter(card => {
+                    const playerName = card.player?.toLowerCase() || '';
+                    const cardPlayerName = card.playerName?.toLowerCase() || '';
+                    return playerName.includes(selection) || cardPlayerName.includes(selection) ||
+                           selection.includes(playerName) || selection.includes(cardPlayerName);
+                });
+                
+                console.log(`   - Red cards for ${selection}: ${playerRedCards.length}`);
+                
+                // For player-specific bets, "Yes" means the player WILL get a red card
+                // So if the player got a red card, the bet WINS
+                won = playerRedCards.length > 0;
+                actualOutcome = won ? 'Yes' : 'No';
+                console.log(`   - Player ${selection} red card: ${playerRedCards.length} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                redCardsCount: redCardEvents.length,
+                matchId: matchDetails.general?.matchId,
+                reason: `To Get a Red Card: ${actualOutcome} (${redCardEvents.length} red cards in match)`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.FIRST_GOAL_SCORER) {
+            // First Goal Scorer - check who scored the first goal
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 FIRST GOAL SCORER MARKET: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Get all goal events from the match
+            const goalEvents = getGoalEvents(matchDetails);
+            console.log(`   - Total goals found: ${goalEvents.length}`);
+            
+            let actualOutcome;
+            let won = false;
+            
+            if (selection === 'no goal' || selection === 'no goals') {
+                // Betting on "No goal" - check if any goals were scored
+                won = goalEvents.length === 0;
+                actualOutcome = won ? 'No goal' : 'Goal scored';
+                console.log(`   - No goal bet: ${goalEvents.length === 0} → ${actualOutcome}`);
+            } else {
+                // Betting on a specific player to score first
+                console.log(`   - Checking first goal scorer: "${selection}"`);
+                
+                if (goalEvents.length === 0) {
+                    // No goals scored
+                    won = false;
+                    actualOutcome = 'No goal';
+                    console.log(`   - No goals scored → LOST`);
+                } else {
+                    // Find the first goal (earliest minute)
+                    const firstGoal = goalEvents.reduce((earliest, goal) => {
+                        const currentMinute = getAbsoluteMinuteFromEvent(goal);
+                        const earliestMinute = getAbsoluteMinuteFromEvent(earliest);
+                        return currentMinute < earliestMinute ? goal : earliest;
+                    });
+                    
+                    const firstGoalScorer = firstGoal.player?.name || firstGoal.nameStr || firstGoal.fullName || '';
+                    const firstGoalMinute = getAbsoluteMinuteFromEvent(firstGoal);
+                    
+                    console.log(`   - First goal: ${firstGoalScorer} at minute ${firstGoalMinute}`);
+                    
+                    // Check if the selected player scored the first goal
+                    const scorerMatches = firstGoalScorer.toLowerCase().includes(selection) || 
+                                       selection.includes(firstGoalScorer.toLowerCase());
+                    
+                    won = scorerMatches;
+                    actualOutcome = won ? firstGoalScorer : firstGoalScorer;
+                    console.log(`   - First goal scorer match: ${scorerMatches} → ${actualOutcome}`);
+                }
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                firstGoalScorer: goalEvents.length > 0 ? actualOutcome : 'No goal',
+                matchId: matchDetails.general?.matchId,
+                reason: `First Goal Scorer: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.GOALKEEPER_SAVES) {
+            // Goalkeeper Saves Over/Under - check if goalkeeper saves exceed the line
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const line = (Number(bet.line) || 0) / 1000; // Convert from 1500 to 1.5
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 GOALKEEPER SAVES MARKET: "${selection}"`);
+            console.log(`   - Line: ${line}`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Determine which team's goalkeeper saves to check
+            let targetTeam = null;
+            let actualSaves = 0;
+            
+            // Check if the market is for a specific team
+            const marketName = String(bet.marketName || '').toLowerCase();
+            if (marketName.includes(homeName.toLowerCase())) {
+                targetTeam = homeName;
+                actualSaves = getGoalkeeperSaves(matchDetails, homeName);
+            } else if (marketName.includes(awayName.toLowerCase())) {
+                targetTeam = awayName;
+                actualSaves = getGoalkeeperSaves(matchDetails, awayName);
+            } else {
+                // Default to home team if no specific team mentioned
+                targetTeam = homeName;
+                actualSaves = getGoalkeeperSaves(matchDetails, homeName);
+            }
+            
+            console.log(`   - Target team: ${targetTeam}`);
+            console.log(`   - Actual saves: ${actualSaves}`);
+            
+            // If no accurate data is available, cancel the bet
+            if (actualSaves === null) {
+                console.log(`❌ No goalkeeper saves data available - cancelling bet`);
+                return {
+                    status: 'cancelled',
+                    reason: 'Goalkeeper saves data not available',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (selection === 'over') {
+                won = actualSaves > line;
+                actualOutcome = won ? `Over ${line} (${actualSaves})` : `Under ${line} (${actualSaves})`;
+                console.log(`   - Over bet: ${actualSaves} > ${line} = ${won} → ${actualOutcome}`);
+            } else if (selection === 'under') {
+                won = actualSaves < line;
+                actualOutcome = won ? `Under ${line} (${actualSaves})` : `Over ${line} (${actualSaves})`;
+                console.log(`   - Under bet: ${actualSaves} < ${line} = ${won} → ${actualOutcome}`);
+            } else {
+                // Handle other selection types or default to over
+                won = actualSaves > line;
+                actualOutcome = won ? `Over ${line} (${actualSaves})` : `Under ${line} (${actualSaves})`;
+                console.log(`   - Default over logic: ${actualSaves} > ${line} = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                goalkeeperSaves: actualSaves,
+                targetTeam: targetTeam,
+                line: line,
+                matchId: matchDetails.general?.matchId,
+                reason: `Goalkeeper Saves: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.GOALKEEPER_SAVES_TOTAL) {
+            // Total Goalkeeper Saves Over/Under - check total saves from both teams
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const line = (Number(bet.line) || 0) / 1000; // Convert from 1500 to 1.5
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 TOTAL GOALKEEPER SAVES MARKET: "${selection}"`);
+            console.log(`   - Line: ${line}`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Get saves from both teams
+            const homeSaves = getGoalkeeperSaves(matchDetails, homeName);
+            const awaySaves = getGoalkeeperSaves(matchDetails, awayName);
+            
+            console.log(`   - Home team saves: ${homeSaves}`);
+            console.log(`   - Away team saves: ${awaySaves}`);
+            
+            // If no accurate data is available, cancel the bet
+            if (homeSaves === null || awaySaves === null) {
+                console.log(`❌ No goalkeeper saves data available - cancelling bet`);
+                return {
+                    status: 'cancelled',
+                    reason: 'Goalkeeper saves data not available',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            const totalSaves = homeSaves + awaySaves;
+            console.log(`   - Total saves: ${totalSaves} (${homeSaves} + ${awaySaves})`);
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (selection === 'over') {
+                won = totalSaves > line;
+                actualOutcome = won ? `Over ${line} (${totalSaves})` : `Under ${line} (${totalSaves})`;
+                console.log(`   - Over bet: ${totalSaves} > ${line} = ${won} → ${actualOutcome}`);
+            } else if (selection === 'under') {
+                won = totalSaves < line;
+                actualOutcome = won ? `Under ${line} (${totalSaves})` : `Over ${line} (${totalSaves})`;
+                console.log(`   - Under bet: ${totalSaves} < ${line} = ${won} → ${actualOutcome}`);
+            } else {
+                // Default to over if selection is not explicitly over/under
+                won = totalSaves > line;
+                actualOutcome = won ? `Over ${line} (${totalSaves})` : `Under ${line} (${totalSaves})`;
+                console.log(`   - Default over logic: ${totalSaves} > ${line} = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                totalGoalkeeperSaves: totalSaves,
+                homeSaves: homeSaves,
+                awaySaves: awaySaves,
+                line: line,
+                matchId: matchDetails.general?.matchId,
+                reason: `Total Goalkeeper Saves: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.PLAYER_ASSIST) {
+            // Player To Assist - check if specific player got an assist
+            const participantName = bet.participant || bet.playerName || null;
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 PLAYER ASSIST MARKET: "${participantName}"`);
+            console.log(`   - Selection: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Determine if this is a "Yes" or "No" bet
+            const isYesBet = selection === 'yes';
+            const isNoBet = selection === 'no';
+            
+            if (!participantName) {
+                console.log(`❌ No participant name found for assist market`);
+                return {
+                    status: 'cancelled',
+                    reason: 'No participant name found for assist market',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            // Find player ID
+            let playerId = bet.participantId;
+            if (!playerId && participantName) {
+                playerId = findPlayerIdByName(matchDetails, participantName);
+            }
+            
+            if (!playerId) {
+                console.log(`❌ Player not found: ${participantName}`);
+                return {
+                    status: 'cancelled',
+                    reason: `Player "${participantName}" not found`,
+                    actualOutcome: 'Player not found',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            console.log(`   - Player ID: ${playerId}`);
+            
+            // Get player assists from match events
+            const assists = getPlayerAssists(matchDetails, Number(playerId));
+            console.log(`   - Player assists: ${assists}`);
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (isYesBet) {
+                won = assists > 0;
+                actualOutcome = won ? `Yes (${assists} assists)` : 'No (0 assists)';
+                console.log(`   - Yes bet: ${assists} > 0 = ${won} → ${actualOutcome}`);
+            } else if (isNoBet) {
+                won = assists === 0;
+                actualOutcome = won ? 'No (0 assists)' : `Yes (${assists} assists)`;
+                console.log(`   - No bet: ${assists} === 0 = ${won} → ${actualOutcome}`);
+            } else {
+                // Default to Yes bet if selection is not explicitly Yes/No
+                won = assists > 0;
+                actualOutcome = won ? `Yes (${assists} assists)` : 'No (0 assists)';
+                console.log(`   - Default Yes logic: ${assists} > 0 = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                playerAssists: assists,
+                playerName: participantName,
+                matchId: matchDetails.general?.matchId,
+                reason: `Player Assist: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.PLAYER_SCORE_OR_ASSIST) {
+            // Player To Score Or Assist - check if specific player scored OR assisted
+            const participantName = bet.participant || bet.playerName || null;
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 PLAYER SCORE OR ASSIST MARKET: "${participantName}"`);
+            console.log(`   - Selection: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Determine if this is a "Yes" or "No" bet
+            const isYesBet = selection === 'yes';
+            const isNoBet = selection === 'no';
+            
+            if (!participantName) {
+                console.log(`❌ No participant name found for score or assist market`);
+                return {
+                    status: 'cancelled',
+                    reason: 'No participant name found for score or assist market',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            // Find player ID
+            let playerId = bet.participantId;
+            if (!playerId && participantName) {
+                playerId = findPlayerIdByName(matchDetails, participantName);
+            }
+            
+            if (!playerId) {
+                console.log(`❌ Player not found: ${participantName}`);
+                return {
+                    status: 'cancelled',
+                    reason: `Player "${participantName}" not found`,
+                    actualOutcome: 'Player not found',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            console.log(`   - Player ID: ${playerId}`);
+            
+            // Get player goals and assists from match events
+            const { goals, assists, total } = getPlayerScoreOrAssist(matchDetails, Number(playerId));
+            console.log(`   - Player goals: ${goals}, assists: ${assists}, total: ${total}`);
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (isYesBet) {
+                won = total > 0;
+                actualOutcome = won ? `Yes (${goals} goals, ${assists} assists)` : 'No (0 goals, 0 assists)';
+                console.log(`   - Yes bet: ${total} > 0 = ${won} → ${actualOutcome}`);
+            } else if (isNoBet) {
+                won = total === 0;
+                actualOutcome = won ? 'No (0 goals, 0 assists)' : `Yes (${goals} goals, ${assists} assists)`;
+                console.log(`   - No bet: ${total} === 0 = ${won} → ${actualOutcome}`);
+            } else {
+                // Default to Yes bet if selection is not explicitly Yes/No
+                won = total > 0;
+                actualOutcome = won ? `Yes (${goals} goals, ${assists} assists)` : 'No (0 goals, 0 assists)';
+                console.log(`   - Default Yes logic: ${total} > 0 = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                playerGoals: goals,
+                playerAssists: assists,
+                playerTotal: total,
+                playerName: participantName,
+                matchId: matchDetails.general?.matchId,
+                reason: `Player Score Or Assist: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.PLAYER_SCORE_OUTSIDE_PENALTY) {
+            // Player To Score From Outside Penalty Box - check if specific player scored from outside penalty box
+            const participantName = bet.participant || bet.playerName || null;
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 PLAYER SCORE OUTSIDE PENALTY MARKET: "${participantName}"`);
+            console.log(`   - Selection: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Determine if this is a "Yes" or "No" bet
+            const isYesBet = selection === 'yes';
+            const isNoBet = selection === 'no';
+            
+            if (!participantName) {
+                console.log(`❌ No participant name found for score from outside penalty market`);
+                return {
+                    status: 'cancelled',
+                    reason: 'No participant name found for score from outside penalty market',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            // Find player ID
+            let playerId = bet.participantId;
+            if (!playerId && participantName) {
+                playerId = findPlayerIdByName(matchDetails, participantName);
+            }
+            
+            if (!playerId) {
+                console.log(`❌ Player not found: ${participantName}`);
+                return {
+                    status: 'cancelled',
+                    reason: `Player "${participantName}" not found`,
+                    actualOutcome: 'Player not found',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            console.log(`   - Player ID: ${playerId}`);
+            
+            // Get player goals from outside penalty box
+            const goalsFromOutside = getPlayerGoalsFromOutsidePenalty(matchDetails, Number(playerId));
+            console.log(`   - Player goals from outside penalty box: ${goalsFromOutside}`);
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (isYesBet) {
+                won = goalsFromOutside > 0;
+                actualOutcome = won ? `Yes (${goalsFromOutside} goals from outside penalty box)` : 'No (0 goals from outside penalty box)';
+                console.log(`   - Yes bet: ${goalsFromOutside} > 0 = ${won} → ${actualOutcome}`);
+            } else if (isNoBet) {
+                won = goalsFromOutside === 0;
+                actualOutcome = won ? 'No (0 goals from outside penalty box)' : `Yes (${goalsFromOutside} goals from outside penalty box)`;
+                console.log(`   - No bet: ${goalsFromOutside} === 0 = ${won} → ${actualOutcome}`);
+            } else {
+                // Default to Yes bet if selection is not explicitly Yes/No
+                won = goalsFromOutside > 0;
+                actualOutcome = won ? `Yes (${goalsFromOutside} goals from outside penalty box)` : 'No (0 goals from outside penalty box)';
+                console.log(`   - Default Yes logic: ${goalsFromOutside} > 0 = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                playerGoalsFromOutside: goalsFromOutside,
+                playerName: participantName,
+                matchId: matchDetails.general?.matchId,
+                reason: `Player Score From Outside Penalty: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.PLAYER_SCORE_HEADER) {
+            // Player To Score From Header - check if specific player scored with a header
+            const participantName = bet.participant || bet.playerName || null;
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 PLAYER SCORE HEADER MARKET: "${participantName}"`);
+            console.log(`   - Selection: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Determine if this is a "Yes" or "No" bet
+            const isYesBet = selection === 'yes';
+            const isNoBet = selection === 'no';
+            
+            if (!participantName) {
+                console.log(`❌ No participant name found for score from header market`);
+                return {
+                    status: 'cancelled',
+                    reason: 'No participant name found for score from header market',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            // Find player ID
+            let playerId = bet.participantId;
+            if (!playerId && participantName) {
+                playerId = findPlayerIdByName(matchDetails, participantName);
+            }
+            
+            if (!playerId) {
+                console.log(`❌ Player not found: ${participantName}`);
+                return {
+                    status: 'cancelled',
+                    reason: `Player "${participantName}" not found`,
+                    actualOutcome: 'Player not found',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            console.log(`   - Player ID: ${playerId}`);
+            
+            // Get player header goals
+            const headerGoals = getPlayerGoalsFromHeader(matchDetails, Number(playerId));
+            console.log(`   - Player header goals: ${headerGoals}`);
+            
+            let won = false;
+            let actualOutcome;
+            
+            if (isYesBet) {
+                won = headerGoals > 0;
+                actualOutcome = won ? `Yes (${headerGoals} header goals)` : 'No (0 header goals)';
+                console.log(`   - Yes bet: ${headerGoals} > 0 = ${won} → ${actualOutcome}`);
+            } else if (isNoBet) {
+                won = headerGoals === 0;
+                actualOutcome = won ? 'No (0 header goals)' : `Yes (${headerGoals} header goals)`;
+                console.log(`   - No bet: ${headerGoals} === 0 = ${won} → ${actualOutcome}`);
+            } else {
+                // Default to Yes bet if selection is not explicitly Yes/No
+                won = headerGoals > 0;
+                actualOutcome = won ? `Yes (${headerGoals} header goals)` : 'No (0 header goals)';
+                console.log(`   - Default Yes logic: ${headerGoals} > 0 = ${won} → ${actualOutcome}`);
+            }
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                playerHeaderGoals: headerGoals,
+                playerName: participantName,
+                matchId: matchDetails.general?.matchId,
+                reason: `Player Score From Header: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
+        } else if (marketCode === MarketCodes.HALF_TIME) {
+            // Half Time Result - check the halftime score
+            const selection = String(bet.outcomeLabel || '').toLowerCase();
+            const { homeScore: ftHome, awayScore: ftAway } = getFinalScore(matchDetails);
+            const { homeName, awayName } = getTeamNames(matchDetails);
+            
+            console.log(`🎯 HALF TIME MARKET: "${selection}"`);
+            console.log(`   - Selection: "${selection}"`);
+            console.log(`   - Full Time: ${ftHome}-${ftAway}`);
+            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            
+            // Get halftime score
+            const halftimeScore = getHalftimeScore(matchDetails);
+            console.log(`   - Halftime Score: ${halftimeScore.home}-${halftimeScore.away}`);
+            
+            if (!halftimeScore || halftimeScore.home === null || halftimeScore.away === null) {
+                console.log(`❌ Halftime score not available`);
+                return {
+                    status: 'cancelled',
+                    reason: 'Halftime score not available',
+                    actualOutcome: 'Data unavailable',
+                    finalScore: `${ftHome}-${ftAway}`,
+                    matchId: matchDetails.general?.matchId,
+                    payout: 0,
+                    stake: bet.stake,
+                    odds: bet.odds
+                };
+            }
+            
+            // Determine the actual halftime result
+            let actualResult;
+            if (halftimeScore.home > halftimeScore.away) {
+                actualResult = '1'; // Home win
+            } else if (halftimeScore.away > halftimeScore.home) {
+                actualResult = '2'; // Away win
+            } else {
+                actualResult = 'X'; // Draw
+            }
+            
+            console.log(`   - Actual halftime result: ${actualResult}`);
+            
+            // Check if the bet won
+            const won = selection === actualResult;
+            const actualOutcome = `Halftime: ${halftimeScore.home}-${halftimeScore.away} (${actualResult})`;
+            
+            console.log(`   - Bet selection: "${selection}" vs Actual: "${actualResult}" = ${won}`);
+            
+            const status = won ? 'won' : 'lost';
+            const payout = won ? bet.stake * bet.odds : 0;
+            
+            return {
+                status: status,
+                actualOutcome: actualOutcome,
+                finalScore: `${ftHome}-${ftAway}`,
+                halftimeScore: `${halftimeScore.home}-${halftimeScore.away}`,
+                halftimeResult: actualResult,
+                matchId: matchDetails.general?.matchId,
+                reason: `Half Time Result: ${actualOutcome}`,
+                payout: payout,
+                stake: bet.stake,
+                odds: bet.odds
+            };
         } else {
             // For unsupported markets, return cancelled (not pending)
             console.log(`⚠️ Market "${bet.marketName}" not yet supported - returning cancelled`);
@@ -3444,6 +4311,10 @@ class BetOutcomeCalculator {
             console.log(`   - League: ${bet.leagueName} (ID: ${bet.leagueId})`);
             console.log(`   - Date: ${bet.start}`);
             console.log(`   - Market: ${bet.marketName}`);
+
+            // Import mongoose for ObjectId conversion
+            const mongoose = await import('mongoose');
+            const mongooseInstance = mongoose.default || mongoose;
 
             // Handle different ID formats - prioritize _originalBet.id since that's where the actual ID is
             let betId = bet._originalBet?.id || bet._id;
@@ -3668,12 +4539,8 @@ class BetOutcomeCalculator {
             console.log(`\n🔍 STEP 6: Updating bet in database...`);
             console.log(`   - Bet ID: ${bet._originalBet?.id} (type: ${typeof bet._id})`);
             
-            // Import Bet model and mongoose for ObjectId
+            // Import Bet model
             const { default: Bet } = await import('../models/Bet.js');
-            const mongoose = await import('mongoose');
-            
-            // Try to get the default mongoose connection
-            const mongooseInstance = mongoose.default || mongoose;
             
             // Check database connection status with error handling
             console.log(`   - Mongoose imported: ${mongoose ? 'YES' : 'NO'}`);

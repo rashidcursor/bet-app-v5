@@ -26,6 +26,16 @@ export const MarketCodes = {
 
     CARDS_3_WAY_LINE: 'CARDS_3_WAY_LINE',
     THREE_WAY_LINE: 'THREE_WAY_LINE',
+    GOAL_IN_BOTH_HALVES: 'GOAL_IN_BOTH_HALVES',
+    PLAYER_RED_CARD: 'PLAYER_RED_CARD',
+    FIRST_GOAL_SCORER: 'FIRST_GOAL_SCORER',
+    GOALKEEPER_SAVES: 'GOALKEEPER_SAVES',
+    GOALKEEPER_SAVES_TOTAL: 'GOALKEEPER_SAVES_TOTAL',
+    PLAYER_ASSIST: 'PLAYER_ASSIST',
+    PLAYER_SCORE_OR_ASSIST: 'PLAYER_SCORE_OR_ASSIST',
+    PLAYER_SCORE_OUTSIDE_PENALTY: 'PLAYER_SCORE_OUTSIDE_PENALTY',
+    PLAYER_SCORE_HEADER: 'PLAYER_SCORE_HEADER',
+    HALF_TIME: 'HALF_TIME',
 
     UNKNOWN: 'UNKNOWN'
 };
@@ -51,8 +61,10 @@ export const MARKET_REGISTRY = [
             const name = norm.marketNameLower;
             const crit = norm.criterionLower;
             const isScorer = (name.includes('to score') || crit.includes('to score')) && !name.includes('team');
+            // Exclude "To Score Or Assist" markets
+            const isScoreOrAssist = name.includes('to score or assist') || crit.includes('to score or assist');
             // Ensure it's actually a player market
-            return isScorer && (norm.hints.isPlayerOccurrenceLine || norm.hints.hasExplicitPlayer || looksLikePlayerSelection(norm));
+            return isScorer && !isScoreOrAssist && (norm.hints.isPlayerOccurrenceLine || norm.hints.hasExplicitPlayer || looksLikePlayerSelection(norm));
         }
     },
     {
@@ -248,6 +260,96 @@ export const MARKET_REGISTRY = [
         match: (bet, norm) => {
             const n = norm.marketNameLower;
             return (n.includes('3-way') && n.includes('line') && !n.includes('cards'));
+        }
+    },
+
+    {
+        code: MarketCodes.GOAL_IN_BOTH_HALVES,
+        priority: 20,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('goal in both halves');
+        }
+    },
+
+    {
+        code: MarketCodes.PLAYER_RED_CARD,
+        priority: 15,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('to get a red card');
+        }
+    },
+
+    {
+        code: MarketCodes.FIRST_GOAL_SCORER,
+        priority: 12,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('first goal scorer');
+        }
+    },
+
+    {
+        code: MarketCodes.GOALKEEPER_SAVES,
+        priority: 10,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('goalkeeper saves') && !n.includes('settled using opta data');
+        }
+    },
+
+    {
+        code: MarketCodes.GOALKEEPER_SAVES_TOTAL,
+        priority: 9,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('goalkeeper saves') && n.includes('settled using opta data');
+        }
+    },
+
+    {
+        code: MarketCodes.PLAYER_ASSIST,
+        priority: 8,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('to assist') && n.includes('settled using opta data');
+        }
+    },
+
+    {
+        code: MarketCodes.PLAYER_SCORE_OR_ASSIST,
+        priority: 98,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('to score or assist') && n.includes('settled using opta data');
+        }
+    },
+
+    {
+        code: MarketCodes.PLAYER_SCORE_OUTSIDE_PENALTY,
+        priority: 97,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('to score from outside the penalty box');
+        }
+    },
+
+    {
+        code: MarketCodes.PLAYER_SCORE_HEADER,
+        priority: 96,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('to score from a header');
+        }
+    },
+
+    {
+        code: MarketCodes.HALF_TIME,
+        priority: 15,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            return n.includes('half time') && !n.includes('total') && !n.includes('goals');
         }
     },
 

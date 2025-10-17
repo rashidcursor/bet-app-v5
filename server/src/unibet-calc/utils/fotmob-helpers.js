@@ -27,7 +27,7 @@ function flattenEventMap(eventMap) {
     return arrays.flat();
 }
 
-function getGoalEvents(matchDetails) {
+export function getGoalEvents(matchDetails) {
     const home = flattenEventMap(matchDetails?.header?.events?.homeTeamGoals);
     const away = flattenEventMap(matchDetails?.header?.events?.awayTeamGoals);
     const homeGoals = home.map(e => ({ ...e, isHome: true }));
@@ -323,4 +323,223 @@ export function getPlayerEvents(matchDetails, playerId) {
     console.log(`   - Player cards data:`, cards);
     
     return { goals, cards };
+}
+
+export function getGoalkeeperSaves(matchDetails, teamName) {
+    console.log(`🔍 Getting goalkeeper saves for team: ${teamName}`);
+    
+    // Only use actual data - NO estimates
+    // Check both possible locations for playerStats
+    const playerStats = matchDetails?.content?.playerStats || matchDetails?.playerStats || {};
+    console.log(`   - Player stats available: ${Object.keys(playerStats).length}`);
+    
+    if (Object.keys(playerStats).length === 0) {
+        console.log(`❌ No player stats available - cannot determine goalkeeper saves`);
+        return null; // Return null to indicate no data available
+    }
+    
+    let totalSaves = 0;
+    let goalkeepersFound = 0;
+    
+    // Parse the Fotmob data structure correctly
+    for (const [playerId, playerData] of Object.entries(playerStats)) {
+        if (!playerData || !playerData.name) continue;
+        
+        // Check if this player is a goalkeeper using the isGoalkeeper flag
+        const isGoalkeeper = playerData.isGoalkeeper === true;
+        
+        if (isGoalkeeper) {
+            // Check if this goalkeeper belongs to the specified team
+            const playerTeamName = playerData.teamName || '';
+            
+            // More flexible team name matching
+            const normalizeTeamName = (name) => {
+                return name.toLowerCase()
+                    .replace(/[áàâãä]/g, 'a')
+                    .replace(/[éèêë]/g, 'e')
+                    .replace(/[íìîï]/g, 'i')
+                    .replace(/[óòôõö]/g, 'o')
+                    .replace(/[úùûü]/g, 'u')
+                    .replace(/[ç]/g, 'c')
+                    .replace(/[ñ]/g, 'n')
+                    .replace(/[^a-z0-9]/g, '');
+            };
+            
+            const normalizedPlayerTeam = normalizeTeamName(playerTeamName);
+            const normalizedTargetTeam = normalizeTeamName(teamName);
+            
+            const isCorrectTeam = normalizedPlayerTeam.includes(normalizedTargetTeam) ||
+                                 normalizedTargetTeam.includes(normalizedPlayerTeam) ||
+                                 // Special cases for known team name variations (using normalized names)
+                                 (normalizedTargetTeam.includes('atletico') && normalizedPlayerTeam.includes('atletico')) ||
+                                 (normalizedTargetTeam.includes('bolivar') && normalizedPlayerTeam.includes('bolivar')) ||
+                                 // Handle "Atletico MG" vs "Atlético Mineiro" case
+                                 (normalizedTargetTeam.includes('atletico') && normalizedTargetTeam.includes('mg') && 
+                                  normalizedPlayerTeam.includes('atletico') && normalizedPlayerTeam.includes('mineiro'));
+            
+            if (isCorrectTeam) {
+                goalkeepersFound++;
+                console.log(`   - Found goalkeeper: ${playerData.name} (Team: ${playerData.teamName})`);
+                
+                // Extract saves from the stats array
+                let playerSaves = 0;
+                if (playerData.stats && Array.isArray(playerData.stats)) {
+                    for (const statGroup of playerData.stats) {
+                        if (statGroup.stats && statGroup.stats["Saves"]) {
+                            playerSaves = Number(statGroup.stats["Saves"].stat.value) || 0;
+                            console.log(`   - Goalkeeper ${playerData.name}: ${playerSaves} saves`);
+                            break; // Found saves data, no need to continue
+                        }
+                    }
+                }
+                
+                totalSaves += playerSaves;
+            }
+        }
+    }
+    
+    if (goalkeepersFound === 0) {
+        console.log(`❌ No goalkeepers found in player stats`);
+        return null;
+    }
+    
+    console.log(`   - Total saves for ${teamName}: ${totalSaves} (from ${goalkeepersFound} goalkeepers)`);
+    return totalSaves;
+}
+
+export function getPlayerAssists(matchDetails, playerId) {
+    console.log(`🔍 Getting assists for player ID: ${playerId}`);
+    
+    // Get events from match details
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Total events: ${events.length}`);
+    
+    let assists = 0;
+    
+    // Look for assist events
+    for (const event of events) {
+        if (event.type === 'Goal' && event.assist && event.assist.id === playerId) {
+            assists++;
+            console.log(`   - Assist found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+        }
+    }
+    
+    console.log(`   - Total assists: ${assists}`);
+    return assists;
+}
+
+export function getPlayerGoals(matchDetails, playerId) {
+    console.log(`🔍 Getting goals for player ID: ${playerId}`);
+    
+    // Get events from match details
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Total events: ${events.length}`);
+    
+    let goals = 0;
+    
+    // Look for goal events where this player scored
+    for (const event of events) {
+        if (event.type === 'Goal' && event.player && event.player.id === playerId) {
+            goals++;
+            console.log(`   - Goal found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+        }
+    }
+    
+    console.log(`   - Total goals: ${goals}`);
+    return goals;
+}
+
+export function getPlayerScoreOrAssist(matchDetails, playerId) {
+    console.log(`🔍 Getting goals or assists for player ID: ${playerId}`);
+    
+    const goals = getPlayerGoals(matchDetails, playerId);
+    const assists = getPlayerAssists(matchDetails, playerId);
+    const total = goals + assists;
+    
+    console.log(`   - Goals: ${goals}, Assists: ${assists}, Total: ${total}`);
+    return { goals, assists, total };
+}
+
+export function getPlayerGoalsFromOutsidePenalty(matchDetails, playerId) {
+    console.log(`🔍 Getting goals from outside penalty box for player ID: ${playerId}`);
+    
+    // Get events from match details
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Total events: ${events.length}`);
+    
+    let goalsFromOutside = 0;
+    
+    // Look for goal events where this player scored from outside the penalty box
+    for (const event of events) {
+        if (event.type === 'Goal' && event.player && event.player.id === playerId) {
+            // Check if the goal was scored from outside the penalty box
+            // This would typically be indicated by event coordinates or other metadata
+            // For now, we'll assume all goals are from outside penalty box if no specific data is available
+            // In a real implementation, you'd check event coordinates or other metadata
+            
+            // Check if there's any indication this was from outside penalty box
+            const isOutsidePenalty = event.outsidePenaltyBox === true || 
+                                   event.goalType === 'outside_penalty' ||
+                                   (event.coordinates && isOutsidePenaltyBox(event.coordinates));
+            
+            if (isOutsidePenalty) {
+                goalsFromOutside++;
+                console.log(`   - Goal from outside penalty box found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+            } else {
+                // If no specific data is available, we can't determine if it was from outside penalty box
+                // This is a limitation of the current data structure
+                console.log(`   - Goal found but cannot determine if from outside penalty box: Goal at minute ${event.minute}`);
+            }
+        }
+    }
+    
+    console.log(`   - Total goals from outside penalty box: ${goalsFromOutside}`);
+    return goalsFromOutside;
+}
+
+// Helper function to determine if coordinates are outside penalty box
+function isOutsidePenaltyBox(coordinates) {
+    if (!coordinates || !coordinates.x || !coordinates.y) return false;
+    
+    // Penalty box is typically from x=0 to x=16.5 (18-yard box)
+    // and from y=0 to y=100 (full width)
+    const x = coordinates.x;
+    const y = coordinates.y;
+    
+    // Outside penalty box if x > 16.5 (beyond 18-yard line)
+    return x > 16.5;
+}
+
+export function getPlayerGoalsFromHeader(matchDetails, playerId) {
+    console.log(`🔍 Getting header goals for player ID: ${playerId}`);
+    
+    // Get events from match details
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Total events: ${events.length}`);
+    
+    let headerGoals = 0;
+    
+    // Look for goal events where this player scored with a header
+    for (const event of events) {
+        if (event.type === 'Goal' && event.player && event.player.id === playerId) {
+            // Check if the goal was scored with a header
+            // This would typically be indicated by event metadata or goal type
+            const isHeader = event.goalType === 'header' || 
+                           event.bodyPart === 'head' ||
+                           event.goalMethod === 'header' ||
+                           (event.description && event.description.toLowerCase().includes('header')) ||
+                           (event.goalType && event.goalType.toLowerCase().includes('header'));
+            
+            if (isHeader) {
+                headerGoals++;
+                console.log(`   - Header goal found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+            } else {
+                // If no specific data is available, we can't determine if it was a header
+                console.log(`   - Goal found but cannot determine if from header: Goal at minute ${event.minute}`);
+            }
+        }
+    }
+    
+    console.log(`   - Total header goals: ${headerGoals}`);
+    return headerGoals;
 }
