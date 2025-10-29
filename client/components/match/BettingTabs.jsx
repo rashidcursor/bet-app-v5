@@ -47,7 +47,7 @@ const BettingTabs = ({ matchData }) => {
     // Helper function to get data by category
     const getDataByCategory = useCallback((categoryId) => {
         const classifiedOdds = classification.classified_odds || {};
-        
+
         if (categoryId === 'all') {
             // For 'all', use all categories from classified_odds
             return Object.entries(classifiedOdds)
@@ -70,8 +70,8 @@ const BettingTabs = ({ matchData }) => {
                             probability: odd.probability,
                             winning: odd.winning,
                             handicap: odd.handicap,
-                            total:odd.total,
-                            suspended:odd.suspended
+                            total: odd.total,
+                            suspended: odd.suspended
                         }))
                     }));
 
@@ -108,8 +108,8 @@ const BettingTabs = ({ matchData }) => {
                 probability: odd.probability,
                 winning: odd.winning,
                 handicap: odd.handicap,
-                total:odd.total,
-                suspended:odd.suspended
+                total: odd.total,
+                suspended: odd.suspended
             }))
         }));
 
@@ -262,69 +262,84 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     }
     const isAllTab = groupedMarkets.length > 1;
     // Helper for grid class
-    const getGridClass = (options) => {
-        // For result markets (1X2), always use 3 columns if there are 3 options
+    const getGridClass = (options, sectionTitle) => {
+        // For 3-Way Handicap markets, always use 3 columns
+        const is3WayHandicapMarket = sectionTitle &&
+            (sectionTitle.toLowerCase().includes('3-way line') ||
+                sectionTitle.toLowerCase().includes('3 way line'));
+
+        const isCorrectScoreMarket = sectionTitle &&
+            (sectionTitle.toLowerCase().includes('correct score'));
+        if (isCorrectScoreMarket) return "grid-cols-3";
+        const isAsianLineMarket = sectionTitle &&
+            (sectionTitle.toLowerCase().includes('asian line'));
         const isResultMarket = options.length === 3 &&
             (options.some(opt => opt.label.toLowerCase().includes('draw')) ||
                 options.every(opt => ['1x', 'x2', '12'].includes(opt.label.toLowerCase())) ||
                 options.some(opt => opt.label.toLowerCase().includes('or'))) // Added for Double Chance detection
-        
+
         // For over/under markets, always use 2 columns
-        const isOverUnderMarket = options.length === 2 && 
-            options.some(opt => opt.label.toLowerCase().includes('over')) && 
+        const isOverUnderMarket =
+            options.some(opt => opt.label.toLowerCase().includes('over')) &&
             options.some(opt => opt.label.toLowerCase().includes('under'));
-        
+
+
+        if (isAsianLineMarket) return "grid-cols-2";
+        // For 3-Way Handicap markets, force 3 columns
+        if (is3WayHandicapMarket) return "grid-cols-3";
+
         // For very small screens (< 500px), limit to max 2 columns for result markets
-        if (isResultMarket) return "grid-cols-2 min-[800px]:grid-cols-3";
-        if (isOverUnderMarket) return "grid-cols-1 min-[500px]:grid-cols-2";
-        
+        if (isResultMarket) return "grid-cols-1";
+        if (isOverUnderMarket) return "grid-cols-2";
+
         const optionsCount = options.length;
-        if (optionsCount <= 2) return "grid-cols-1 min-[500px]:grid-cols-2";
-        else if (optionsCount <= 4) return "grid-cols-1 min-[500px]:grid-cols-2 min-[800px]:grid-cols-4";
-        else if (optionsCount <= 6) return "grid-cols-1 min-[500px]:grid-cols-2 min-[800px]:grid-cols-3";
-        else return "grid-cols-1 min-[500px]:grid-cols-2 min-[800px]:grid-cols-3 lg:grid-cols-4";
+        if (optionsCount <= 2) return "grid-cols-2";
+        else if (optionsCount === 3) return "grid-cols-3";
+        else if (optionsCount <= 4) return "grid-cols-4";
+        else if (optionsCount <= 6) return "grid-cols-3";
+        else return "grid-cols-2";
     };
 
     // Helper function to sort result options in Home, Draw, Away order
     const sortResultOptions = (options, matchData) => {
         const homeTeam = matchData?.participants?.[0]?.name;
         const awayTeam = matchData?.participants?.[1]?.name;
-        
+
         return options.sort((a, b) => {
             // Define the desired order: Home (1), Draw (X), Away (2)
             const getOrder = (option) => {
                 const label = option.label?.toLowerCase();
                 const name = option.name?.toLowerCase();
-                
+
                 // Check for home team (1)
-                if (label === '1' || 
-                    label === 'home' || 
+                if (label === '1' ||
+                    label === 'home' ||
                     name === 'home' ||
                     (homeTeam && (label === homeTeam.toLowerCase() || name === homeTeam.toLowerCase()))) {
                     return 1;
                 }
-                
+
                 // Check for draw (X)
-                if (label === 'x' || 
-                    label === 'draw' || 
+                if (label === 'x' ||
+                    label === 'draw' ||
                     label === 'tie' ||
                     name === 'draw' ||
                     name === 'tie') {
                     return 2;
                 }
-                
+
                 // Check for away team (2)
-                if (label === '2' || 
+                if (label === '2' ||
                     label === 'away' ||
                     name === 'away' ||
                     (awayTeam && (label === awayTeam.toLowerCase() || name === awayTeam.toLowerCase()))) {
                     return 3;
                 }
-                
+
                 // Default order for unknown options
                 return 4;
             };
-            
+
             return getOrder(a) - getOrder(b);
         });
     };
@@ -332,114 +347,202 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     // Render betting options
     const renderOptions = (options, section) => {
         // Special handling for result markets (1X2, Match Result, etc.)
-        const isResultMarket = 
-            section.title?.toLowerCase().includes('result') || 
+        const isResultMarket =
+            section.title?.toLowerCase().includes('result') ||
             section.title?.toLowerCase().includes('winner') ||
             section.title?.toLowerCase().includes('1x2') ||
             section.title?.toLowerCase().includes('double chance');
-        
+
         // Special handling for handicap markets (include Asian Line and generic "Line" markets like Cards Line)
         const isHandicapMarket = (() => {
             const t = section.title?.toLowerCase() || '';
             return t.includes('handicap') || t.includes('asian line') || t.includes('asian handicap') || t.includes(' line');
         })();
-        
+
         // Special handling for half-time markets
         const isHalfTimeMarket =
             section.title?.toLowerCase().includes('1st half') ||
             section.title?.toLowerCase().includes('first half') ||
             section.title?.toLowerCase().includes('halftime');
-        
+
         // Special handling for over/under markets
-        const isOverUnderMarket = 
-            section.title?.toLowerCase().includes('over/under') || 
-            (options.length === 2 && 
-             options.some(opt => opt.label.toLowerCase().includes('over')) && 
-             options.some(opt => opt.label.toLowerCase().includes('under')));
-        
+        const isOverUnderMarket =
+            section.title?.toLowerCase().includes('over/under') ||
+            (options.length === 2 &&
+                options.some(opt => opt.label.toLowerCase().includes('over')) &&
+                options.some(opt => opt.label.toLowerCase().includes('under')));
+
         // Special handling for Match Goals market (market_id: 4)
-        const isMatchGoalsMarket = 
+        const isMatchGoalsMarket =
             section.title?.toLowerCase().includes('match goals') ||
             section.type === '4' ||
-            (options.length === 2 && 
-             options.some(opt => opt.label.toLowerCase().includes('over')) && 
-             options.some(opt => opt.label.toLowerCase().includes('under')) &&
-             options.some(opt => opt.total));
-        
+            (options.length === 2 &&
+                options.some(opt => opt.label.toLowerCase().includes('over')) &&
+                options.some(opt => opt.label.toLowerCase().includes('under')) &&
+                options.some(opt => opt.total));
+
         // Special handling for Alternative Match Goals market (market_id: 5)
-        const isAlternativeMatchGoalsMarket = 
+        const isAlternativeMatchGoalsMarket =
             section.title?.toLowerCase().includes('alternative match goals') ||
             section.type === '5' ||
-            (section.title?.toLowerCase().includes('alternative') && 
-             section.title?.toLowerCase().includes('match goals'));
-        
+            (section.title?.toLowerCase().includes('alternative') &&
+                section.title?.toLowerCase().includes('match goals'));
+
         // Special handling for goal scorer markets
-        const isGoalScorerMarket = 
-            section.title?.toLowerCase().includes('team to score') || 
-            section.title?.toLowerCase().includes('first team') || 
+        const isGoalScorerMarket =
+            section.title?.toLowerCase().includes('team to score') ||
+            section.title?.toLowerCase().includes('first team') ||
             section.title?.toLowerCase().includes('last team') ||
             section.type === 'goal-scorer';
 
+        // Special handling for Goal Scorer markets (First Goal Scorer + To Score)
+        const isGoalScorerSection =
+            section.title?.toLowerCase().includes('goal scorer') ||
+            section.title?.toLowerCase().includes('first goal scorer') ||
+            section.title?.toLowerCase().includes('to score');
+
         // Special handling for Corner Match Bet markets
-        const isCornerMatchBet = 
+        const isCornerMatchBet =
             section.title?.toLowerCase().includes('corner match bet') ||
             section.type === 'corner-match-bet';
 
         // Special handling for Team Total Goals markets only (not individual exact goals markets)
-        const isTeamTotalGoalsMarket = 
+        const isTeamTotalGoalsMarket =
             section.title?.toLowerCase().includes('team total goals');
-            
+
         // Special handling for Over/Under markets (Alternative Total Goals, Total Goals, etc.)
         // Exclude corners markets and Odd/Even from being treated as Total Goals markets
         const titleLower = section.title?.toLowerCase() || '';
         const isOddEvenMarket = titleLower.includes('odd/even') || titleLower.includes('odd even');
-        const isTotalGoalsMarket = 
+        const isTotalGoalsMarket =
             !titleLower.includes('corners') && !isOddEvenMarket && (
-                (titleLower.includes('total goals') && 
-                 !titleLower.includes('exact total goals')) ||
-                (options.length > 2 && 
-                 options.some(opt => (opt.label || '').toLowerCase().includes('over')) && 
-                 options.some(opt => (opt.label || '').toLowerCase().includes('under')))
+                (titleLower.includes('total goals') &&
+                    !titleLower.includes('exact total goals')) ||
+                (options.length > 2 &&
+                    options.some(opt => (opt.label || '').toLowerCase().includes('over')) &&
+                    options.some(opt => (opt.label || '').toLowerCase().includes('under')))
             );
 
+        // Special rendering for 3-Way Line markets: group by handicap and show "Starts A-B" label before odds
+        const isThreeWayLineMarket = (() => {
+            const t = section.title?.toLowerCase() || '';
+            return t.includes('3-way line') || t.includes('3 way line') || t.includes('three way line');
+        })();
+
+        if (isThreeWayLineMarket) {
+            // Group options by handicap value
+            const byHandicap = {};
+            options.forEach(opt => {
+                const key = String(opt.handicap ?? '');
+                if (!byHandicap[key]) byHandicap[key] = [];
+                byHandicap[key].push(opt);
+            });
+            // Sort handicap groups: positives first (ascending), then negatives (descending by magnitude)
+            const parseNum = (v) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : 0;
+            };
+            const sortedKeys = Object.keys(byHandicap).sort((a, b) => {
+                const na = parseNum(a), nb = parseNum(b);
+                if (na >= 0 && nb < 0) return -1; // positives first
+                if (na < 0 && nb >= 0) return 1;
+                if (na >= 0 && nb >= 0) return na - nb; // ascending positives: 0,1,2...
+                // both negative: -1, -2, ... -> sort by absolute ascending (i.e., -1 before -2)
+                return Math.abs(na) - Math.abs(nb);
+            });
+
+            return (
+                <div className="space-y-3">
+                    {sortedKeys.map((key) => {
+                        const handicapNum = parseNum(key);
+                        const homeGoals = handicapNum > 0 ? Math.abs(handicapNum) : 0;
+                        const awayGoals = handicapNum < 0 ? Math.abs(handicapNum) : 0;
+                        const groupLabel = `Starts ${homeGoals}-${awayGoals}`;
+                        // Ensure options ordered Home, Draw, Away
+                        const groupOptions = sortResultOptions(byHandicap[key], matchData);
+                        return (
+                            <div key={`3wl-${key}`} className="">
+                                <div className="px-1 pb-1 text-xs font-medium text-gray-700">{groupLabel}</div>
+                                <div className={`grid ${getGridClass(groupOptions, section.title)} gap-1`}>
+                                    {groupOptions.map((option, idx) => (
+                                        <BettingOptionButton
+                                            key={`3wl-${key}-${idx}`}
+                                            label={option.label}
+                                            value={option.value}
+                                            sectionType={section?.type || 'market'}
+                                            optionId={option?.id}
+                                            matchData={matchData}
+                                            isResultOption={true}
+                                            isHandicapOption={false}
+                                            isHalfTimeOption={false}
+                                            isOverUnderOption={false}
+                                            isGoalScorerOption={false}
+                                            handicapValue={option.handicap}
+                                            halfIndicator={option.halfIndicator}
+                                            thresholds={option.thresholds}
+                                            total={option.total}
+                                            name={option.name}
+                                            marketDescription={section.title}
+                                            suspended={option.suspended}
+                                            marketId={option.marketId}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
         // Use appropriate grid class based on market type
-        const gridClass = isGoalScorerMarket && options.length === 3 ? "grid-cols-2 min-[800px]:grid-cols-3" : getGridClass(options);
-        
+        const gridClass = isGoalScorerMarket && options.length === 3 ? "grid-cols-2 min-[800px]:grid-cols-3" : getGridClass(options, section.title);
+
         // Special rendering for Team Total Goals markets
         if (isTeamTotalGoalsMarket) {
             return renderTeamGoalMarketsOptions(options, section);
         }
-        
+
         // Special rendering for Alternative Corners markets (Under | Exactly | Over partition)
         if (section.title?.toLowerCase().includes('alternative corners')) {
             return renderAlternativeCornersOptions(options, section);
         }
-        
+
+        // Special rendering for Total Corners market (Over/Under partition with Over on left)
+        if (section.title?.toLowerCase().includes('total corners') &&
+            !section.title?.toLowerCase().includes('alternative corners') &&
+            !section.title?.toLowerCase().includes('by')) {
+            return renderTotalCornersOptions(options, section);
+        }
+
         // Special rendering for Exact Total Goals markets (no partition)
         if (section.title?.toLowerCase().includes('exact total goals')) {
             return renderTotalGoalsOptions(options, section);
         }
-        
+
         // Special rendering for Total Goals markets (Over/Under partition)
         if (isTotalGoalsMarket) {
             return renderTotalGoalsOptions(options, section);
         }
-        
+
         // Special rendering for Match Goals market (market_id: 4)
         if (isMatchGoalsMarket) {
             return renderMatchGoalsOptions(options, section);
         }
-        
+
         // Special rendering for Alternative Match Goals market (market_id: 5)
         if (isAlternativeMatchGoalsMarket) {
             return renderMatchGoalsOptions(options, section);
         }
-        
+
         // Special rendering for Clean Sheet markets (Yes/No partition)
         if (section.title?.toLowerCase().includes('clean sheet')) {
             return renderCleanSheetOptions(options, section);
         }
-        
+
+        // Special rendering for Goal Scorer markets (group by player, show First Goal Scorer and To Score side by side)
+        // This will be handled at the category level in renderSections
+
         // Special handling for correct score markets
         const isCorrectScoreMarket =
             section.title?.toLowerCase().includes('correct score');
@@ -449,32 +552,32 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             return (
                 <div className={`grid ${gridClass} gap-1`}>
                     {options.map((option, idx) => (
-                                    <BettingOptionButton
+                        <BettingOptionButton
                             key={`cs-${option.id || idx}`}
                             label={option.label}
-                                        value={option.value}
-                                        sectionType={section?.type || 'market'}
-                                        optionId={option?.id}
-                                        matchData={matchData}
-                                        isResultOption={false}
-                                        isHandicapOption={false}
-                                        isHalfTimeOption={false}
-                                        isOverUnderOption={false}
-                                        isGoalScorerOption={false}
-                                        handicapValue={option.handicap}
-                                        halfIndicator={option.halfIndicator}
-                                        thresholds={option.thresholds}
-                                        total={option.total}
-                                        name={option.name}
-                                        marketDescription={section.title}
-                                        suspended={option.suspended}
-                                        marketId={option.marketId}
-                                    />
-                                ))}
+                            value={option.value}
+                            sectionType={section?.type || 'market'}
+                            optionId={option?.id}
+                            matchData={matchData}
+                            isResultOption={false}
+                            isHandicapOption={false}
+                            isHalfTimeOption={false}
+                            isOverUnderOption={false}
+                            isGoalScorerOption={false}
+                            handicapValue={option.handicap}
+                            halfIndicator={option.halfIndicator}
+                            thresholds={option.thresholds}
+                            total={option.total}
+                            name={option.name}
+                            marketDescription={section.title}
+                            suspended={option.suspended}
+                            marketId={option.marketId}
+                        />
+                    ))}
                 </div>
             );
         }
-        
+
         // Group Over/Under by participant for player shots markets
         const isPlayerShots = section.title?.toLowerCase().includes("player's shots") || section.title?.toLowerCase().includes('shots on target');
         let renderedOptions = options;
@@ -498,7 +601,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             });
             if (flattened.length) renderedOptions = flattened;
         }
-        
+
         return (
             <div className={`grid ${gridClass} gap-1`}>
                 {/* Sort options for result markets to ensure Home, Draw, Away order */}
@@ -512,8 +615,8 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                     } else if (section.title && section.title.toLowerCase().includes('winning margin')) {
                         name = option.name;
                     } else if ((option.label === '1' || option.label === '2') && matchData?.participants?.length >= 2
-                               && !section.title.toLowerCase().includes('specials')
-                               && !section.title.toLowerCase().includes('clean sheet')) {
+                        && !section.title.toLowerCase().includes('specials')
+                        && !section.title.toLowerCase().includes('clean sheet')) {
                         // Only set name to team name for 1/2 if NOT Specials and NOT Clean Sheet
                         name = option.label === '1' ? matchData.participants[0].name : matchData.participants[1].name;
                     } else {
@@ -581,12 +684,12 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 </div>
             );
         }
-        
+
         // For other Total Goals markets, separate options by Over/Under
-        const overOptions = options.filter(opt => 
+        const overOptions = options.filter(opt =>
             opt.label && opt.label.toLowerCase().includes('over')
         );
-        const underOptions = options.filter(opt => 
+        const underOptions = options.filter(opt =>
             opt.label && opt.label.toLowerCase().includes('under')
         );
 
@@ -620,12 +723,12 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 </div>
             );
         }
-        
+
         return (
             <div className="flex flex-col min-[640px]:flex-row gap-2">
                 {/* Over Options (Top on mobile, Left on desktop) */}
                 <div className="flex-1">
-                    
+
                     <div className="grid grid-cols-1 gap-1">
                         {overOptions.map((option, idx) => {
                             return (
@@ -654,13 +757,13 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         })}
                     </div>
                 </div>
-                
+
                 {/* Visual partition - horizontal line on mobile, vertical line on desktop */}
                 <div className="h-0.5 bg-gray-400 mx-2 rounded-full min-[640px]:h-auto min-[640px]:w-0.5"></div>
-                
+
                 {/* Under Options (Bottom on mobile, Right on desktop) */}
                 <div className="flex-1">
-                   
+
                     <div className="grid grid-cols-1 gap-1">
                         {underOptions.map((option, idx) => {
                             return (
@@ -693,19 +796,131 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
         );
     };
 
+    // Special rendering function for Total Corners markets (Over/Under partition with Over on left)
+    const renderTotalCornersOptions = (options, section) => {
+        // Separate options by Over/Under
+        const overOptions = options.filter(opt =>
+            opt.label && opt.label.toLowerCase().includes('over')
+        );
+        const underOptions = options.filter(opt =>
+            opt.label && opt.label.toLowerCase().includes('under')
+        );
+
+        // Fallback: if neither Over nor Under is present, render a simple grid
+        if (overOptions.length === 0 && underOptions.length === 0) {
+            return (
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1">
+                    {options.map((option, idx) => (
+                        <BettingOptionButton
+                            key={`corners-generic-${option.label}-${idx}`}
+                            label={option.label}
+                            value={option.value}
+                            sectionType={section?.type || 'market'}
+                            optionId={option?.id}
+                            matchData={matchData}
+                            isResultOption={false}
+                            isHandicapOption={false}
+                            isHalfTimeOption={false}
+                            isOverUnderOption={true}
+                            isGoalScorerOption={false}
+                            handicapValue={option.handicap}
+                            halfIndicator={option.halfIndicator}
+                            thresholds={option.thresholds}
+                            total={option.total}
+                            name={option.name}
+                            marketDescription={section.title}
+                            suspended={option.suspended}
+                            marketId={option.marketId}
+                        />
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex flex-col min-[640px]:flex-row gap-2">
+                {/* Over Options (Top on mobile, Left on desktop) */}
+                <div className="flex-1">
+                    <div className="grid grid-cols-1 gap-1">
+                        {overOptions.map((option, idx) => {
+                            return (
+                                <BettingOptionButton
+                                    key={`over-corners-${option.label}-${idx}`}
+                                    label={option.label}
+                                    value={option.value}
+                                    sectionType={section?.type || 'market'}
+                                    optionId={option?.id}
+                                    matchData={matchData}
+                                    isResultOption={false}
+                                    isHandicapOption={false}
+                                    isHalfTimeOption={false}
+                                    isOverUnderOption={true}
+                                    isGoalScorerOption={false}
+                                    handicapValue={option.handicap}
+                                    halfIndicator={option.halfIndicator}
+                                    thresholds={option.thresholds}
+                                    total={option.total}
+                                    name={option.name}
+                                    marketDescription={section.title}
+                                    suspended={option.suspended}
+                                    marketId={option.marketId}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Visual partition - horizontal line on mobile, vertical line on desktop */}
+                <div className="h-0.5 bg-gray-400 mx-2 rounded-full min-[640px]:h-auto min-[640px]:w-0.5"></div>
+
+                {/* Under Options (Bottom on mobile, Right on desktop) */}
+                <div className="flex-1">
+                    <div className="grid grid-cols-1 gap-1">
+                        {underOptions.map((option, idx) => {
+                            return (
+                                <BettingOptionButton
+                                    key={`under-corners-${option.label}-${idx}`}
+                                    label={option.label}
+                                    value={option.value}
+                                    sectionType={section?.type || 'market'}
+                                    optionId={option?.id}
+                                    matchData={matchData}
+                                    isResultOption={false}
+                                    isHandicapOption={false}
+                                    isHalfTimeOption={false}
+                                    isOverUnderOption={true}
+                                    isGoalScorerOption={false}
+                                    handicapValue={option.handicap}
+                                    halfIndicator={option.halfIndicator}
+                                    thresholds={option.thresholds}
+                                    total={option.total}
+                                    name={option.name}
+                                    marketDescription={section.title}
+                                    suspended={option.suspended}
+                                    marketId={option.marketId}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
     // Special rendering function for Alternative Corners markets (Under | Exactly | Over partition)
     const renderAlternativeCornersOptions = (options, section) => {
         // Separate options by type
-        const underOptions = options.filter(opt => 
+        const underOptions = options.filter(opt =>
             opt.label && opt.label.toLowerCase().includes('under')
         );
-        const exactlyOptions = options.filter(opt => 
+        const exactlyOptions = options.filter(opt =>
             opt.label && opt.label.toLowerCase().includes('exactly')
         );
-        const overOptions = options.filter(opt => 
+        const overOptions = options.filter(opt =>
             opt.label && opt.label.toLowerCase().includes('over')
         );
-        
+
         return (
             <div className="flex flex-col min-[640px]:flex-row gap-2">
                 {/* Under Options (Top on mobile, Left on desktop) */}
@@ -736,10 +951,10 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         ))}
                     </div>
                 </div>
-                
+
                 {/* Visual partition - horizontal line on mobile, vertical line on desktop */}
                 <div className="h-0.5 bg-gray-400 mx-2 rounded-full min-[640px]:h-auto min-[640px]:w-0.5 min-[640px]:mx-1"></div>
-                
+
                 {/* Exactly Options (Middle on mobile, Center on desktop) */}
                 <div className="flex-1">
                     <div className="grid grid-cols-1 gap-1">
@@ -768,10 +983,10 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         ))}
                     </div>
                 </div>
-                
+
                 {/* Visual partition - horizontal line on mobile, vertical line on desktop */}
                 <div className="h-0.5 bg-gray-400 mx-2 rounded-full min-[640px]:h-auto min-[640px]:w-0.5 min-[640px]:mx-1"></div>
-                
+
                 {/* Over Options (Bottom on mobile, Right on desktop) */}
                 <div className="flex-1">
                     <div className="grid grid-cols-1 gap-1">
@@ -808,11 +1023,11 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     const renderTeamGoalMarketsOptions = (options, section) => {
         const team1 = matchData?.participants?.[0]?.name || 'Team 1';
         const team2 = matchData?.participants?.[1]?.name || 'Team 2';
-        
+
         // For Team Total Goals markets, filter by label "1" or "2"
         const team1Options = options.filter(opt => opt.label === '1');
         const team2Options = options.filter(opt => opt.label === '2');
-        
+
         // Fallback: if no options found for either team, show all options in a single grid
         if (team1Options.length === 0 && team2Options.length === 0) {
             return (
@@ -846,7 +1061,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 </div>
             );
         }
-        
+
         return (
             <div className="flex flex-col min-[640px]:flex-row gap-2">
                 {/* Team 1 (Top on mobile, Left on desktop) */}
@@ -881,10 +1096,10 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         })}
                     </div>
                 </div>
-                
+
                 {/* Visual partition - horizontal line on mobile, vertical line on desktop */}
                 <div className="h-0.5 bg-gray-400 mx-2 rounded-full min-[640px]:h-auto min-[640px]:w-0.5"></div>
-                
+
                 {/* Team 2 (Bottom on mobile, Right on desktop) */}
                 <div className="flex-1">
                     <div className="text-sm text-gray-700 font-semibold  mb-2 px-2 text-center  py-1 rounded">{team2}</div>
@@ -925,13 +1140,13 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     const renderMatchGoalsOptions = (options, section) => {
         // Get the total value from the first option that has it
         const totalValue = options.find(opt => opt.total)?.total || '0';
-        
+
         return (
             <div className="grid grid-cols-2 gap-1">
                 {options.map((option, idx) => {
                     // Create the label with the total value
                     const labelWithTotal = `${option.label} ${totalValue}`;
-                    
+
                     return (
                         <BettingOptionButton
                             key={`match-goals-${option.label}-${idx}`}
@@ -964,16 +1179,16 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     const renderCleanSheetOptions = (options, section) => {
         const team1 = matchData?.participants?.[0]?.name || 'Team 1';
         const team2 = matchData?.participants?.[1]?.name || 'Team 2';
-        
+
         // Separate options by Yes/No
         const yesOptions = options.filter(opt => opt.name === 'Yes');
         const noOptions = options.filter(opt => opt.name === 'No');
-        
+
         return (
             <div className="flex flex-col min-[640px]:flex-row gap-2">
                 {/* No Options (Top on mobile, Left on desktop) */}
                 <div className="flex-1">
-                   
+
                     <div className="grid grid-cols-1 gap-1">
                         {yesOptions.map((option, idx) => {
                             return (
@@ -1002,10 +1217,10 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         })}
                     </div>
                 </div>
-                
+
                 {/* Yes Options (Bottom on mobile, Right on desktop) */}
                 <div className="flex-1">
-                   
+
                     <div className="grid grid-cols-1 gap-1">
                         {noOptions.map((option, idx) => {
                             return (
@@ -1038,8 +1253,194 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
         );
     };
 
+    // Special rendering function for Goal Scorer categories (group by player, show First Goal Scorer and To Score side by side)
+    const renderGoalScorerCategory = (category) => {
+        // Group all options by player name across all markets in the category
+        const playerMap = {};
+        const team1 = matchData?.participants?.[0]?.name || '';
+        const team2 = matchData?.participants?.[1]?.name || '';
+        const isTeamName = (n) => {
+            if (!n) return false;
+            const lower = String(n).trim().toLowerCase();
+            return lower === String(team1).trim().toLowerCase() || lower === String(team2).trim().toLowerCase();
+        };
+        const isNonPlayerToken = (n) => {
+            if (!n) return false;
+            const lower = String(n).trim().toLowerCase();
+            return lower === '1' || lower === '2' || lower === 'x' || lower === 'tie' || lower === 'draw' || lower === 'no goal';
+        };
+
+        category.markets.forEach(section => {
+            const marketType = (section.title || '').toLowerCase();
+            // Skip team/aggregate scorer markets
+            const skipThisSection = (
+                marketType.includes('first team') ||
+                marketType.includes('both teams') ||
+                marketType.includes('team to score') ||
+                marketType.includes('to score or assist') ||
+                marketType.includes('to assist') ||
+                marketType.includes('from a penalty') ||
+                marketType.includes('header') ||
+                marketType.includes('outside the penalty') ||
+                marketType.includes('penalty kick')
+            );
+            if (skipThisSection) return;
+            section.options.forEach(option => {
+                const playerName = option.name || option.label;
+                if (!playerName) return;
+                const lowerName = String(playerName).toLowerCase();
+                // Exclude non-player outcomes and team names
+                if (lowerName === 'yes' || lowerName === 'no') return;
+                if (isTeamName(playerName) || isNonPlayerToken(playerName)) return;
+
+                if (!playerMap[playerName]) {
+                    playerMap[playerName] = {
+                        firstGoalScorer: null,
+                        toScore: null
+                    };
+                }
+
+                // Determine market type based on section title
+                // First Goal Scorer: match explicitly
+                if (marketType.includes('first goal scorer')) {
+                    playerMap[playerName].firstGoalScorer = option;
+                } else {
+                    // Pure "To Score" only – exclude assist/combos/variants
+                    const isPureToScore = (
+                        // starts with or equals "to score"
+                        (marketType === 'to score' || marketType.startsWith('to score')) &&
+                        // exclude variants we don't want
+                        !marketType.includes('assist') &&
+                        !marketType.includes('or assist') &&
+                        !marketType.includes('at least') &&
+                        !marketType.includes('team member') &&
+                        !marketType.includes('from ') &&
+                        !marketType.includes('header') &&
+                        !marketType.includes('outside the penalty') &&
+                        !marketType.includes('penalty')
+                    );
+                    if (isPureToScore) {
+                        playerMap[playerName].toScore = option;
+                    }
+                }
+            });
+        });
+
+        // If we don't have grouped data, fall back to regular rendering
+        if (Object.keys(playerMap).length === 0) {
+            return category.markets.map((section) => (
+                <div key={section.id} className="bg-white border overflow-hidden transition-all duration-200">
+                    <div className="px-4 py-2.5">
+                        <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
+                    </div>
+                    <div className="p-3">
+                        {renderOptions(section.options, section)}
+                    </div>
+                </div>
+            ));
+        }
+
+        // Remove players with no valid markets
+        const rows = Object.entries(playerMap).filter(([_, m]) => Boolean(m.firstGoalScorer) || Boolean(m.toScore));
+
+        return (
+            <div className="bg-white border overflow-hidden transition-all duration-200">
+                <div className="px-4 py-2.5">
+                    <h3 className="text-sm font-semibold text-gray-800">Goal Scorer</h3>
+                </div>
+                <div className="p-3">
+                    {/* Market Headers */}
+                    <div className="flex justify-between items-center px-2 py-1 bg-gray-100 rounded">
+                        <div className="text-sm font-medium text-gray-700 text-center flex-1">First Goal Scorer</div>
+                        <div className="text-sm font-medium text-gray-700 text-center flex-1">To Score</div>
+                    </div>
+
+                    {/* Player rows */}
+                    {rows.map(([playerName, markets]) => (
+                        <div key={playerName} className="flex flex-col gap-1">
+                            {/* Player name as label */}
+                            <div className="text-sm font-medium text-gray-700 px-2">{playerName}</div>
+
+                            {/* Odds buttons side by side */}
+                            <div className="grid grid-cols-2 gap-1">
+                                {/* First Goal Scorer */}
+                                <div className="flex-1">
+                                    {markets.firstGoalScorer ? (
+                                        <BettingOptionButton
+                                            key={`first-goal-${playerName}`}
+                                            label={''}
+                                            value={markets.firstGoalScorer.value}
+                                            sectionType={markets.firstGoalScorer.marketId || 'market'}
+                                            optionId={markets.firstGoalScorer?.id}
+                                            matchData={matchData}
+                                            isResultOption={false}
+                                            isHandicapOption={false}
+                                            isHalfTimeOption={false}
+                                            isOverUnderOption={false}
+                                            isGoalScorerOption={true}
+                                            handicapValue={markets.firstGoalScorer.handicap}
+                                            halfIndicator={markets.firstGoalScorer.halfIndicator}
+                                            thresholds={markets.firstGoalScorer.thresholds}
+                                            total={markets.firstGoalScorer.total}
+                                            name={''}
+                                            marketDescription={markets.firstGoalScorer.marketDescription || 'First Goal Scorer'}
+                                            suspended={markets.firstGoalScorer.suspended}
+                                            marketId={markets.firstGoalScorer.marketId}
+                                            onlyOdds={true}
+                                        />
+                                    ) : (
+                                        <div className="h-8 bg-gray-100 rounded flex items-center justify-center">
+                                            <span className="text-xs text-gray-400">N/A</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* To Score */}
+                                <div className="flex-1">
+                                    {markets.toScore ? (
+                                        <BettingOptionButton
+                                            key={`to-score-${playerName}`}
+                                            label={''}
+                                            value={markets.toScore.value}
+                                            sectionType={markets.toScore.marketId || 'market'}
+                                            optionId={markets.toScore?.id}
+                                            matchData={matchData}
+                                            isResultOption={false}
+                                            isHandicapOption={false}
+                                            isHalfTimeOption={false}
+                                            isOverUnderOption={false}
+                                            isGoalScorerOption={true}
+                                            handicapValue={markets.toScore.handicap}
+                                            halfIndicator={markets.toScore.halfIndicator}
+                                            thresholds={markets.toScore.thresholds}
+                                            total={markets.toScore.total}
+                                            name={''}
+                                            marketDescription={markets.toScore.marketDescription || 'To Score'}
+                                            suspended={markets.toScore.suspended}
+                                            marketId={markets.toScore.marketId}
+                                            onlyOdds={true}
+                                        />
+                                    ) : (
+                                        <div className="h-8 bg-gray-100 rounded flex items-center justify-center">
+                                            <span className="text-xs text-gray-400">N/A</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     // Render market sections
     const renderSections = (category) => {
+        // Special handling for Goal Scorer categories (First Goal Scorer + To Score)
+        if (category.label?.toLowerCase().includes('scorer') || category.label?.toLowerCase().includes('goal scorer')) {
+            return renderGoalScorerCategory(category);
+        }
+
         // Detect if this is a player-based market (Player Shots, Player Shots on Target, Goalscorer, etc.)
         const playerKeywords = ["player", "goalscorer", "goal scorer", "scorer"];
         const isPlayerCategory = playerKeywords.some(keyword => category.label.toLowerCase().includes(keyword));
@@ -1064,8 +1465,10 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 if (!allOptionsHavePlayerName) break;
             }
         }
+        // Shots markets (including Player Shots on Target) should not use this generic player grouping
+        const isShotsCategory = category.markets.some(section => ((section.title || '').toLowerCase().includes('shots')));
 
-        if (isPlayerMarket && allOptionsHavePlayerName) {
+        if (isPlayerMarket && allOptionsHavePlayerName && !isShotsCategory) {
             // Group all options by player name
             const playerMap = {};
             category.markets.forEach(section => {
@@ -1088,6 +1491,77 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 );
             }
         }
+        // Special handling: Player's shots on target – always group by player and show their options beneath
+        const forcePlayerShotsGrouping =
+            category.markets.some(sec => (sec.title).toLowerCase().includes("player's shots on target"));
+
+        if (forcePlayerShotsGrouping) {
+            const playerMap = {};
+            const extractPlayerName = (opt, sectionTitle) => {
+                // Prefer explicit name if present and looks like a person name
+                if (typeof opt.name === 'string' && opt.name.trim().length > 1 && isNaN(Number(opt.name))) return opt.name.trim();
+                // Try from market_description: "<Player> Player's shots on target ..."
+                const md = opt.market_description || sectionTitle || '';
+                const marker = " Player's shots on target";
+                const idx = md.indexOf(marker);
+                if (idx > 0) return md.substring(0, idx).trim();
+                // Try from label if it embeds a name like "<Player> - Over 0.5"
+                if (typeof opt.label === 'string' && opt.label.includes(' - ')) {
+                    return opt.label.split(' - ')[0].trim();
+                }
+                return undefined;
+            };
+            // Separate sections: shots on target vs others so we can render both
+            const isSOT = (t) => (t || '').toLowerCase().includes("player's shots on target");
+            const shotsOnTargetSections = category.markets.filter(sec => isSOT(sec.title));
+            const otherSections = category.markets.filter(sec => !isSOT(sec.title));
+
+            // Build player map from SOT sections only
+            shotsOnTargetSections.forEach((section) => {
+                (section.options || []).forEach((opt) => {
+                    const p = extractPlayerName(opt, section.title);
+                    if (!p) return;
+                    if (!playerMap[p]) playerMap[p] = [];
+                    // de-dup by id
+                    if (!playerMap[p].some(o => o.id === opt.id)) {
+                        playerMap[p].push(opt);
+                    }
+                });
+            });
+
+            // Render player SOT blocks first, then the remaining markets using the default renderer
+            if (Object.keys(playerMap).length > 0 || otherSections.length > 0) {
+                return (
+                    <div className="space-y-3">
+                        {Object.keys(playerMap).length > 0 && (
+                            <div className="bg-white border overflow-hidden transition-all duration-200">
+                                <div className="px-4 py-2.5">
+                                    <h3 className="text-sm font-semibold text-gray-800">{shotsOnTargetSections[0]?.title}</h3>
+                                </div>
+                                <div className="p-3">
+                                    <div className="grid grid-cols-1 ">
+                                        {Object.entries(playerMap).map(([playerName, options]) => (
+                                            <PlayerCardOption key={playerName} player={{ name: playerName, options }} matchData={matchData} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {otherSections.map((section) => (
+                            <div key={section.id} className="bg-white border overflow-hidden transition-all duration-200">
+                                <div className="px-4 py-2.5">
+                                    <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
+                                </div>
+                                <div className="p-3">
+                                    {renderOptions(section.options, section)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+        }
+
         // Fallback: standard rendering for non-player markets or if not all options have a valid player name
         return category.markets.map((section) => (
             <div key={section.id} className="bg-white border overflow-hidden transition-all duration-200">
@@ -1116,7 +1590,12 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         </AccordionTrigger>
                         <AccordionContent className="px-4 py-3 bg-gray-50/30">
                             <div className="space-y-3">
-                                {renderSections(category)}
+                                {(() => {
+                                    if (category.label === '3-Way Line') {
+                                        console.log('🎯 BettingTabs category:', category);
+                                    }
+                                    return renderSections(category);
+                                })()}
                             </div>
                         </AccordionContent>
                     </AccordionItem>
@@ -1144,26 +1623,27 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     );
 };
 
-const BettingOptionButton = ({ 
-    label, 
-    value, 
-    sectionType, 
-    optionId, 
-    matchData, 
-    isResultOption, 
-    isHandicapOption, 
-    isHalfTimeOption, 
-    isOverUnderOption, 
-    isGoalScorerOption, 
-    handicapValue, 
-    halfIndicator, 
+const BettingOptionButton = ({
+    label,
+    value,
+    sectionType,
+    optionId,
+    matchData,
+    isResultOption,
+    isHandicapOption,
+    isHalfTimeOption,
+    isOverUnderOption,
+    isGoalScorerOption,
+    handicapValue,
+    halfIndicator,
     thresholds,
     total,
     marketDescription,
     name,
     suspended,
     extraClassName,
-    ...props 
+    onlyOdds = false,
+    ...props
 }) => {
     const { addBetToSlip } = useBetting();
     const dispatch = useDispatch();
@@ -1320,7 +1800,7 @@ const BettingOptionButton = ({
         if (
             marketDescription &&
             (marketDescription.toLowerCase().includes('home team exact goals') ||
-             marketDescription.toLowerCase().includes('away team exact goals'))
+                marketDescription.toLowerCase().includes('away team exact goals'))
         ) {
             return (
                 <div className="flex items-center gap-1">
@@ -1392,8 +1872,8 @@ const BettingOptionButton = ({
 
         // Special handling for Over/Under markets that need to show total values (avoid duplicating total)
         if (
-            (label === 'Over' || label === 'Under') && 
-            total && 
+            (label === 'Over' || label === 'Under') &&
+            total &&
             (
                 marketDescription?.toLowerCase().includes('match goals') ||
                 marketDescription?.toLowerCase().includes('alternative match goals') ||
@@ -1424,7 +1904,7 @@ const BettingOptionButton = ({
                     <span>{teamName}</span>
                     {/* Show total only once: suppress if label already includes the number */}
                     {!String(label).includes(String(total)) && (
-                    <span className="bg-white/30 px-1 rounded text-[8px] min-[400px]:text-[9px]">{total}</span>
+                        <span className="bg-white/30 px-1 rounded text-[8px] min-[400px]:text-[9px]">{total}</span>
                     )}
                 </div>
             );
@@ -1459,10 +1939,61 @@ const BettingOptionButton = ({
             );
         }
 
-        // 2. Handicap/Line markets: show team name or tie/draw and line/handicap value as badge (including "Line" markets in Other category)
+        // Special handling for 3-Way Line: show team names/Draw only ("Starts A-B" label rendered outside)
+        if (
+            marketDescription &&
+            (marketDescription.toLowerCase().includes('3-way line') ||
+                marketDescription.toLowerCase().includes('3 way line') ||
+                marketDescription.toLowerCase().includes('three way line'))
+        ) {
+            if (label === '1') return matchData?.participants?.[0]?.name || 'Home';
+            if (label === '2') return matchData?.participants?.[1]?.name || 'Away';
+            if (
+                label && (
+                    label.trim().toLowerCase() === 'x' ||
+                    label.trim().toLowerCase() === 'tie' ||
+                    label.trim().toLowerCase() === 'draw'
+                )
+            ) {
+                return 'Draw';
+            }
+            return label;
+        }
+
+        // Special handling for 3-Way Handicap markets - show "Starts X-Y" format
+        if (
+            marketDescription &&
+            marketDescription.toLowerCase().includes('3-way handicap') &&
+            handicapValue !== undefined &&
+            handicapValue !== null &&
+            handicapValue !== ''
+        ) {
+            const handicapNum = parseFloat(handicapValue);
+            if (!isNaN(handicapNum)) {
+                if (label === '1') {
+                    // Home team with positive handicap: "Starts 1-0"
+                    const homeGoals = Math.abs(handicapNum);
+                    return `Starts ${homeGoals}-0`;
+                } else if (label === '2') {
+                    // Away team with negative handicap: "Starts 0-1"  
+                    const awayGoals = Math.abs(handicapNum);
+                    return `Starts 0-${awayGoals}`;
+                } else if (
+                    label &&
+                    (label.trim().toLowerCase() === 'tie' ||
+                        label.trim().toLowerCase() === 'x' ||
+                        label.trim().toLowerCase() === 'draw')
+                ) {
+                    return 'Draw';
+                }
+            }
+        }
+
+        // 2. Other Handicap/Line markets: show team name or tie/draw and line/handicap value as badge (including "Line" markets in Other category)
         if (
             marketDescription &&
             (marketDescription.toLowerCase().includes('handicap') || marketDescription.toLowerCase().includes('asian line') || marketDescription.toLowerCase().includes('asian handicap') || marketDescription.toLowerCase().includes(' line') || marketDescription.toLowerCase() === 'line') &&
+            !marketDescription.toLowerCase().includes('3-way handicap') &&
             handicapValue !== undefined &&
             handicapValue !== null &&
             handicapValue !== ''
@@ -1475,8 +2006,8 @@ const BettingOptionButton = ({
             } else if (
                 label &&
                 (label.trim().toLowerCase() === 'tie' ||
-                 label.trim().toLowerCase() === 'x' ||
-                 label.trim().toLowerCase() === 'draw')
+                    label.trim().toLowerCase() === 'x' ||
+                    label.trim().toLowerCase() === 'draw')
             ) {
                 // Use "Tie" or "Draw" as the main label
                 mainLabel = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
@@ -1521,9 +2052,9 @@ const BettingOptionButton = ({
         ) {
             // For Over/Under markets, show both player name and the full label (which contains the line data)
             if (label && (label.toLowerCase().includes('over') || label.toLowerCase().includes('under'))) {
-                return <span>{name} - {label}</span>;
+                return <span>{label}</span>;
             }
-            return <span>{name}</span>;
+            return <span>{value}</span>;
         }
 
         // For generic markets: show team name and name as badge if name is a string and not the team name
@@ -1556,9 +2087,9 @@ const BettingOptionButton = ({
 
     // Determine if this is a team name (for styling)
     const isTeamName = matchData?.participants && (
-        label === matchData.participants[0]?.name || 
-        label === matchData.participants[1]?.name || 
-        label.includes(matchData.participants[0]?.name) || 
+        label === matchData.participants[0]?.name ||
+        label === matchData.participants[1]?.name ||
+        label.includes(matchData.participants[0]?.name) ||
         label.includes(matchData.participants[1]?.name) ||
         (sectionType === 'corner-match-bet' && (label === '1' || label === '2'))
     );
@@ -1571,7 +2102,7 @@ const BettingOptionButton = ({
         if (isSuspended) {
             return "bg-gray-400 cursor-not-allowed opacity-60";
         }
-        
+
         if (isResultOption || isHandicapOption || isHalfTimeOption || sectionType === 'corner-match-bet') {
             if (isTeamName) {
                 return "bg-base hover:bg-base-dark";
@@ -1586,23 +2117,31 @@ const BettingOptionButton = ({
 
     return (
         <Button
-            className={`group relative px-1 min-[500px]:px-2 py-1 text-center transition-all duration-200 ${!isSuspended && !isConflicting ? 'active:scale-[0.98]' : ''} betting-button ${getStyleClasses()} ${extraClassName} min-h-[32px] min-[400px]:min-h-[36px]`}
+            className={`group relative w-full px-1 min-[500px]:px-2 py-1 text-center transition-all duration-200 ${!isSuspended && !isConflicting ? 'active:scale-[0.98]' : ''} betting-button ${getStyleClasses()} ${extraClassName} min-h-[32px] min-[400px]:min-h-[36px]`}
             onClick={handleBetClick}
             disabled={isSuspended || isConflicting}
             title={isSuspended ? 'This odd is suspended' : isConflicting ? 'You already have a bet on another outcome in this market' : ''}
         >
-            <div className="relative w-full flex flex-row justify-between items-center py-1 z-10 gap-1">
-                <div className="text-[10px] min-[500px]:text-[12px] text-white font-medium transition-colors duration-200 leading-tight flex-1 text-left break-words truncate">
-                    {formattedLabel()}
-                    {isSuspended && <span className="ml-1 text-[9px] min-[500px]:text-[10px] opacity-80">(Suspended)</span>}
-                    {isConflicting && !isSuspended && (
-                        <span className="ml-1 text-[9px] min-[500px]:text-[10px] opacity-80 text-yellow-300">(Conflicting bet)</span>
-                    )}
+            {onlyOdds ? (
+                <div className="relative w-full flex flex-row justify-center items-center py-1 z-10">
+                    <div className="text-[12px] min-[500px]:text-[14px] font-bold text-white">
+                        {isSuspended || isConflicting ? '--' : value}
+                    </div>
                 </div>
-                <div className="text-[10px] min-[500px]:text-[12px] font-bold text-white transition-colors duration-200 flex-shrink-0 text-right">
-                    {isSuspended || isConflicting ? '--' : value}
+            ) : (
+                <div className="relative w-full flex flex-row justify-between items-center py-1 z-10 gap-1">
+                    <div className="text-[10px] min-[500px]:text-[12px] text-white font-medium transition-colors duration-200 leading-tight flex-1 text-left break-words truncate">
+                        {formattedLabel()}
+                        {isSuspended && <span className="ml-1 text-[9px] min-[500px]:text-[10px] opacity-80">(Suspended)</span>}
+                        {isConflicting && !isSuspended && (
+                            <span className="ml-1 text-[9px] min-[500px]:text-[10px] opacity-80 text-yellow-300">(Conflicting bet)</span>
+                        )}
+                    </div>
+                    <div className="text-[10px] min-[500px]:text-[12px] font-bold text-white transition-colors duration-200 flex-shrink-0 text-right">
+                        {isSuspended || isConflicting ? '--' : value}
+                    </div>
                 </div>
-            </div>
+            )}
         </Button>
     );
 };
@@ -1633,7 +2172,7 @@ const PlayerCardOption = ({ player, matchData }) => {
         // Get all unique action types
         const actionTypes = Object.keys(optionsByType);
         return (
-            <div className="flex flex-col gap-1 mb-2">
+            <div className="flex flex-col mb-2 border-0">
                 <div className="text-xs font-medium text-gray-700 mb-1">{player.name}</div>
                 {actionTypes.map((actionType, index) => {
                     const option = optionsByType[actionType][0]; // Get the best odds for this action type
@@ -1670,9 +2209,9 @@ const PlayerCardOption = ({ player, matchData }) => {
     } else {
         // For non-card player markets (e.g., Player Shots), render with BettingOptionButton to respect suspension and formatting
         // Determine grid columns based on number of options with responsive design
-        const gridCols = player.options.length > 2 ? 'grid-cols-1 min-[400px]:grid-cols-2 min-[500px]:grid-cols-3' : 'grid-cols-1 min-[400px]:grid-cols-2';
+        const gridCols = 'grid-cols-2';
         return (
-            <div className="flex flex-col gap-1 rounded-none mb-2 border border-gray-200  p-3 bg-white">
+            <div className="flex flex-col gap-1 rounded-none p-3 bg-white">
                 <div className="text-sm font-medium text-gray-700 mb-1">{player.name}</div>
                 <div className={`grid ${gridCols} gap-1`}>
                     {player.options.map((option, idx) => (

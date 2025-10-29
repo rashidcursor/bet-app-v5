@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Next.js: Debug frontend (SSR + API routes)",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "dev"],
+        "cwd": "${workspaceFolder}/client",
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+          "NODE_OPTIONS": "--inspect"
+        }
+      },
+      {
+        "type": "chrome",
+        "request": "launch",
+        "name": "Next.js: Debug browser code",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder}/client"
+      }
+    ]
+  }
+  

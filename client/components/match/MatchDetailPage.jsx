@@ -46,6 +46,7 @@ const MatchDetailPage = ({ matchId }) => {
     
     const {
         matchData,
+        betOffers,
         loading,
         error
     } = useSelector((state) => {
@@ -60,6 +61,7 @@ const MatchDetailPage = ({ matchId }) => {
         } else {
             return {
         matchData: state.matches.matchDetails[matchId],
+        betOffers: state.matches.matchDetails[matchId]?.betOffers || [],
         loading: state.matches.matchDetailLoading,
         error: state.matches.matchDetailError,
             };
@@ -231,10 +233,11 @@ const MatchDetailPage = ({ matchId }) => {
                     name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
                     outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
-                        name: outcome.participant || outcome.label, // Use participant name if available, otherwise use label
+                        name: outcome.label || outcome.participant || outcome.name, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000, // Convert from Unibet format (13000 -> 13.00)
                         status: outcome.status,
                         line: outcome.line, // Include line value for Over/Under markets (raw)
+                        handicap: outcome.line != null ? (outcome.line / 1000) : null, // Convert handicap line (1000 -> 1.0)
                         participant: outcome.participant,
                         participantId: outcome.participantId,
                         eventParticipantId: outcome.eventParticipantId
@@ -259,10 +262,12 @@ const MatchDetailPage = ({ matchId }) => {
                     name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
                     outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
-                        name: outcome.participant || outcome.label, // Use participant name if available, otherwise use label
+
+                        name: outcome.label || outcome.participant || outcome.name, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000,
                         status: outcome.status,
                         line: outcome.line, // Include line value for Over/Under markets
+                        handicap: outcome.line != null ? (outcome.line / 1000) : null, // Convert handicap line (1000 -> 1.0)
                         participant: outcome.participant,
                         participantId: outcome.participantId,
                         eventParticipantId: outcome.eventParticipantId
@@ -336,6 +341,9 @@ const MatchDetailPage = ({ matchId }) => {
                         // For player markets (cards, shots), prefer participant name as display name
                         const isPlayerCardMarket = lowerMarket.includes('to get a card') || lowerMarket.includes('to be booked') || lowerMarket.includes('player cards');
                         const isPlayerShotsMarket = (lowerMarket.includes('shot') || lowerMarket.includes('on target')) && (lowerMarket.includes("player") || Boolean(outcome.participant));
+                        if (isPlayerShotsMarket) {
+                            console.log('🔍 Player shots market found:', lowerMarket, 'Outcome:', outcome);
+                        }
                         // For team line markets (e.g., Cards Line), populate handicap from line
                         const isLineMarket = lowerMarket.includes(' line') || lowerMarket === 'line';
                         const displayName = (isPlayerCardMarket || isPlayerShotsMarket) ? (outcome.participant || displayLabel) : displayLabel;

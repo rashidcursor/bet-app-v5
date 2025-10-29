@@ -119,7 +119,7 @@ router.get('/:eventId', async (req, res) => {
       console.log(`🌐 [PRODUCTION DEBUG] Making external API call to: ${API_BASE_URL}/${eventId}.json`);
       console.log(`🌐 [PRODUCTION DEBUG] Headers:`, API_HEADERS);
       
-      const response = await axios.get(`${API_BASE_URL}/${eventId}.json`, {
+      const response = await axios.get(`${API_BASE_URL}/${eventId}.json?lang=en_AU&market=AU`, {
         headers: API_HEADERS,
         timeout: 12000
       });
@@ -138,6 +138,20 @@ router.get('/:eventId', async (req, res) => {
           );
         }
       } catch (_) {}
+      
+      // Save response data to file for debugging
+      try {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const outputPath = path.join(__dirname, '../../../../current_opened_match.json');
+        fs.writeFileSync(outputPath, JSON.stringify({
+          eventId,
+          timestamp: new Date().toISOString(),
+          data: response.data
+        }, null, 2));
+      } catch (fileError) {
+        console.error('Failed to save response to file:', fileError.message);
+      }
       
       return res.json({
         success: true,
