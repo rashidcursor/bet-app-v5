@@ -4,6 +4,7 @@ export const MarketCodes = {
     PLAYER_TO_SCORE: 'PLAYER_TO_SCORE',
     PLAYER_TO_SCORE_2PLUS: 'PLAYER_TO_SCORE_2PLUS',
     PLAYER_SOT_OU: 'PLAYER_SOT_OU',
+    PLAYER_SHOTS_OU: 'PLAYER_SHOTS_OU',
     TEAM_TOTAL_SHOTS_OU: 'TEAM_TOTAL_SHOTS_OU',
     TEAM_SHOTS_ON_TARGET_OU: 'TEAM_SHOTS_ON_TARGET_OU',
     TEAM_SHOTS_OU: 'TEAM_SHOTS_OU',
@@ -14,6 +15,7 @@ export const MarketCodes = {
     THREE_WAY_HANDICAP_1ST_HALF: 'THREE_WAY_HANDICAP_1ST_HALF',
     ASIAN_TOTAL_1ST_HALF: 'ASIAN_TOTAL_1ST_HALF',
     ASIAN_TOTAL: 'ASIAN_TOTAL',
+    ASIAN_HANDICAP: 'ASIAN_HANDICAP',
     FIRST_GOAL: 'FIRST_GOAL',
     PLAYER_CARD_ANY: 'PLAYER_CARD_ANY',
     PLAYER_CARD_RED: 'PLAYER_CARD_RED',
@@ -21,7 +23,12 @@ export const MarketCodes = {
     MATCH_RESULT: 'MATCH_RESULT',
     TEAM_TOTAL_GOALS_OU: 'TEAM_TOTAL_GOALS_OU',
     MATCH_TOTAL_GOALS_OU: 'MATCH_TOTAL_GOALS_OU',
+    MATCH_TOTAL_GOALS_1ST_HALF_OU: 'MATCH_TOTAL_GOALS_1ST_HALF_OU',
+    MATCH_TOTAL_GOALS_2ND_HALF_OU: 'MATCH_TOTAL_GOALS_2ND_HALF_OU',
     MATCH_TOTAL_GOALS_INTERVAL_OU: 'MATCH_TOTAL_GOALS_INTERVAL_OU',
+    BTTS: 'BTTS',
+    BTTS_1ST_HALF: 'BTTS_1ST_HALF',
+    BTTS_2ND_HALF: 'BTTS_2ND_HALF',
     HALF_TIME_FULL_TIME: 'HALF_TIME_FULL_TIME',
     METHOD_OF_SCORING_NEXT_GOAL: 'METHOD_OF_SCORING_NEXT_GOAL',
 
@@ -54,6 +61,7 @@ export const MarketCodes = {
     DOUBLE_CHANCE_2ND_HALF: 'DOUBLE_CHANCE_2ND_HALF',
     DOUBLE_CHANCE_1ST_HALF: 'DOUBLE_CHANCE_1ST_HALF',
     WIN_TO_NIL: 'WIN_TO_NIL',
+    CORRECT_SCORE: 'CORRECT_SCORE',
 
     UNKNOWN: 'UNKNOWN'
 };
@@ -97,14 +105,41 @@ export const MARKET_REGISTRY = [
         }
     },
     {
+        code: MarketCodes.PLAYER_SHOTS_OU,
+        priority: 94,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Player's shots" but NOT "shots on target" and NOT "total shots"
+            return (name.includes("player's shots") || crit.includes("player's shots")) && 
+                   !name.includes('shots on target') && 
+                   !crit.includes('shots on target') &&
+                   !name.includes('total shots') &&
+                   !crit.includes('total shots') &&
+                   norm.hints.isPlayerMarket;
+        }
+    },
+    {
+        code: MarketCodes.FIRST_GOAL_SCORER,
+        priority: 105,
+        match: (bet, norm) => {
+            const n = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "First Goal Scorer" markets (more specific, check first)
+            return n.includes('first goal scorer') || crit.includes('first goal scorer');
+        }
+    },
+    {
         code: MarketCodes.FIRST_GOAL,
         priority: 104,
         match: (bet, norm) => {
             const name = norm.marketNameLower;
             const crit = norm.criterionLower;
-            // Match "First Goal" markets
+            // Match "First Goal" markets (team-based, not player-based)
+            // Exclude "scorer" to avoid matching "First Goal Scorer"
             return (name.includes('first goal') || crit.includes('first goal')) && 
-                   !name.includes('player') && !crit.includes('player');
+                   !name.includes('player') && !crit.includes('player') &&
+                   !name.includes('scorer') && !crit.includes('scorer');
         }
     },
     {
@@ -127,6 +162,17 @@ export const MARKET_REGISTRY = [
             // Match "Asian Total - 1st Half" markets
             return (name.includes('asian total') && name.includes('1st half')) || 
                    (crit.includes('asian total') && crit.includes('1st half'));
+        }
+    },
+    {
+        code: MarketCodes.ASIAN_HANDICAP,
+        priority: 100,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Asian Handicap" or "Asian Line" markets (exclude Asian Total)
+            return (name.includes('asian handicap') || name.includes('asian line')) && !name.includes('total') ||
+                   (crit.includes('asian handicap') || crit.includes('asian line')) && !crit.includes('total');
         }
     },
     {
@@ -294,6 +340,28 @@ export const MARKET_REGISTRY = [
         }
     },
     {
+        code: MarketCodes.MATCH_TOTAL_GOALS_1ST_HALF_OU,
+        priority: 77,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            // Match "Total Goals - 1st Half" or "Total Goals - First Half"
+            return (name.includes('total goals') && (name.includes('1st half') || name.includes('first half'))) &&
+                   !name.includes('by') && // Exclude "Total Goals by Team - 1st Half"
+                   !norm.hints.hasTimeWindow; // Exclude time window markets
+        }
+    },
+    {
+        code: MarketCodes.MATCH_TOTAL_GOALS_2ND_HALF_OU,
+        priority: 76,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            // Match "Total Goals - 2nd Half" or "Total Goals - Second Half"
+            return (name.includes('total goals') && (name.includes('2nd half') || name.includes('second half'))) &&
+                   !name.includes('by') && // Exclude "Total Goals by Team - 2nd Half"
+                   !norm.hints.hasTimeWindow; // Exclude time window markets
+        }
+    },
+    {
         code: MarketCodes.MATCH_TOTAL_GOALS_INTERVAL_OU,
         priority: 75,
         match: (bet, norm) => {
@@ -308,7 +376,9 @@ export const MARKET_REGISTRY = [
         match: (bet, norm) => {
             const name = norm.marketNameLower;
             // Explicitly exclude player hints to avoid collisions
+            // Also exclude 1st half and 2nd half (handled by specific codes above)
             if (norm.hints.isPlayerMarket || norm.hints.maybePlayerTotalGoals) return false;
+            if (name.includes('1st half') || name.includes('2nd half') || name.includes('first half') || name.includes('second half')) return false;
             return name.includes('total goals');
         }
     },
@@ -334,8 +404,8 @@ export const MARKET_REGISTRY = [
         priority: 55,
         match: (bet, norm) => {
             const n = norm.marketNameLower;
-            // Accept variations: "Corners 3-Way Handicap", "3-Way Corners Handicap", etc.
-            return (n.includes('3-way') && n.includes('corner') && n.includes('handicap'));
+            // Accept variations: "Corners 3-Way Handicap", "Corners 3-Way Line", "3-Way Corners Handicap", etc.
+            return (n.includes('3-way') && n.includes('corner') && (n.includes('handicap') || n.includes('line')));
         }
     },
     {
@@ -395,7 +465,8 @@ export const MARKET_REGISTRY = [
         priority: 50,
         match: (bet, norm) => {
             const n = norm.marketNameLower;
-            return (n.includes('3-way') && n.includes('line') && !n.includes('cards'));
+            // Exclude cards and corners - they have their own market codes
+            return (n.includes('3-way') && n.includes('line') && !n.includes('cards') && !n.includes('corner'));
         }
     },
 
@@ -426,14 +497,6 @@ export const MARKET_REGISTRY = [
         }
     },
 
-    {
-        code: MarketCodes.FIRST_GOAL_SCORER,
-        priority: 12,
-        match: (bet, norm) => {
-            const n = norm.marketNameLower;
-            return n.includes('first goal scorer');
-        }
-    },
 
     {
         code: MarketCodes.GOALKEEPER_SAVES,
@@ -556,6 +619,97 @@ export const MARKET_REGISTRY = [
             // Match "Win to Nil" markets - both in market name and criterion
             return (name.includes('win to nil') || crit.includes('win to nil')) && 
                    !name.includes('player') && !crit.includes('player');
+        }
+    },
+
+    {
+        code: MarketCodes.CORRECT_SCORE,
+        priority: 82,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Correct Score" markets (can be full-time, 1st half, or 2nd half)
+            return name.includes('correct score') || crit.includes('correct score');
+        }
+    },
+
+    {
+        code: MarketCodes.BTTS_1ST_HALF,
+        priority: 81,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Both Teams To Score - 1st Half" markets
+            // Check both market name and criterion for flexibility
+            const hasBtts = name.includes('both teams to score') || name.includes('btts') ||
+                           crit.includes('both teams to score') || crit.includes('btts');
+            const hasFirstHalf = name.includes('1st half') || name.includes('first half') ||
+                               crit.includes('1st half') || crit.includes('first half');
+            return hasBtts && hasFirstHalf;
+        }
+    },
+
+    {
+        code: MarketCodes.BTTS_2ND_HALF,
+        priority: 80,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Both Teams To Score - 2nd Half" markets
+            return (name.includes('both teams to score') || name.includes('btts')) &&
+                   (name.includes('2nd half') || name.includes('second half'));
+        }
+    },
+
+    {
+        code: MarketCodes.BTTS,
+        priority: 79,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Both Teams To Score" markets (full-time, exclude 1st/2nd half)
+            return (name.includes('both teams to score') || name.includes('btts')) &&
+                   !name.includes('1st half') && !name.includes('2nd half') &&
+                   !name.includes('first half') && !name.includes('second half');
+        }
+    },
+
+    {
+        code: MarketCodes.MOST_CARDS_1ST_HALF,
+        priority: 78,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Most Cards - 1st Half" markets
+            return (name.includes('most cards') || crit.includes('most cards')) &&
+                   (name.includes('1st half') || name.includes('first half') ||
+                    crit.includes('1st half') || crit.includes('first half'));
+        }
+    },
+
+    {
+        code: MarketCodes.MOST_CARDS_2ND_HALF,
+        priority: 77,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Most Cards - 2nd Half" markets
+            return (name.includes('most cards') || crit.includes('most cards')) &&
+                   (name.includes('2nd half') || name.includes('second half') ||
+                    crit.includes('2nd half') || crit.includes('second half'));
+        }
+    },
+
+    {
+        code: MarketCodes.MOST_CARDS,
+        priority: 76,
+        match: (bet, norm) => {
+            const name = norm.marketNameLower;
+            const crit = norm.criterionLower;
+            // Match "Most Cards" markets (full-time, exclude 1st/2nd half)
+            return (name.includes('most cards') || crit.includes('most cards')) &&
+                   !name.includes('1st half') && !name.includes('2nd half') &&
+                   !name.includes('first half') && !name.includes('second half');
         }
     },
 

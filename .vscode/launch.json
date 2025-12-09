@@ -4,6 +4,22 @@
       {
         "type": "node",
         "request": "launch",
+        "name": "🐛 Debug Backend (Express Server)",
+        "runtimeExecutable": "nodemon",
+        "runtimeArgs": ["src/app.js"],
+        "cwd": "${workspaceFolder}/server",
+        "restart": true,
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen",
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+          "NODE_ENV": "development",
+          "NODE_OPTIONS": "--inspect"
+        }
+      },
+      {
+        "type": "node",
+        "request": "launch",
         "name": "Next.js: Debug frontend (SSR + API routes)",
         "runtimeExecutable": "npm",
         "runtimeArgs": ["run", "dev"],
@@ -20,6 +36,26 @@
         "name": "Next.js: Debug browser code",
         "url": "http://localhost:3000",
         "webRoot": "${workspaceFolder}/client"
+      },
+      {
+        "type": "node",
+        "request": "attach",
+        "name": "🔗 Attach to Backend (Port 9229)",
+        "port": 9229,
+        "restart": true,
+        "localRoot": "${workspaceFolder}/server",
+        "remoteRoot": "${workspaceFolder}/server",
+        "skipFiles": ["<node_internals>/**"]
+      }
+    ],
+    "compounds": [
+      {
+        "name": "🚀 Debug Full Stack (Backend + Frontend)",
+        "configurations": [
+          "🐛 Debug Backend (Express Server)",
+          "Next.js: Debug frontend (SSR + API routes)"
+        ],
+        "stopAll": true
       }
     ]
   }

@@ -1,0 +1,39 @@
+{
+  "20251126": {
+    "leagues": [
+      {
+        "id": 42,
+        "name": "Champions League",
+        "country": "INT-2",
+        "matches": [
+          {
+            "id": "4947156",
+            "home": {
+              "name": "Paris Saint-Germain",
+              "id": 9847
+            },
+            "away": {
+              "name": "Tottenham Hotspur",
+              "id": 8586
+            },
+            "status": {
+              "utcTime": "2025-11-26T20:00:00.000Z",
+              "finished": true,
+              "started": true,
+              "scoreStr": "5 - 3",
+              "reason": {
+                "short": "FT",
+                "shortKey": "fulltime_short",
+                "long": "Full-Time",
+                "longKey": "finished"
+              }
+            },
+            "time": "Wed, Nov 26, 2025, 20:00 UTC",
+            "leagueId": 42,
+            "leagueName": "Champions League"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -29,14 +29,32 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
 
   const calculateProfit = () => {
     const totalStake = bet.stake * bet.combination.length;
-    if (bet.status.toLowerCase() === 'won') {
-      return (totalStake * bet.odds).toFixed(2);
-    } else if (bet.status.toLowerCase() === 'lost') {
+    const status = bet.status.toLowerCase();
+    
+    // Use profit field from database if available (preferred)
+    if (bet.profit !== undefined && bet.profit !== null) {
+      const profit = Number(bet.profit);
+      return Math.abs(profit).toFixed(2);
+    }
+    
+    // Fallback to calculation if profit field not available
+    if (status === 'won') {
+      // Profit = (totalStake * odds) - totalStake
+      return ((totalStake * bet.odds) - totalStake).toFixed(2);
+    } else if (status === 'half_won') {
+      // Half win: (stake/2) * odds + (stake/2) - stake = (stake/2) * (odds - 1)
+      const halfWinProfit = (bet.stake / 2) * (bet.odds - 1);
+      return halfWinProfit.toFixed(2);
+    } else if (status === 'half_lost') {
+      // Half loss: (stake/2) - stake = -(stake/2)
+      const halfLossProfit = bet.stake / 2;
+      return halfLossProfit.toFixed(2);
+    } else if (status === 'lost') {
       return totalStake.toFixed(2);
-    } else if (bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled') {
+    } else if (status === 'cancelled' || status === 'canceled' || status === 'void') {
       return '0.00';
     }
-    return 0;
+    return '0.00';
   };
 
   return (
@@ -81,17 +99,37 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
             <Badge variant="outline" className={getStatusColor(bet.status)}>
               {bet.status}
             </Badge>
-            {bet.status.toLowerCase() !== 'pending' && (
-              <span className={`font-semibold ${
-                bet.status.toLowerCase() === 'won' ? 'text-green-600' : 
-                bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled' ? 'text-gray-500' : 
-                'text-red-600'
-              }`}>
-                {bet.status.toLowerCase() === 'won' ? '+' : 
-                 bet.status.toLowerCase() === 'cancelled' || bet.status.toLowerCase() === 'canceled' ? '' : 
-                 '-'}${calculateProfit()}
+            {bet.status.toLowerCase() !== 'pending' && (() => {
+              const status = bet.status.toLowerCase();
+              const profit = calculateProfit();
+              const profitNum = Number(profit);
+              
+              // Get profit from database if available
+              const actualProfit = bet.profit !== undefined && bet.profit !== null 
+                ? Number(bet.profit) 
+                : profitNum;
+              
+              if (status === 'won' || status === 'half_won') {
+                return (
+                  <span className="font-semibold text-green-600">
+                    +${Math.abs(actualProfit).toFixed(2)}
+                  </span>
+                );
+              } else if (status === 'lost' || status === 'half_lost') {
+                return (
+                  <span className="font-semibold text-red-600">
+                    -${Math.abs(actualProfit).toFixed(2)}
+                  </span>
+                );
+              } else if (status === 'cancelled' || status === 'canceled' || status === 'void') {
+                return (
+                  <span className="font-semibold text-gray-500">
+                    $0.00
               </span>
-            )}
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
 

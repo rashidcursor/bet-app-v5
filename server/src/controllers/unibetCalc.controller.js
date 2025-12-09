@@ -223,11 +223,8 @@ export class UnibetCalcController {
             
             // No need to update database again - calculator already did it
             // The calculator handles the database update with proper transaction and write concern
-
-            // Update user balance if bet was won, lost, or cancelled
-            if (calculatorResult.outcome?.status === 'won' || calculatorResult.outcome?.status === 'lost' || calculatorResult.outcome?.status === 'cancelled') {
-                await this.updateUserBalance(bet.userId, calculatorResult.outcome);
-            }
+            // NOTE: Calculator already updates user balance in processBet method, so we don't update it again here
+            // to avoid double balance updates
 
             return {
                 betId: bet._id,
@@ -320,10 +317,8 @@ export class UnibetCalcController {
                 { new: true }
             );
 
-            // Update user balance if bet was won or lost
-            if (calculatorResult.status === 'won' || calculatorResult.status === 'lost') {
-                await this.updateUserBalance(bet.userId, calculatorResult);
-            }
+            // NOTE: Calculator already updates user balance in processBet method, so we don't update it again here
+            // to avoid double balance updates
 
             return {
                 betId: bet._id,

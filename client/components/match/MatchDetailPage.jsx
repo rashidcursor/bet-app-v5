@@ -240,7 +240,9 @@ const MatchDetailPage = ({ matchId }) => {
                         handicap: outcome.line != null ? (outcome.line / 1000) : null, // Convert handicap line (1000 -> 1.0)
                         participant: outcome.participant,
                         participantId: outcome.participantId,
-                        eventParticipantId: outcome.eventParticipantId
+                        eventParticipantId: outcome.eventParticipantId,
+                        marketId: offer.id, // ✅ Use betOffer ID as marketId
+                        market_id: offer.id // ✅ Also set market_id for compatibility
                     }))
                 }))
         };
@@ -262,7 +264,6 @@ const MatchDetailPage = ({ matchId }) => {
                     name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
                     outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
-
                         name: outcome.label || outcome.participant || outcome.name, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000,
                         status: outcome.status,
@@ -270,7 +271,9 @@ const MatchDetailPage = ({ matchId }) => {
                         handicap: outcome.line != null ? (outcome.line / 1000) : null, // Convert handicap line (1000 -> 1.0)
                         participant: outcome.participant,
                         participantId: outcome.participantId,
-                        eventParticipantId: outcome.eventParticipantId
+                        eventParticipantId: outcome.eventParticipantId,
+                        marketId: offer.id, // ✅ Use betOffer ID as marketId
+                        market_id: offer.id // ✅ Also set market_id for compatibility
                     }))
                 }));
         }
@@ -319,7 +322,9 @@ const MatchDetailPage = ({ matchId }) => {
                                 label: scoreStr, // display score text
                                 value: outcome.odds,
                                 name: scoreStr,
-                                suspended: outcome.status !== 'OPEN'
+                                suspended: outcome.status !== 'OPEN',
+                                marketId: outcome.marketId || outcome.market_id || market.id, // ✅ Preserve marketId
+                                market_id: outcome.marketId || outcome.market_id || market.id // ✅ Also set market_id
                             });
                             return;
                         }
@@ -368,6 +373,8 @@ const MatchDetailPage = ({ matchId }) => {
                             label: displayLabel,
                             value: outcome.odds,
                             name: displayName,
+                            marketId: outcome.marketId || outcome.market_id || market.id, // ✅ Preserve marketId
+                            market_id: outcome.marketId || outcome.market_id || market.id, // ✅ Also set market_id
                             suspended: outcome.status !== 'OPEN',
                             line: lineValueNormalized,
                             // Provide both total (for Over/Under) and handicap (for Asian/Handicap lines)

@@ -242,9 +242,12 @@ class BetService {
   // Helper method to extract teams from match data with fallbacks
   getTeamsFromMatchData(matchData, fallbackTeams = "") {
     // Try to get teams from matchData.participants first
+    // ✅ FIX: Check position field first, then fallback to array index
     if (matchData.participants && Array.isArray(matchData.participants) && matchData.participants.length >= 2) {
-      const team1 = matchData.participants[0]?.name || matchData.participants[0]?.meta?.name;
-      const team2 = matchData.participants[1]?.name || matchData.participants[1]?.meta?.name;
+      const homeParticipant = matchData.participants.find(p => (p.position || '').toLowerCase() === 'home') || matchData.participants[0];
+      const awayParticipant = matchData.participants.find(p => (p.position || '').toLowerCase() === 'away') || matchData.participants[1];
+      const team1 = homeParticipant?.name || homeParticipant?.meta?.name;
+      const team2 = awayParticipant?.name || awayParticipant?.meta?.name;
       
       if (team1 && team2) {
         return `${team1} vs ${team2}`;
@@ -717,11 +720,18 @@ class BetService {
         const estimatedMatchEnd = new Date(matchDate.getTime() + 105 * 60 * 1000);
 
         // Create unibetMeta for this leg using frontend data (same as single bets)
+        // Extract home/away teams correctly by checking position field first
+        const participants = matchData.participants || [];
+        const homeParticipant = participants.find(p => (p.position || '').toLowerCase() === 'home') || participants[0];
+        const awayParticipant = participants.find(p => (p.position || '').toLowerCase() === 'away') || participants[1];
+        const homeTeamName = homeParticipant?.name || this.extractHomeTeam(leg.teams);
+        const awayTeamName = awayParticipant?.name || this.extractAwayTeam(leg.teams);
+        
         // The frontend already extracts and sends unibetMetadata, so use it directly
         const legUnibetMeta = this.buildUnibetMetaFromPayload(
           {
             // Use frontend unibetMetadata first (extracted by extractUnibetMetadata function)
-            eventName: leg.eventName || leg.teams || `${matchData.participants?.[0]?.name || 'Home'} vs ${matchData.participants?.[1]?.name || 'Away'}`,
+            eventName: leg.eventName || leg.teams || `${homeTeamName || 'Home'} vs ${awayTeamName || 'Away'}`,
             marketName: leg.marketName || leg.marketDescription || betDetails.market_name || betDetails.market_description || "Unknown Market",
             criterionLabel: leg.criterionLabel || betDetails.label || leg.betOption,
             criterionEnglishLabel: leg.criterionEnglishLabel || betDetails.market_description || betDetails.market_name,
@@ -734,17 +744,17 @@ class BetService {
             handicapLine: leg.handicapLine || betDetails.handicap || null,
             leagueId: leg.leagueId || matchData.league?.id || matchData.league_id,
             leagueName: leg.leagueName || matchData.league?.name,
-            homeName: leg.homeName || matchData.participants?.[0]?.name || this.extractHomeTeam(leg.teams),
-            awayName: leg.awayName || matchData.participants?.[1]?.name || this.extractAwayTeam(leg.teams),
+            homeName: leg.homeName || homeTeamName,
+            awayName: leg.awayName || awayTeamName,
             start: leg.start || leg.matchDate || matchData.starting_at,
             odds: parseFloat(leg.odds) // Use frontend odds (already in decimal format)
           },
           {
-            eventName: leg.teams || `${matchData.participants?.[0]?.name || 'Home'} vs ${matchData.participants?.[1]?.name || 'Away'}`,
+            eventName: leg.teams || `${homeTeamName || 'Home'} vs ${awayTeamName || 'Away'}`,
             leagueId: matchData.league?.id || matchData.league_id,
             leagueName: matchData.league?.name,
-            homeName: matchData.participants?.[0]?.name || this.extractHomeTeam(leg.teams),
-            awayName: matchData.participants?.[1]?.name || this.extractAwayTeam(leg.teams)
+            homeName: homeTeamName,
+            awayName: awayTeamName
           }
         );
 
@@ -1295,7 +1305,10 @@ class BetService {
     if (!user) {
       throw new CustomError("User not found", 404, "USER_NOT_FOUND");
     }
-    if (user.balance < stake) {
+    
+    const balanceBefore = user.balance || 0;
+    
+    if (balanceBefore < stake) {
       throw new CustomError(
         "Insufficient balance",
         400,
@@ -1303,8 +1316,19 @@ class BetService {
       );
     }
 
+    console.log(`\n[placeBet] ========== BET PLACEMENT BALANCE UPDATE ==========`);
+    console.log(`[placeBet] User ID: ${userId}`);
+    console.log(`[placeBet] Balance Before: ${balanceBefore}`);
+    console.log(`[placeBet] Stake: ${stake}`);
+    console.log(`[placeBet] Deducting Stake: ${balanceBefore} - ${stake} = ${balanceBefore - stake}`);
+
     user.balance -= stake;
     await user.save();
+    
+    const balanceAfter = user.balance || 0;
+    console.log(`[placeBet] Balance After: ${balanceAfter}`);
+    console.log(`[placeBet] Balance Change: ${balanceAfter - balanceBefore} (should be -${stake})`);
+    console.log(`[placeBet] ===========================================\n`);
 
     // Use the robust getTeamsFromMatchData method for single bets too
     let teams = this.getTeamsFromMatchData(matchData, "");
@@ -1314,8 +1338,43 @@ class BetService {
       matchId,
       participants: matchData.participants,
       name: matchData.name,
-      extractedTeams: teams
+      extractedTeams: teams,
+      unibetV2Data: !!unibetV2Data,
+      unibetV2Events: unibetV2Data?.data?.events?.length || 0
     });
+    
+    // If teams are still not available OR participants are empty, try to get from unibetV2Data cache
+    if ((teams === "Teams information not available" || !matchData.participants || matchData.participants.length === 0) && !unibetV2Data) {
+      // Try to get unibetV2Data from cache if not already loaded
+      try {
+        const v2 = global.fixtureOptimizationService?.fixtureCache?.get(`unibet_v2_${matchId}`);
+        if (v2?.data) {
+          unibetV2Data = v2;
+          console.log(`[DEBUG] Loaded unibetV2Data from cache for teams extraction`);
+        }
+      } catch (e) { 
+        console.warn('[DEBUG] Failed to load unibetV2Data from cache:', e?.message); 
+      }
+    }
+    
+    if ((teams === "Teams information not available" || !matchData.participants || matchData.participants.length === 0) && unibetV2Data?.data?.events) {
+      const event = unibetV2Data.data.events.find(e => String(e.id) === String(matchId)) || unibetV2Data.data.events[0];
+      if (event?.participants && Array.isArray(event.participants) && event.participants.length >= 2) {
+        const homeTeam = event.participants.find(p => (p.position || '').toLowerCase() === 'home') || event.participants[0];
+        const awayTeam = event.participants.find(p => (p.position || '').toLowerCase() === 'away') || event.participants[1];
+        if (homeTeam?.name && awayTeam?.name) {
+          teams = `${homeTeam.name} vs ${awayTeam.name}`;
+          // Also update matchData.participants for consistency
+          matchData.participants = event.participants;
+          matchData.name = event.name || event.englishName || teams;
+          if (!matchData.league) {
+            matchData.league = { id: event?.groupId, name: event?.group };
+          }
+          console.log(`[DEBUG] ✅ Extracted teams from unibetV2Data cache: ${teams}`);
+          console.log(`[DEBUG] ✅ Updated matchData.participants:`, matchData.participants.map(p => p.name));
+        }
+      }
+    }
     
     const selection = betOption;
 
@@ -1334,12 +1393,21 @@ class BetService {
 
     // Create betDetails object
     const betDetails = this.createBetDetails(odds, odds.market_id);
+    
+    // Debug: Log market ID resolution
+    console.log(`[DEBUG] Market ID resolution:`, {
+      odds_market_id: odds.market_id,
+      betDetails_market_id: betDetails.market_id,
+      betDetails_market_name: betDetails.market_name,
+      odds_market_description: odds.market_description,
+      final_marketId: betDetails.market_id || odds.market_id
+    });
 
     const bet = new Bet({
       userId,
       matchId,
       oddId,
-      marketId: odds.market_id,
+      marketId: betDetails.market_id || odds.market_id, // Use resolved market_id from betDetails
       betOption: betOption || selection || odds.name,
       odds: parseFloat(odds.value),
       stake,
@@ -1363,11 +1431,46 @@ class BetService {
           eventName: matchData?.name || teams,
           leagueId: matchData?.league?.id || matchData?.league_id,
           leagueName: matchData?.league?.name,
-          homeName: matchData?.participants?.[0]?.name || (teams?.includes(' vs ') ? teams.split(' vs ')[0] : null),
-          awayName: matchData?.participants?.[1]?.name || (teams?.includes(' vs ') ? teams.split(' vs ')[1] : null)
+          homeName: matchData?.participants?.[0]?.name || (teams?.includes(' vs ') ? teams.split(' vs ')[0].trim() : null),
+          awayName: matchData?.participants?.[1]?.name || (teams?.includes(' vs ') ? teams.split(' vs ')[1].trim() : null)
         }
       ),
+      // Also set leagueId and leagueName directly on bet for easier access by calculator
+      leagueId: matchData?.league?.id || matchData?.league_id || null,
+      leagueName: matchData?.league?.name || null,
     });
+    
+    // Final validation: Check if required fields are present
+    const homeName = bet.unibetMeta?.homeName || (bet.teams?.includes(' vs ') ? bet.teams.split(' vs ')[0].trim() : null);
+    const awayName = bet.unibetMeta?.awayName || (bet.teams?.includes(' vs ') ? bet.teams.split(' vs ')[1].trim() : null);
+    const leagueId = bet.leagueId || bet.unibetMeta?.leagueId;
+    const startDate = bet.unibetMeta?.start || bet.matchDate;
+    
+    // Final validation: Log bet data to help debug cancellation issues
+    console.log(`[DEBUG] ✅ Bet created with:`, {
+      matchId: bet.matchId,
+      teams: bet.teams,
+      leagueId: leagueId,
+      homeName: homeName,
+      awayName: awayName,
+      start: startDate,
+      marketId: bet.marketId,
+      hasRequiredFields: !!(homeName && awayName && leagueId && startDate)
+    });
+    
+    // Warn if required fields are missing (but don't reject - let calculator handle it)
+    if (!homeName || !awayName) {
+      console.warn(`⚠️ [WARNING] Bet placed with missing team names - Home: "${homeName}", Away: "${awayName}"`);
+      console.warn(`⚠️ This bet may be cancelled during outcome calculation`);
+    }
+    if (!leagueId) {
+      console.warn(`⚠️ [WARNING] Bet placed with missing leagueId: ${leagueId}`);
+      console.warn(`⚠️ This bet may be cancelled during outcome calculation`);
+    }
+    if (!startDate) {
+      console.warn(`⚠️ [WARNING] Bet placed with missing start date: ${startDate}`);
+      console.warn(`⚠️ This bet may be cancelled during outcome calculation`);
+    }
 
     await bet.save();
 
@@ -2418,37 +2521,224 @@ class BetService {
       }
 
       console.log(`[calculateAndUpdateBetOutcome] Outcome calculated:`, outcomeResult);
+      
+      // Log initial bet data
+      console.log(`\n[calculateAndUpdateBetOutcome] ========== INITIAL BET DATA ==========`);
+      console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+      console.log(`[calculateAndUpdateBetOutcome] Stake: ${bet.stake}`);
+      console.log(`[calculateAndUpdateBetOutcome] Odds: ${bet.odds}`);
+      console.log(`[calculateAndUpdateBetOutcome] Current Status: ${bet.status}`);
+      console.log(`[calculateAndUpdateBetOutcome] Current Payout: ${bet.payout}`);
+      console.log(`[calculateAndUpdateBetOutcome] Current Profit: ${bet.profit || 'N/A'}`);
+      console.log(`[calculateAndUpdateBetOutcome] Calculated Status: ${outcomeResult.status}`);
+      console.log(`[calculateAndUpdateBetOutcome] ========================================\n`);
 
       // Update bet based on the outcome
       let updateData = {
         status: outcomeResult.status,
         payout: 0,
+        profit: 0, // Profit = payout - stake
       };
 
       // Handle different outcome statuses
       switch (outcomeResult.status) {
         case "won":
           const winningPayout = bet.stake * bet.odds;
-          console.log(`[calculateAndUpdateBetOutcome] Bet won. Payout: ${winningPayout}`);
+          const winningProfit = winningPayout - bet.stake;
+          
+          console.log(`\n[calculateAndUpdateBetOutcome] ========== WON BET BALANCE UPDATE ==========`);
+          console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+          console.log(`[calculateAndUpdateBetOutcome] Stake: ${bet.stake}`);
+          console.log(`[calculateAndUpdateBetOutcome] Odds: ${bet.odds}`);
+          console.log(`[calculateAndUpdateBetOutcome] Payout: ${winningPayout} (stake × odds)`);
+          console.log(`[calculateAndUpdateBetOutcome] Profit: ${winningProfit} (payout - stake)`);
+          
           updateData.payout = winningPayout;
+          updateData.profit = winningProfit;
+          
           // Update user balance for winning bet
           if (bet.userId) {
+            const userBefore = await User.findById(bet.userId);
+            const balanceBefore = userBefore?.balance || 0;
+            
+            console.log(`[calculateAndUpdateBetOutcome] Balance Before: ${balanceBefore}`);
+            console.log(`[calculateAndUpdateBetOutcome] Adding Payout: ${winningPayout}`);
+            console.log(`[calculateAndUpdateBetOutcome] Breakdown: ${balanceBefore} + ${winningPayout} = ${balanceBefore + winningPayout}`);
+            
             await User.findByIdAndUpdate(bet.userId, {
               $inc: { balance: winningPayout },
             });
-            console.log(`[calculateAndUpdateBetOutcome] User balance updated. Added: ${winningPayout}`);
+            
+            const userAfter = await User.findById(bet.userId);
+            const balanceAfter = userAfter?.balance || 0;
+            
+            console.log(`[calculateAndUpdateBetOutcome] Balance After: ${balanceAfter}`);
+            console.log(`[calculateAndUpdateBetOutcome] Balance Change: ${balanceAfter - balanceBefore} (should be ${winningPayout})`);
+            console.log(`[calculateAndUpdateBetOutcome] ===========================================\n`);
           }
           break;
 
         case "lost":
-          console.log(`[calculateAndUpdateBetOutcome] Bet lost. No payout.`);
+          const lostProfit = -bet.stake; // Full loss
+          
+          console.log(`\n[calculateAndUpdateBetOutcome] ========== LOST BET BALANCE UPDATE ==========`);
+          console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+          console.log(`[calculateAndUpdateBetOutcome] Stake: ${bet.stake}`);
+          console.log(`[calculateAndUpdateBetOutcome] Payout: 0 (bet lost)`);
+          console.log(`[calculateAndUpdateBetOutcome] Profit: ${lostProfit} (full loss)`);
+          
           updateData.payout = 0;
-          // No balance update needed for lost bets
+          updateData.profit = lostProfit;
+          
+          // No balance update needed for lost bets (stake already deducted at bet placement)
+          if (bet.userId) {
+            const userCurrent = await User.findById(bet.userId);
+            const balanceCurrent = userCurrent?.balance || 0;
+            console.log(`[calculateAndUpdateBetOutcome] Current Balance: ${balanceCurrent} (no change - stake already deducted)`);
+            console.log(`[calculateAndUpdateBetOutcome] ===========================================\n`);
+          }
+          break;
+
+        case "half_won":
+          // Half Win: Half stake wins (with odds), half stake refunded
+          // Calculation breakdown:
+          // - Half stake (50%) wins with odds: (stake / 2) * odds
+          // - Half stake (50%) refunded: (stake / 2)
+          // - Total Payout = (stake / 2) * odds + (stake / 2) = stake * ((odds - 1) / 2 + 1)
+          // - Profit = Payout - Stake = (stake / 2) * (odds - 1)
+          
+          // Ensure stake and odds are numbers
+          const stakeNum = Number(bet.stake);
+          const oddsNum = Number(bet.odds);
+          
+          if (isNaN(stakeNum) || isNaN(oddsNum)) {
+            console.error(`[calculateAndUpdateBetOutcome] Invalid stake or odds: stake=${bet.stake}, odds=${bet.odds}`);
+            throw new Error(`Invalid stake or odds for half_won calculation`);
+          }
+          
+          const halfStake = stakeNum / 2;
+          const halfStakeWinnings = halfStake * oddsNum;
+          const halfStakeRefund = halfStake;
+          const halfWinPayout = Number((halfStakeWinnings + halfStakeRefund).toFixed(2));
+          const halfWinProfit = Number((halfWinPayout - stakeNum).toFixed(2));
+          
+          console.log(`\n[calculateAndUpdateBetOutcome] ========== HALF WIN CALCULATION ==========`);
+          console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+          console.log(`[calculateAndUpdateBetOutcome] Original Stake: ${stakeNum} (type: ${typeof stakeNum})`);
+          console.log(`[calculateAndUpdateBetOutcome] Odds: ${oddsNum} (type: ${typeof oddsNum})`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 1: Split stake into 2 equal parts`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Half Stake (Part 1): ${halfStake} (will win with odds)`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Half Stake (Part 2): ${halfStake} (will be refunded)`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 2: Calculate winnings for Part 1`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Part 1 Winnings = ${halfStake} × ${oddsNum} = ${halfStakeWinnings}`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 3: Calculate refund for Part 2`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Part 2 Refund = ${halfStakeRefund}`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 4: Calculate Total Payout`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Total Payout = ${halfStakeWinnings} + ${halfStakeRefund} = ${halfWinPayout} (type: ${typeof halfWinPayout})`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 5: Calculate Profit`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Profit = ${halfWinPayout} - ${stakeNum} = ${halfWinProfit} (type: ${typeof halfWinProfit})`);
+          console.log(`[calculateAndUpdateBetOutcome] ===========================================\n`);
+          
+          updateData.payout = halfWinPayout;
+          updateData.profit = halfWinProfit;
+          
+          // Update user balance for half win
+          if (bet.userId) {
+            const userBefore = await User.findById(bet.userId);
+            const balanceBefore = userBefore?.balance || 0;
+            await User.findByIdAndUpdate(bet.userId, {
+              $inc: { balance: halfWinPayout },
+            });
+            const userAfter = await User.findById(bet.userId);
+            const balanceAfter = userAfter?.balance || 0;
+            console.log(`[calculateAndUpdateBetOutcome] User balance updated:`);
+            console.log(`[calculateAndUpdateBetOutcome]   - Before: ${balanceBefore}`);
+            console.log(`[calculateAndUpdateBetOutcome]   - Added: ${halfWinPayout}`);
+            console.log(`[calculateAndUpdateBetOutcome]   - After: ${balanceAfter}`);
+          }
+          break;
+
+        case "half_lost":
+          // Half Loss: Half stake lost, half stake refunded
+          // Calculation breakdown:
+          // - Half stake (50%) lost: (stake / 2) - this is gone
+          // - Half stake (50%) refunded: (stake / 2) - this is returned
+          // - Total Payout = stake / 2 (only refund)
+          // - Profit = Payout - Stake = -(stake / 2)
+          
+          // Ensure stake is a number
+          const halfLossStakeNum = Number(bet.stake);
+          
+          if (isNaN(halfLossStakeNum)) {
+            console.error(`[calculateAndUpdateBetOutcome] Invalid stake: stake=${bet.stake}`);
+            throw new Error(`Invalid stake for half_lost calculation`);
+          }
+          
+          const halfLossStake = halfLossStakeNum / 2;
+          const halfLossRefund = Number(halfLossStake.toFixed(2));
+          const halfLossLost = halfLossStake;
+          const halfLossProfit = Number((halfLossRefund - halfLossStakeNum).toFixed(2));
+          
+          console.log(`\n[calculateAndUpdateBetOutcome] ========== HALF LOSS CALCULATION ==========`);
+          console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+          console.log(`[calculateAndUpdateBetOutcome] Original Stake: ${halfLossStakeNum} (type: ${typeof halfLossStakeNum})`);
+          console.log(`[calculateAndUpdateBetOutcome] Odds: ${bet.odds} (type: ${typeof bet.odds})`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 1: Split stake into 2 equal parts`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Half Stake (Part 1): ${halfLossStake} (LOST - gone)`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Half Stake (Part 2): ${halfLossStake} (VOID - will be refunded)`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 2: Calculate refund for Part 2`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Part 2 Refund = ${halfLossRefund} (type: ${typeof halfLossRefund})`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 3: Part 1 is lost (no payout)`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Part 1 Lost = ${halfLossLost} (gone)`);
+          console.log(`[calculateAndUpdateBetOutcome] ---`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 4: Calculate Total Payout`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Total Payout = ${halfLossRefund} (only refund, no winnings)`);
+          console.log(`[calculateAndUpdateBetOutcome] Step 5: Calculate Profit`);
+          console.log(`[calculateAndUpdateBetOutcome]   - Profit = ${halfLossRefund} - ${halfLossStakeNum} = ${halfLossProfit} (type: ${typeof halfLossProfit})`);
+          console.log(`[calculateAndUpdateBetOutcome] ===========================================\n`);
+          
+          updateData.payout = halfLossRefund;
+          updateData.profit = halfLossProfit;
+          
+          // Refund half stake to user
+          if (bet.userId) {
+            const userBefore = await User.findById(bet.userId);
+            const balanceBefore = userBefore?.balance || 0;
+            await User.findByIdAndUpdate(bet.userId, {
+              $inc: { balance: halfLossRefund },
+            });
+            const userAfter = await User.findById(bet.userId);
+            const balanceAfter = userAfter?.balance || 0;
+            console.log(`[calculateAndUpdateBetOutcome] User balance updated:`);
+            console.log(`[calculateAndUpdateBetOutcome]   - Before: ${balanceBefore}`);
+            console.log(`[calculateAndUpdateBetOutcome]   - Added (refund): ${halfLossRefund}`);
+            console.log(`[calculateAndUpdateBetOutcome]   - After: ${balanceAfter}`);
+          }
+          break;
+
+        case "void":
+          console.log(`[calculateAndUpdateBetOutcome] Bet voided. Refunding stake: ${bet.stake}`);
+          updateData.payout = bet.stake;
+          updateData.profit = 0; // No profit, no loss (void)
+          updateData.status = "void";
+          // Refund stake to user (void = push = stake returned)
+          if (bet.userId) {
+            await User.findByIdAndUpdate(bet.userId, {
+              $inc: { balance: bet.stake },
+            });
+            console.log(`[calculateAndUpdateBetOutcome] Stake refunded to user for void bet: ${bet.stake}`);
+          }
           break;
 
         case "cancelled":
           console.log(`[calculateAndUpdateBetOutcome] Bet canceled. Refunding stake: ${bet.stake}`);
           updateData.payout = bet.stake;
+          updateData.profit = 0; // No profit, no loss (cancelled)
           updateData.status = "canceled";
           // Refund stake to user
           if (bet.userId) {
@@ -2463,6 +2753,7 @@ class BetService {
           console.error(`[calculateAndUpdateBetOutcome] Unknown status in outcome calculation:`, outcomeResult);
           updateData.status = "canceled";
           updateData.payout = bet.stake; // Refund the stake
+          updateData.profit = 0; // No profit, no loss
           // Refund stake to user
           if (bet.userId) {
             await User.findByIdAndUpdate(bet.userId, {
@@ -2473,6 +2764,15 @@ class BetService {
           break;
       }
 
+      // Log what we're about to save to database
+      console.log(`\n[calculateAndUpdateBetOutcome] ========== SAVING TO DATABASE ==========`);
+      console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${betId}`);
+      console.log(`[calculateAndUpdateBetOutcome] Update Data:`);
+      console.log(`[calculateAndUpdateBetOutcome]   - status: ${updateData.status}`);
+      console.log(`[calculateAndUpdateBetOutcome]   - payout: ${updateData.payout}`);
+      console.log(`[calculateAndUpdateBetOutcome]   - profit: ${updateData.profit}`);
+      console.log(`[calculateAndUpdateBetOutcome] =========================================\n`);
+
       // Update the bet in database
       const updatedBet = await Bet.findByIdAndUpdate(betId, updateData, {
         new: true,
@@ -2482,9 +2782,14 @@ class BetService {
         throw new CustomError("Failed to update bet", 500, "UPDATE_FAILED");
       }
 
-      console.log(
-        `[calculateAndUpdateBetOutcome] Bet updated successfully. betId: ${bet._id}, status: ${updatedBet.status}, payout: ${updatedBet.payout}`
-      );
+      console.log(`\n[calculateAndUpdateBetOutcome] ========== DATABASE UPDATE VERIFIED ==========`);
+      console.log(`[calculateAndUpdateBetOutcome] Bet ID: ${updatedBet._id}`);
+      console.log(`[calculateAndUpdateBetOutcome] Status in DB: ${updatedBet.status}`);
+      console.log(`[calculateAndUpdateBetOutcome] Payout in DB: ${updatedBet.payout}`);
+      console.log(`[calculateAndUpdateBetOutcome] Profit in DB: ${updatedBet.profit}`);
+      console.log(`[calculateAndUpdateBetOutcome] Stake in DB: ${updatedBet.stake}`);
+      console.log(`[calculateAndUpdateBetOutcome] Odds in DB: ${updatedBet.odds}`);
+      console.log(`[calculateAndUpdateBetOutcome] ===============================================\n`);
 
       return {
         betId: updatedBet._id,

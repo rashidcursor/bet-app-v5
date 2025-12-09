@@ -168,6 +168,8 @@ router.get('/:eventId', async (req, res) => {
       } catch (fileError) {
         console.error('Failed to save response to file:', fileError.message);
       }
+
+      console.log('🔍 [PRODUCTION DEBUG] Response data:', response.data);
       
       return res.json({
         success: true,

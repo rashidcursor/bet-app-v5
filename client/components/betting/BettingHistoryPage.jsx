@@ -424,21 +424,48 @@ const BettingHistoryPage = ({ userId }) => {
             <div className="flex justify-between pt-2 border-t">
               <span className="text-gray-500 font-medium">Profit:</span>
               <span className={`font-semibold ${
-                bet.status.toLowerCase() === "won" 
+                bet.status.toLowerCase() === "won" || bet.status.toLowerCase() === "half_won"
                   ? "text-green-600"
-                  : bet.status.toLowerCase() === "lost"
+                  : bet.status.toLowerCase() === "lost" || bet.status.toLowerCase() === "half_lost"
                   ? "text-red-600"
                   : "text-gray-500"
               }`}>
-                {bet.status.toLowerCase() === "won" ? (
-                  `+$${(bet.stake * bet.odds).toFixed(2)}`
-                ) : bet.status.toLowerCase() === "pending" ? (
-                  "Pending"
-                ) : bet.status.toLowerCase() === "cancelled" || bet.status.toLowerCase() === "canceled" ? (
-                  "$0.00"
-                ) : (
-                  `-$${bet.stake.toFixed(2)}`
-                )}
+                {(() => {
+                  const status = bet.status.toLowerCase();
+                  
+                  // Use profit field from database if available (preferred)
+                  if (bet.profit !== undefined && bet.profit !== null) {
+                    const profit = Number(bet.profit);
+                    if (profit > 0) {
+                      return `+$${profit.toFixed(2)}`;
+                    } else if (profit < 0) {
+                      return `-$${Math.abs(profit).toFixed(2)}`;
+                    } else {
+                      return "$0.00";
+                    }
+                  }
+                  
+                  // Fallback to calculation if profit field not available
+                  if (status === "won") {
+                    return `+$${((bet.stake * bet.odds) - bet.stake).toFixed(2)}`;
+                  } else if (status === "half_won") {
+                    // Half win: (stake/2) * odds + (stake/2) - stake = (stake/2) * (odds - 1)
+                    const halfWinProfit = (bet.stake / 2) * (bet.odds - 1);
+                    return `+$${halfWinProfit.toFixed(2)}`;
+                  } else if (status === "half_lost") {
+                    // Half loss: (stake/2) - stake = -(stake/2)
+                    const halfLossProfit = -(bet.stake / 2);
+                    return `-$${Math.abs(halfLossProfit).toFixed(2)}`;
+                  } else if (status === "pending") {
+                    return "Pending";
+                  } else if (status === "cancelled" || status === "canceled" || status === "void") {
+                    return "$0.00";
+                  } else if (status === "lost") {
+                    return `-$${bet.stake.toFixed(2)}`;
+                  } else {
+                    return "$0.00";
+                  }
+                })()}
               </span>
             </div>
           </div>
@@ -855,19 +882,66 @@ const BettingHistoryPage = ({ userId }) => {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {item.status.toLowerCase() === "won" ? (
+                                {(() => {
+                                  const status = item.status.toLowerCase();
+                                  
+                                  // Use profit field from database if available (preferred)
+                                  if (item.profit !== undefined && item.profit !== null) {
+                                    const profit = Number(item.profit);
+                                    if (profit > 0) {
+                                      return (
                                   <span className="font-medium text-green-600">
-                                    +${(item.stake * item.odds).toFixed(2)}
+                                          +${profit.toFixed(2)}
                                   </span>
-                                ) : item.status.toLowerCase() === "pending" ? (
-                                  <span className="text-gray-500">Pending</span>
-                                ) : item.status.toLowerCase() === "cancelled" || item.status.toLowerCase() === "canceled" ? (
-                                  <span className="text-gray-500">$0.00</span>
-                                ) : (
+                                      );
+                                    } else if (profit < 0) {
+                                      return (
+                                        <span className="font-medium text-red-600">
+                                          -${Math.abs(profit).toFixed(2)}
+                                        </span>
+                                      );
+                                    } else {
+                                      return <span className="text-gray-500">$0.00</span>;
+                                    }
+                                  }
+                                  
+                                  // Fallback to calculation if profit field not available
+                                  if (status === "won") {
+                                    return (
+                                      <span className="font-medium text-green-600">
+                                        +${((item.stake * item.odds) - item.stake).toFixed(2)}
+                                      </span>
+                                    );
+                                  } else if (status === "half_won") {
+                                    // Half win: (stake/2) * odds + (stake/2) - stake = (stake/2) * (odds - 1)
+                                    const halfWinProfit = (item.stake / 2) * (item.odds - 1);
+                                    return (
+                                      <span className="font-medium text-green-600">
+                                        +${halfWinProfit.toFixed(2)}
+                                      </span>
+                                    );
+                                  } else if (status === "half_lost") {
+                                    // Half loss: (stake/2) - stake = -(stake/2)
+                                    const halfLossProfit = -(item.stake / 2);
+                                    return (
+                                      <span className="font-medium text-red-600">
+                                        -${Math.abs(halfLossProfit).toFixed(2)}
+                                      </span>
+                                    );
+                                  } else if (status === "pending") {
+                                    return <span className="text-gray-500">Pending</span>;
+                                  } else if (status === "cancelled" || status === "canceled" || status === "void") {
+                                    return <span className="text-gray-500">$0.00</span>;
+                                  } else if (status === "lost") {
+                                    return (
                                   <span className="font-medium text-red-600">
                                     -${item.stake.toFixed(2)}
                                   </span>
-                                )}
+                                    );
+                                  } else {
+                                    return <span className="text-gray-500">$0.00</span>;
+                                  }
+                                })()}
                               </TableCell>
                             </TableRow>
                             {isCombo && expandedTableBets.has(item._id) && renderCombinationDetails(item)}

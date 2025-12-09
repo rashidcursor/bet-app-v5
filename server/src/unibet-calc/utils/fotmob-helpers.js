@@ -1,5 +1,115 @@
 // FotMob helper utilities for extracting standardized data from match details
 
+// Normalize team/player name for comparison
+export function normalizeTeamName(name) {
+    if (!name) return '';
+    return String(name)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\w\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// Calculate similarity score between two names (0-1)
+export function calculateNameSimilarity(name1, name2) {
+    const norm1 = normalizeTeamName(name1);
+    const norm2 = normalizeTeamName(name2);
+
+    if (norm1 === norm2) return 1.0;
+
+    // Check if one name contains the other
+    if (norm1.includes(norm2) || norm2.includes(norm1)) return 0.8;
+
+    // Special handling for common abbreviations and name variations
+    const nameVariations = {
+        'psg': ['paris saint germain', 'paris saintgermain', 'paris st germain'],
+        'paris saint germain': ['psg'],
+        'tottenham': ['tottenham hotspur', 'spurs'],
+        'tottenham hotspur': ['tottenham', 'spurs'],
+        'spurs': ['tottenham', 'tottenham hotspur'],
+        'manchester united': ['man utd', 'manchester utd', 'man u'],
+        'manchester city': ['man city', 'mancity'],
+        'real madrid': ['real madrid cf', 'real'],
+        'barcelona': ['barca', 'fc barcelona'],
+        'bayern munich': ['bayern', 'fc bayern', 'bayern munchen'],
+        'juventus': ['juve', 'juventus fc'],
+        'ac milan': ['milan', 'acmilan'],
+        'inter milan': ['inter', 'inter milano'],
+        'atletico madrid': ['atletico', 'atletico madrid']
+    };
+
+    // Check if either name matches known variations
+    const checkVariations = (n1, n2) => {
+        const variations1 = nameVariations[n1] || [];
+        const variations2 = nameVariations[n2] || [];
+        
+        if (variations1.includes(n2) || variations2.includes(n1)) {
+            return true;
+        }
+        
+        if (variations1.some(v => n2.includes(v) || v.includes(n2))) {
+            return true;
+        }
+        if (variations2.some(v => n1.includes(v) || v.includes(n1))) {
+            return true;
+        }
+        
+        return false;
+    };
+
+    if (checkVariations(norm1, norm2)) {
+        return 0.85; // High score for abbreviation/variation matches
+    }
+
+    // Calculate Levenshtein distance
+    const distance = levenshteinDistance(norm1, norm2);
+    const maxLength = Math.max(norm1.length, norm2.length);
+
+    if (maxLength === 0) return 0;
+
+    return 1 - (distance / maxLength);
+}
+
+// Calculate Levenshtein distance between two strings
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+    const len1 = str1.length;
+    const len2 = str2.length;
+
+    for (let i = 0; i <= len2; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= len1; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= len2; i++) {
+        for (let j = 1; j <= len1; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+
+    return matrix[len2][len1];
+}
+
+// Check if two names match using similarity calculation
+export function namesMatch(name1, name2, threshold = 0.6) {
+    if (!name1 || !name2) return false;
+    const similarity = calculateNameSimilarity(name1, name2);
+    return similarity >= threshold;
+}
+
 // Normalize Unibet numeric line (e.g., 7500 -> 7.5)
 export function normalizeLine(rawLine) {
     if (rawLine === null || rawLine === undefined) return null;
@@ -36,12 +146,34 @@ export function getGoalEvents(matchDetails) {
 }
 
 export function getCardEvents(matchDetails) {
-    // Cards are provided as generic Card events under header.events.events
-    const eventsArray = matchDetails?.header?.events?.events;
-    if (Array.isArray(eventsArray)) {
-        return eventsArray
+    // Cards can be in multiple locations:
+    // 1. header.events.events (primary location)
+    // 2. content.matchFacts.events.events (alternative location)
+    // 3. Legacy per-team maps (homeTeamRedCards, awayTeamRedCards, etc.)
+    
+    let allCardEvents = [];
+    
+    // Check header.events.events first
+    const headerEvents = matchDetails?.header?.events?.events;
+    if (Array.isArray(headerEvents)) {
+        const headerCards = headerEvents
             .filter(ev => String(ev?.type).toLowerCase() === 'card' && !!ev?.card)
             .map(ev => ({ ...ev, isHome: !!ev?.isHome }));
+        allCardEvents.push(...headerCards);
+    }
+    
+    // Check content.matchFacts.events.events (alternative location)
+    const matchFactsEvents = matchDetails?.content?.matchFacts?.events?.events;
+    if (Array.isArray(matchFactsEvents)) {
+        const matchFactsCards = matchFactsEvents
+            .filter(ev => String(ev?.type).toLowerCase() === 'card' && !!ev?.card)
+            .map(ev => ({ ...ev, isHome: !!ev?.isHome }));
+        allCardEvents.push(...matchFactsCards);
+    }
+    
+    // If we found cards in events arrays, return them
+    if (allCardEvents.length > 0) {
+        return allCardEvents;
     }
 
     // Fallback to legacy per-team maps if present
@@ -204,14 +336,29 @@ export function getFoulsFromStats(matchDetails) {
     return { ...pair, total: pair.home + pair.away };
 }
 
-export function getTeamCards(matchDetails) {
+export function getTeamCards(matchDetails, period = 'full') {
     // Primary: event timeline
     const events = getCardEvents(matchDetails);
     const counts = {
         home: { yellow: 0, red: 0, total: 0 },
         away: { yellow: 0, red: 0, total: 0 }
     };
-    for (const c of events) {
+    
+    // Filter cards by period if specified
+    let filteredEvents = events;
+    if (period === '1st half' || period === 'first half') {
+        filteredEvents = events.filter(c => {
+            const m = getAbsoluteMinuteFromEvent(c);
+            return m !== null ? m <= 45 : (String(c?.period || '').toLowerCase().includes('first'));
+        });
+    } else if (period === '2nd half' || period === 'second half') {
+        filteredEvents = events.filter(c => {
+            const m = getAbsoluteMinuteFromEvent(c);
+            return m !== null ? m > 45 : (String(c?.period || '').toLowerCase().includes('second'));
+        });
+    }
+    
+    for (const c of filteredEvents) {
         const bucket = c.isHome ? counts.home : counts.away;
         const t = String(c?.card || '').toLowerCase();
         if (t.includes('yellow')) bucket.yellow++;
@@ -220,6 +367,8 @@ export function getTeamCards(matchDetails) {
     }
 
     // Supplement with aggregate stats when available (handles feeds missing yellow card timeline)
+    // Only use aggregate stats for full-time, not for period-specific
+    if (period === 'full') {
     const yellowPair = findTeamStatPair(matchDetails, 'yellow_cards');
     const redPair = findTeamStatPair(matchDetails, 'red_cards');
     if (yellowPair || redPair) {
@@ -235,42 +384,112 @@ export function getTeamCards(matchDetails) {
         counts.away.red = Math.max(counts.away.red, statsAwayRed);
         counts.home.total = counts.home.yellow + counts.home.red;
         counts.away.total = counts.away.yellow + counts.away.red;
+        }
     }
     return counts;
 }
 
 // Stubs (to be expanded in later phases)
 export function getPlayerStats(matchDetails, playerId) {
-    if (!matchDetails || !playerId) return null;
+    console.log(`📊 getPlayerStats called for playerId: ${playerId}`);
+    
+    if (!matchDetails || !playerId) {
+        console.log(`❌ getPlayerStats: Missing matchDetails or playerId`);
+        return null;
+    }
+    
     const key = String(playerId);
     const playerStatsMap = matchDetails.playerStats || matchDetails.content?.playerStats || null;
     const player = playerStatsMap ? playerStatsMap[key] : null;
 
+    console.log(`   - Player found in stats map: ${!!player}`);
+    if (player) {
+        console.log(`   - Player name: ${player?.name || 'N/A'}`);
+    }
+
     const result = { shotsOnTarget: null, goals: null };
 
-    // Read aggregated per-player stats if available
+    // PRIORITY 1: Read aggregated per-player stats from "Attack" section (Primary Source)
     if (player && Array.isArray(player.stats)) {
+        console.log(`   - Player stats array found, length: ${player.stats.length}`);
+        
+        // First, try to find "Attack" section specifically (most reliable)
+        const attackSection = player.stats.find(s => 
+            s?.key === 'attack' || 
+            s?.title === 'Attack' ||
+            String(s?.title || '').toLowerCase().includes('attack')
+        );
+        
+        if (attackSection && attackSection.stats && typeof attackSection.stats === 'object') {
+            console.log(`   - Found Attack section, checking for "Shots on target"...`);
+            for (const [label, obj] of Object.entries(attackSection.stats)) {
+                const k = String(obj?.key || '').toLowerCase();
+                const labelKey = String(label || '').toLowerCase();
+                const val = obj?.stat?.value;
+                
+                // Check for shots on target - multiple ways it might be named
+                if (k === 'shotsontarget' || 
+                    k === 'shots_on_target' ||
+                    labelKey.includes('shots on target') ||
+                    labelKey === 'shots on target') {
+                    if (typeof val === 'number') {
+                        result.shotsOnTarget = Number(val);
+                        console.log(`   ✅ FOUND shots on target in Attack section: ${result.shotsOnTarget} (from label: "${label}", key: "${obj?.key}")`);
+                    } else {
+                        console.log(`   - Shots on target found but value is not a number: ${typeof val}, value=${val}`);
+                    }
+                }
+            }
+        }
+        
+        // If not found in Attack section, search all sections
+        if (result.shotsOnTarget === null || result.shotsOnTarget === undefined) {
+            console.log(`   - Shots on target not found in Attack section, searching all sections...`);
         for (const section of player.stats) {
             const dictOrArray = section?.stats;
             if (!dictOrArray) continue;
+                
             if (Array.isArray(dictOrArray)) {
+                    // Array format
                 for (const obj of dictOrArray) {
                     if (!obj) continue;
                     const k = String(obj?.key || '').toLowerCase();
                     const val = obj?.stat?.value;
-                    if (k === 'shotsontarget' && typeof val === 'number') result.shotsOnTarget = Number(val);
-                    if (k === 'goals' && typeof val === 'number') result.goals = Number(val);
+                        if (k === 'shotsontarget' && typeof val === 'number') {
+                            result.shotsOnTarget = Number(val);
+                            console.log(`   ✅ Found shots on target in stats array: ${result.shotsOnTarget}`);
+                        }
+                        if (k === 'goals' && typeof val === 'number') {
+                            result.goals = Number(val);
+                            console.log(`   - Found goals in stats array: ${result.goals}`);
+                        }
                 }
             } else if (typeof dictOrArray === 'object') {
+                    // Object format (key-value pairs)
+                    console.log(`   - Checking section "${section?.title || section?.key || 'unknown'}" with ${Object.keys(dictOrArray).length} entries`);
                 for (const [label, obj] of Object.entries(dictOrArray)) {
                     const k = String(obj?.key || '').toLowerCase();
                     const labelKey = String(label || '').toLowerCase();
                     const val = obj?.stat?.value;
-                    if (k === 'shotsontarget' || labelKey.includes('shots on target')) {
-                        if (typeof val === 'number') result.shotsOnTarget = Number(val);
+                        
+                        // Check for shots on target - multiple ways it might be named
+                        if (k === 'shotsontarget' || 
+                            k === 'shots_on_target' ||
+                            labelKey.includes('shots on target') ||
+                            labelKey === 'shots on target') {
+                            if (typeof val === 'number') {
+                                result.shotsOnTarget = Number(val);
+                                console.log(`   ✅ Found shots on target in stats object: ${result.shotsOnTarget} (from label: "${label}", section: "${section?.title || section?.key}")`);
+                            } else {
+                                console.log(`   - Shots on target found but value is not a number: ${typeof val}, value=${val}`);
+                            }
                     }
                     if (k === 'goals' || labelKey === 'goals') {
-                        if (typeof val === 'number') result.goals = Number(val);
+                            if (typeof val === 'number') {
+                                result.goals = Number(val);
+                                console.log(`   - Found goals in stats object: ${result.goals}`);
+                            }
+                        }
                     }
                 }
             }
@@ -279,37 +498,95 @@ export function getPlayerStats(matchDetails, playerId) {
 
     // Fallback 1: player's own shotmap (if present in this fixture)
     if ((result.shotsOnTarget === null || result.shotsOnTarget === undefined) && Array.isArray(player?.shotmap)) {
+        console.log(`   - Using Fallback 1: Player's own shotmap`);
         const sot = player.shotmap.reduce((acc, ev) => acc + (ev?.isOnTarget ? 1 : 0), 0);
-        if (Number.isFinite(sot)) result.shotsOnTarget = sot;
+        if (Number.isFinite(sot)) {
+            result.shotsOnTarget = sot;
+            console.log(`   - Calculated shots on target from player shotmap: ${result.shotsOnTarget}`);
+        }
     }
 
     // Fallback 2: compute shots on target from global shotmap when stat is missing
     if (result.shotsOnTarget === null || result.shotsOnTarget === undefined) {
+        console.log(`   - Using Fallback 2: Global shotmap`);
         const globalShotmap = Array.isArray(matchDetails?.shotmap)
             ? matchDetails.shotmap
             : (Array.isArray(matchDetails?.header?.events?.shotmap)
                 ? matchDetails.header.events.shotmap
                 : null);
         if (Array.isArray(globalShotmap)) {
-            const sot = globalShotmap
-                .filter(ev => ev?.playerId === Number(playerId))
-                .reduce((acc, ev) => acc + (ev?.isOnTarget ? 1 : 0), 0);
-            if (Number.isFinite(sot)) result.shotsOnTarget = sot;
+            // Filter by playerId - check multiple possible locations
+            const playerShots = globalShotmap.filter(ev => {
+                const eventPlayerId = ev?.playerId || ev?.shotmapEvent?.playerId;
+                return Number(eventPlayerId) === Number(playerId);
+            });
+            console.log(`   - Found ${playerShots.length} shots in global shotmap for player ${playerId}`);
+            const sot = playerShots.filter(ev => ev?.isOnTarget === true).length;
+            if (Number.isFinite(sot) && sot > 0) {
+                result.shotsOnTarget = sot;
+                console.log(`   - Calculated shots on target from global shotmap: ${result.shotsOnTarget}`);
+            } else {
+                console.log(`   - No shots on target found in global shotmap for player ${playerId}`);
+            }
+        } else {
+            console.log(`   - Global shotmap not available`);
         }
     }
 
-    // Fallback 3: as a last resort, approximate SOT with goals count
+    // Fallback 3: Try to get shots on target from goal events' shotmapEvent
+    // Each goal event has a shotmapEvent with isOnTarget flag
     if (result.shotsOnTarget === null || result.shotsOnTarget === undefined) {
+        console.log(`   - Using Fallback 3: Counting shots on target from goal events' shotmapEvent`);
         const { goals } = getPlayerEvents(matchDetails, Number(playerId));
-        if (Array.isArray(goals)) result.shotsOnTarget = goals.length;
+        if (Array.isArray(goals) && goals.length > 0) {
+            // Count goals that have isOnTarget = true in shotmapEvent
+            const shotsOnTargetFromGoals = goals.filter(g => g?.shotmapEvent?.isOnTarget === true).length;
+            console.log(`   - Found ${goals.length} goals, ${shotsOnTargetFromGoals} have isOnTarget=true`);
+            
+            // But this is still not accurate - we need ALL shots on target, not just goals
+            // So we should look at the global shotmap for this player
+            const globalShotmap = Array.isArray(matchDetails?.shotmap)
+                ? matchDetails.shotmap
+                : (Array.isArray(matchDetails?.header?.events?.shotmap)
+                    ? matchDetails.header.events.shotmap
+                    : null);
+            if (Array.isArray(globalShotmap)) {
+                const playerShots = globalShotmap.filter(ev => {
+                    const eventPlayerId = ev?.playerId || ev?.shotmapEvent?.playerId;
+                    return Number(eventPlayerId) === Number(playerId);
+                });
+                const sotFromShotmap = playerShots.filter(ev => ev?.isOnTarget === true).length;
+                console.log(`   - Found ${playerShots.length} total shots in shotmap, ${sotFromShotmap} on target`);
+                if (sotFromShotmap > 0) {
+                    result.shotsOnTarget = sotFromShotmap;
+                    console.log(`   - Set shots on target from shotmap: ${result.shotsOnTarget}`);
+                }
+            }
+            
+            // Only use goals as last resort if shotmap is not available
+            if (result.shotsOnTarget === null || result.shotsOnTarget === undefined) {
+                console.log(`   - WARNING: Using goals count as proxy (NOT ACCURATE - goals != shots on target)`);
+                result.shotsOnTarget = goals.length;
+                console.log(`   - Approximated shots on target from goals: ${result.shotsOnTarget} (from ${goals.length} goals)`);
+            }
+        } else {
+            console.log(`   - No goals found for player ${playerId}`);
+        }
     }
 
+    console.log(`   - Final result: shotsOnTarget=${result.shotsOnTarget}, goals=${result.goals}`);
     return result;
 }
 
 // Best-effort matcher from odds participant name to FotMob playerId
 export function findPlayerIdByName(matchDetails, participantName) {
-    if (!matchDetails || !matchDetails.playerStats || !participantName) return null;
+    console.log(`🔍 findPlayerIdByName: Looking for "${participantName}"`);
+    
+    if (!matchDetails || !participantName) {
+        console.log(`   - Missing matchDetails or participantName`);
+        return null;
+    }
+    
     const normalize = (s) => String(s || '')
         .toLowerCase()
         .normalize('NFD')
@@ -319,26 +596,178 @@ export function findPlayerIdByName(matchDetails, participantName) {
         .trim();
 
     const target = normalize(participantName);
-    let fallbackId = null;
-    for (const [id, p] of Object.entries(matchDetails.playerStats)) {
-        const nameN = normalize(p?.name);
+    console.log(`   - Normalized target: "${target}"`);
+    
+    // Method 1: Check playerStats (try both locations) using similarity
+    const playerStats = matchDetails?.content?.playerStats || matchDetails?.playerStats || {};
+    if (Object.keys(playerStats).length > 0) {
+        console.log(`   - Checking playerStats (${Object.keys(playerStats).length} players)...`);
+        let exactMatch = null;
+        let bestMatch = null;
+        let bestSimilarity = 0;
+        const SIMILARITY_THRESHOLD = 0.6;
+        
+        for (const [id, p] of Object.entries(playerStats)) {
+            const playerName = p?.name || '';
+            const nameN = normalize(playerName);
         if (!nameN) continue;
-        if (nameN === target) return Number(id);
-        if (target.includes(nameN) || nameN.includes(target)) fallbackId = Number(id);
+            
+            // Exact match
+            if (nameN === target) {
+                exactMatch = Number(id);
+                console.log(`   ✅ Exact match found: "${playerName}" (ID: ${id})`);
+                return exactMatch;
+            }
+            
+            // Similarity-based match
+            const similarity = calculateNameSimilarity(participantName, playerName);
+            if (similarity >= SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestMatch = Number(id);
+                console.log(`   - Similarity match: "${playerName}" (ID: ${id}, similarity: ${similarity.toFixed(3)})`);
+            }
+            
+            // Fallback: Partial match (one contains the other) - only if similarity didn't find anything
+            if (!bestMatch && (target.includes(nameN) || nameN.includes(target))) {
+                if (!bestMatch) {
+                    bestMatch = Number(id);
+                    console.log(`   - Partial match: "${playerName}" (ID: ${id})`);
+                }
+            }
+        }
+        
+        if (bestMatch) {
+            console.log(`   ✅ Using best match: ID ${bestMatch} (similarity: ${bestSimilarity > 0 ? bestSimilarity.toFixed(3) : 'partial'})`);
+            return bestMatch;
+        }
     }
-    return fallbackId;
+    
+    // Method 2: Check shotmap by playerName
+    console.log(`   - Checking shotmap for player name...`);
+    const globalShotmap = Array.isArray(matchDetails?.shotmap)
+        ? matchDetails.shotmap
+        : (Array.isArray(matchDetails?.header?.events?.shotmap)
+            ? matchDetails.header.events.shotmap
+            : null);
+    
+    if (Array.isArray(globalShotmap)) {
+        const targetLower = target.toLowerCase();
+        for (const shot of globalShotmap) {
+            const shotPlayerName = normalize(shot?.playerName || '');
+            if (shotPlayerName === target || shotPlayerName.includes(target) || target.includes(shotPlayerName)) {
+                const foundId = shot?.playerId || shot?.shotmapEvent?.playerId;
+                if (foundId) {
+                    console.log(`   ✅ Found in shotmap: "${shot.playerName}" (ID: ${foundId})`);
+                    return Number(foundId);
+                }
+            }
+        }
+    }
+    
+    // Method 3: Check goal events by player name (as scorer)
+    console.log(`   - Checking goal events for player name (as scorer)...`);
+    const homeGoals = matchDetails?.header?.events?.homeTeamGoals || {};
+    const awayGoals = matchDetails?.header?.events?.awayTeamGoals || {};
+    
+    // Check home team goals (keyed by player name)
+    for (const [playerName, goals] of Object.entries(homeGoals)) {
+        if (normalize(playerName) === target || normalize(playerName).includes(target) || target.includes(normalize(playerName))) {
+            if (Array.isArray(goals) && goals.length > 0) {
+                const playerId = goals[0]?.playerId || goals[0]?.player?.id || goals[0]?.shotmapEvent?.playerId;
+                if (playerId) {
+                    console.log(`   ✅ Found in home goals: "${playerName}" (ID: ${playerId})`);
+                    return Number(playerId);
+                }
+            }
+        }
+    }
+    
+    // Check away team goals
+    for (const [playerName, goals] of Object.entries(awayGoals)) {
+        if (normalize(playerName) === target || normalize(playerName).includes(target) || target.includes(normalize(playerName))) {
+            if (Array.isArray(goals) && goals.length > 0) {
+                const playerId = goals[0]?.playerId || goals[0]?.player?.id || goals[0]?.shotmapEvent?.playerId;
+                if (playerId) {
+                    console.log(`   ✅ Found in away goals: "${playerName}" (ID: ${playerId})`);
+                    return Number(playerId);
+                }
+            }
+        }
+    }
+    
+    // Method 4: Check assists in goal events (player might have assists but no goals)
+    console.log(`   - Checking assists in goal events for player name...`);
+    const allGoals = [...Object.values(homeGoals).flat(), ...Object.values(awayGoals).flat()];
+    for (const goal of allGoals) {
+        // Check assist fields
+        const assistName = goal?.assistInput || goal?.assistStr || '';
+        if (assistName) {
+            const assistNameNormalized = normalize(assistName.replace(/^assist by\s*/i, '').trim());
+            if (assistNameNormalized === target || 
+                assistNameNormalized.includes(target) || 
+                target.includes(assistNameNormalized)) {
+                const assistPlayerId = goal?.assistPlayerId || goal?.assist?.id || goal?.assist?.playerId;
+                if (assistPlayerId) {
+                    console.log(`   ✅ Found in assists: "${assistName}" (ID: ${assistPlayerId})`);
+                    return Number(assistPlayerId);
+                }
+            }
+        }
+    }
+    
+    // Method 5: Check content.playerStats (alternative location)
+    console.log(`   - Checking content.playerStats...`);
+    const contentPlayerStats = matchDetails?.content?.playerStats || {};
+    if (Object.keys(contentPlayerStats).length > 0) {
+        for (const [id, p] of Object.entries(contentPlayerStats)) {
+            const playerName = p?.name || '';
+            const nameN = normalize(playerName);
+            if (!nameN) continue;
+            
+            // Exact match
+            if (nameN === target) {
+                console.log(`   ✅ Exact match found in content.playerStats: "${playerName}" (ID: ${id})`);
+                return Number(id);
+            }
+            
+            // Partial match
+            if (target.includes(nameN) || nameN.includes(target)) {
+                console.log(`   ✅ Partial match found in content.playerStats: "${playerName}" (ID: ${id})`);
+                return Number(id);
+            }
+        }
+    }
+    
+    console.log(`   ❌ Could not find player "${participantName}" in any source`);
+    return null;
 }
 
 export function getPlayerEvents(matchDetails, playerId) {
-    const goals = getGoalEvents(matchDetails).filter(e => e?.playerId === playerId);
+    // Get all goals and filter by playerId
+    // Note: Goals can have playerId in multiple places: e.playerId, e.player?.id, e.shotmapEvent?.playerId
+    const allGoals = getGoalEvents(matchDetails);
+    const goals = allGoals.filter(e => {
+        const eventPlayerId = e?.playerId || e?.player?.id || e?.shotmapEvent?.playerId;
+        return Number(eventPlayerId) === Number(playerId);
+    });
+    
     const allCards = getCardEvents(matchDetails);
     console.log(`🔍 getPlayerEvents for playerId ${playerId}:`);
+    console.log(`   - All goals found: ${allGoals.length}`);
+    console.log(`   - Goals for player ${playerId}: ${goals.length}`);
+    if (goals.length > 0) {
+        console.log(`   - Goal events:`, goals.map(g => ({ minute: g.time, player: g.player?.name, playerId: g.playerId || g.player?.id })));
+    }
     console.log(`   - All cards found: ${allCards.length}`);
-    console.log(`   - All cards data:`, allCards);
     
-    const cards = allCards.filter(e => e?.playerId === playerId);
+    const cards = allCards.filter(e => {
+        const eventPlayerId = e?.playerId || e?.player?.id;
+        return Number(eventPlayerId) === Number(playerId);
+    });
     console.log(`   - Cards for player ${playerId}: ${cards.length}`);
-    console.log(`   - Player cards data:`, cards);
+    if (cards.length > 0) {
+        console.log(`   - Card events:`, cards.map(c => ({ minute: c.time, player: c.player?.name, card: c.card })));
+    }
     
     return { goals, cards };
 }
@@ -428,42 +857,74 @@ export function getGoalkeeperSaves(matchDetails, teamName) {
 export function getPlayerAssists(matchDetails, playerId) {
     console.log(`🔍 Getting assists for player ID: ${playerId}`);
     
-    // Get events from match details
-    const events = matchDetails?.header?.events?.events || [];
-    console.log(`   - Total events: ${events.length}`);
+    // Get all goal events (from homeTeamGoals and awayTeamGoals)
+    // Assists are stored in goal events, not in a separate events array
+    const allGoals = getGoalEvents(matchDetails);
+    console.log(`   - Total goals in match: ${allGoals.length}`);
     
     let assists = 0;
     
-    // Look for assist events
-    for (const event of events) {
-        if (event.type === 'Goal' && event.assist && event.assist.id === playerId) {
+    // Look for assists in goal events
+    // Assists can be stored in multiple ways:
+    // 1. event.assistPlayerId (direct field in goal event)
+    // 2. event.assist.id (nested object)
+    // 3. event.assist?.playerId (alternative nested structure)
+    for (const goal of allGoals) {
+        const assistPlayerId = goal?.assistPlayerId || 
+                               goal?.assist?.id || 
+                               goal?.assist?.playerId;
+        
+        if (assistPlayerId && Number(assistPlayerId) === Number(playerId)) {
             assists++;
-            console.log(`   - Assist found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+            const goalMinute = goal.time || goal.timeStr || 'unknown';
+            const scorerName = goal.player?.name || goal.nameStr || 'Unknown';
+            const assistPlayerName = goal?.assistInput || goal?.assistStr?.replace(/^assist by\s*/i, '') || `Player ID ${playerId}`;
+            console.log(`   ✅ Assist found: ${assistPlayerName} assisted ${scorerName}'s goal at minute ${goalMinute}`);
         }
     }
     
     console.log(`   - Total assists: ${assists}`);
+    if (assists > 0) {
+        console.log(`   - Assists found for player ID ${playerId}`);
+    } else {
+        console.log(`   - No assists found for player ID ${playerId}`);
+    }
+    
     return assists;
 }
 
 export function getPlayerGoals(matchDetails, playerId) {
     console.log(`🔍 Getting goals for player ID: ${playerId}`);
     
-    // Get events from match details
-    const events = matchDetails?.header?.events?.events || [];
-    console.log(`   - Total events: ${events.length}`);
+    // Get all goal events (from homeTeamGoals and awayTeamGoals)
+    // Goals are stored in goal events, not in a separate events array
+    const allGoals = getGoalEvents(matchDetails);
+    console.log(`   - Total goals in match: ${allGoals.length}`);
     
     let goals = 0;
     
-    // Look for goal events where this player scored
-    for (const event of events) {
-        if (event.type === 'Goal' && event.player && event.player.id === playerId) {
+    // Look for goals where this player scored
+    // Player ID can be in multiple places: goal.playerId, goal.player.id, goal.shotmapEvent.playerId
+    for (const goal of allGoals) {
+        const goalPlayerId = goal?.playerId || 
+                            goal?.player?.id || 
+                            goal?.shotmapEvent?.playerId;
+        
+        if (goalPlayerId && Number(goalPlayerId) === Number(playerId)) {
             goals++;
-            console.log(`   - Goal found: Goal at minute ${event.minute} by ${event.player?.name || 'Unknown'}`);
+            const goalMinute = goal.time || goal.timeStr || 'unknown';
+            const scorerName = goal.player?.name || goal.nameStr || 'Unknown';
+            console.log(`   ✅ Goal found: Goal at minute ${goalMinute} by ${scorerName}`);
         }
     }
     
     console.log(`   - Total goals: ${goals}`);
+    if (goals > 0) {
+        console.log(`   - Goals found for player ID ${playerId}`);
+    } else {
+        console.log(`   - No goals found for player ID ${playerId}`);
+    }
+    
     return goals;
 }
 

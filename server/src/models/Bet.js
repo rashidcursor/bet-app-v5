@@ -18,6 +18,12 @@ const betSchema = new mongoose.Schema(
       required: [true, "Odd ID is required"],
       // For combination bets, this will be a unique combo ID
     },
+    marketId: {
+      type: String,
+      required: false,
+      // Market ID from Unibet (e.g., 2573799436 for "3-Way Line")
+      // Also stored in betDetails.market_id for backward compatibility
+    },
     betOption: {
       type: String,
       required: [true, "Bet option is required"],
@@ -40,9 +46,20 @@ const betSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    profit: {
+      type: Number,
+      required: false,
+      default: 0,
+      // Profit = payout - stake
+      // For won: positive (payout - stake)
+      // For lost: negative (-stake)
+      // For half_won: positive but less than full win
+      // For half_lost: negative but less than full loss (-stake/2)
+      // For void/cancelled: 0
+    },
     status: {
       type: String,
-      enum: ["pending", "won", "lost", "canceled", "cancelled", "void"],
+      enum: ["pending", "won", "lost", "canceled", "cancelled", "void", "half_won", "half_lost"],
       default: "pending",
     },
     result: {

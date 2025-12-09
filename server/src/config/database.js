@@ -15,8 +15,9 @@ const connectDB = async () => {
     // Connection options for better reliability
     const options = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      serverSelectionTimeoutMS: 30000, // Keep trying to send operations for 30 seconds (increased from 5s)
+      socketTimeoutMS: 60000, // Close sockets after 60 seconds of inactivity (increased from 45s)
+      bufferTimeoutMS: 30000, // Buffer operations for up to 30 seconds before timing out (increased from default 10s)
     };
 
     await mongoose.connect(mongoURI, options);
@@ -76,8 +77,9 @@ const attemptReconnect = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 30000, // Increased from 5s to 30s
+      socketTimeoutMS: 60000, // Increased from 45s to 60s
+      bufferTimeoutMS: 30000, // Increased from default 10s to 30s
     });
     console.log('✅ MongoDB reconnected successfully');
     isConnected = true;
