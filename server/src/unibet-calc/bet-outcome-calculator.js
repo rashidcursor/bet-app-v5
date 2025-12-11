@@ -74,6 +74,181 @@ function getCornersInTimeWindow(matchDetails, team, startMinute, startSecond, en
     return cornerCount;
 }
 
+// Helper function to get 1st half corners from stats
+function getFirstHalfCorners(matchDetails) {
+    // Get home and away team names for logging
+    const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+    const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+    
+    console.log(`📊 GETTING 1ST HALF CORNERS:`);
+    console.log(`   - Home Team: ${homeTeamName}`);
+    console.log(`   - Away Team: ${awayTeamName}`);
+    
+    // Try to get from content.stats.Periods.FirstHalf (preferred method)
+    const firstHalfStats = matchDetails?.content?.stats?.Periods?.FirstHalf?.stats;
+    console.log(`   - FirstHalf stats available: ${!!firstHalfStats}`);
+    
+    if (firstHalfStats && Array.isArray(firstHalfStats)) {
+        console.log(`   - FirstHalf stats array length: ${firstHalfStats.length}`);
+        
+        // Find the corners stat in the stats array
+        for (const statGroup of firstHalfStats) {
+            if (statGroup.stats && Array.isArray(statGroup.stats)) {
+                for (const stat of statGroup.stats) {
+                    if (stat.key === 'corners' && stat.stats && Array.isArray(stat.stats) && stat.stats.length >= 2) {
+                        const homeCorners = Number(stat.stats[0]) || 0;
+                        const awayCorners = Number(stat.stats[1]) || 0;
+                        
+                        console.log(`   ✅ Found corners in FirstHalf stats:`);
+                        console.log(`      - Source: content.stats.Periods.FirstHalf.stats`);
+                        console.log(`      - Raw data: [${stat.stats[0]}, ${stat.stats[1]}]`);
+                        console.log(`      - ${homeTeamName} (Home): ${homeCorners} corners`);
+                        console.log(`      - ${awayTeamName} (Away): ${awayCorners} corners`);
+                        console.log(`      - Total: ${homeCorners + awayCorners} corners`);
+                        
+                        return {
+                            home: homeCorners,
+                            away: awayCorners,
+                            total: homeCorners + awayCorners
+                        };
+                    }
+                }
+            }
+        }
+        console.log(`   ⚠️  Corners stat not found in FirstHalf stats array`);
+    } else {
+        console.log(`   ⚠️  FirstHalf stats not available, falling back to events`);
+    }
+    
+    // Fallback: count from events if stats not available
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Events available: ${events.length} events`);
+    
+    let homeCorners = 0;
+    let awayCorners = 0;
+    const cornerEvents = [];
+    
+    for (const event of events) {
+        if (event.type === 'Corner' && event.minute !== undefined) {
+            const eventMinute = event.minute;
+            // 1st half is 0-45 minutes (including stoppage time up to ~45+)
+            // We'll use <= 45 to capture all first half corners
+            if (eventMinute <= 45) {
+                const isHomeTeam = event.isHome === true;
+                cornerEvents.push({
+                    minute: eventMinute,
+                    isHome: isHomeTeam,
+                    team: isHomeTeam ? homeTeamName : awayTeamName
+                });
+                if (isHomeTeam) {
+                    homeCorners++;
+                } else {
+                    awayCorners++;
+                }
+            }
+        }
+    }
+    
+    console.log(`   ✅ Counted corners from events (1st half, minute <= 45):`);
+    console.log(`      - Source: header.events.events (filtered by minute <= 45)`);
+    console.log(`      - Corner events found: ${cornerEvents.length}`);
+    if (cornerEvents.length > 0) {
+        console.log(`      - Events:`, cornerEvents.map(e => `${e.team} @ ${e.minute}'`).join(', '));
+    }
+    console.log(`      - ${homeTeamName} (Home): ${homeCorners} corners`);
+    console.log(`      - ${awayTeamName} (Away): ${awayCorners} corners`);
+    console.log(`      - Total: ${homeCorners + awayCorners} corners`);
+    
+    return { home: homeCorners, away: awayCorners, total: homeCorners + awayCorners };
+}
+
+// Helper function to get 2nd half corners from stats
+function getSecondHalfCorners(matchDetails) {
+    // Get home and away team names for logging
+    const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+    const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+    
+    console.log(`📊 GETTING 2ND HALF CORNERS:`);
+    console.log(`   - Home Team: ${homeTeamName}`);
+    console.log(`   - Away Team: ${awayTeamName}`);
+    
+    // Try to get from content.stats.Periods.SecondHalf (preferred method)
+    const secondHalfStats = matchDetails?.content?.stats?.Periods?.SecondHalf?.stats;
+    console.log(`   - SecondHalf stats available: ${!!secondHalfStats}`);
+    
+    if (secondHalfStats && Array.isArray(secondHalfStats)) {
+        console.log(`   - SecondHalf stats array length: ${secondHalfStats.length}`);
+        
+        // Find the corners stat in the stats array
+        for (const statGroup of secondHalfStats) {
+            if (statGroup.stats && Array.isArray(statGroup.stats)) {
+                for (const stat of statGroup.stats) {
+                    if (stat.key === 'corners' && stat.stats && Array.isArray(stat.stats) && stat.stats.length >= 2) {
+                        const homeCorners = Number(stat.stats[0]) || 0;
+                        const awayCorners = Number(stat.stats[1]) || 0;
+                        
+                        console.log(`   ✅ Found corners in SecondHalf stats:`);
+                        console.log(`      - Source: content.stats.Periods.SecondHalf.stats`);
+                        console.log(`      - Raw data: [${stat.stats[0]}, ${stat.stats[1]}]`);
+                        console.log(`      - ${homeTeamName} (Home): ${homeCorners} corners`);
+                        console.log(`      - ${awayTeamName} (Away): ${awayCorners} corners`);
+                        console.log(`      - Total: ${homeCorners + awayCorners} corners`);
+                        
+                        return {
+                            home: homeCorners,
+                            away: awayCorners,
+                            total: homeCorners + awayCorners
+                        };
+                    }
+                }
+            }
+        }
+        console.log(`   ⚠️  Corners stat not found in SecondHalf stats array`);
+    } else {
+        console.log(`   ⚠️  SecondHalf stats not available, falling back to events`);
+    }
+    
+    // Fallback: count from events if stats not available
+    const events = matchDetails?.header?.events?.events || [];
+    console.log(`   - Events available: ${events.length} events`);
+    
+    let homeCorners = 0;
+    let awayCorners = 0;
+    const cornerEvents = [];
+    
+    for (const event of events) {
+        if (event.type === 'Corner' && event.minute !== undefined) {
+            const eventMinute = event.minute;
+            // 2nd half is > 45 minutes
+            if (eventMinute > 45) {
+                const isHomeTeam = event.isHome === true;
+                cornerEvents.push({
+                    minute: eventMinute,
+                    isHome: isHomeTeam,
+                    team: isHomeTeam ? homeTeamName : awayTeamName
+                });
+                if (isHomeTeam) {
+                    homeCorners++;
+                } else {
+                    awayCorners++;
+                }
+            }
+        }
+    }
+    
+    console.log(`   ✅ Counted corners from events (2nd half, minute > 45):`);
+    console.log(`      - Source: header.events.events (filtered by minute > 45)`);
+    console.log(`      - Corner events found: ${cornerEvents.length}`);
+    if (cornerEvents.length > 0) {
+        console.log(`      - Events:`, cornerEvents.map(e => `${e.team} @ ${e.minute}'`).join(', '));
+    }
+    console.log(`      - ${homeTeamName} (Home): ${homeCorners} corners`);
+    console.log(`      - ${awayTeamName} (Away): ${awayCorners} corners`);
+    console.log(`      - Total: ${homeCorners + awayCorners} corners`);
+    
+    return { home: homeCorners, away: awayCorners, total: homeCorners + awayCorners };
+}
+
 class BetOutcomeCalculator {
     constructor(db) {
         this.db = db;
@@ -191,9 +366,38 @@ class BetOutcomeCalculator {
             const query = { status: 'pending' };
 
             if (onlyFinished) {
-                // First try to get bets where matchFinished is explicitly true
-                query.matchFinished = true;
-                console.log('🔍 Looking for pending bets with matchFinished = true');
+                // Use time-based filtering to get bets where matches are likely finished
+                // Matches typically finish within 2 hours (including extra time), so we check for matches
+                // that started at least 2 hours and 15 minutes ago (135 minutes = 90 min match + 15 min extra time + 30 min buffer)
+                const currentTime = new Date();
+                const matchDuration = 135 * 60 * 1000; // 135 minutes in milliseconds (2h 15min)
+                const likelyFinishedTime = new Date(currentTime.getTime() - matchDuration);
+                
+                // Check both 'start' and 'matchDate' fields for backward compatibility
+                query.$or = [
+                    { start: { $lt: likelyFinishedTime.toISOString() } },
+                    { matchDate: { $lt: likelyFinishedTime } },
+                    { createdAt: { $lt: likelyFinishedTime } } // Fallback: use bet creation time if match time not available
+                ];
+                
+                // Also include bets where matchFinished is explicitly true (if set)
+                const finishedBetsQuery = { status: 'pending', matchFinished: true };
+                const finishedBets = await this.db.collection('bets').find(finishedBetsQuery).toArray();
+                
+                console.log(`🔍 Looking for pending bets using time-based filtering (matches started ${matchDuration / 60000} minutes ago or more)`);
+                console.log(`   - Time threshold: ${likelyFinishedTime.toISOString()}`);
+                
+                const timeBasedBets = await this.db.collection('bets').find(query).toArray();
+                
+                // Combine both queries and remove duplicates
+                const allBets = [...timeBasedBets, ...finishedBets];
+                const uniqueBets = allBets.filter((bet, index, self) => 
+                    index === self.findIndex(b => b._id.toString() === bet._id.toString())
+                );
+                
+                console.log(`   - Found ${timeBasedBets.length} time-based bets, ${finishedBets.length} finished-flagged bets, ${uniqueBets.length} unique total`);
+                
+                return uniqueBets;
             } else {
                 // For legacy mode, use time-based filtering - only matches that are likely finished (105+ minutes after start)
                 const currentTime = new Date();
@@ -201,12 +405,10 @@ class BetOutcomeCalculator {
                 const likelyFinishedTime = new Date(currentTime.getTime() - matchDuration);
                 query.start = { $lt: likelyFinishedTime.toISOString() };
                 console.log('🔍 Looking for pending bets using time-based filtering (matches likely finished - 105+ minutes after start)');
+                
+                const bets = await this.db.collection('bets').find(query).toArray();
+                return bets;
             }
-
-            const bets = await this.db.collection('bets').find(query).toArray();
-            // console.log(`Found ${bets.length} pending bets${onlyFinished ? ' (with matchFinished = true)' : ' (time-based filtering)'}`);
-
-            return bets;
         } catch (error) {
             console.error('Error fetching pending bets:', error);
             return [];
@@ -470,6 +672,8 @@ class BetOutcomeCalculator {
                 console.log(`📡 Calling correct Fotmob API endpoint...`);
                 const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
                 
+                console.log(`📡 Calling FotMob API for daily matches: ${dateStr} (${date})`);
+                
                 // Get x-mas token (required for authentication)
                 let xmasToken = null;
                 try {
@@ -490,8 +694,16 @@ class BetOutcomeCalculator {
                     headers['x-mas'] = xmasToken;
                 }
                 
+                console.log(`🐛 [BREAKPOINT] Making HTTP request to FotMob API...`);
                 const response = await axios.get(apiUrl, { headers });
                 const freshData = response.data;
+                
+                console.log(`🐛 [BREAKPOINT] FotMob API response received`);
+                console.log(`🐛 [BREAKPOINT] Response status: ${response.status}`);
+                console.log(`🐛 [BREAKPOINT] Response data available: ${!!freshData}`);
+                if (freshData?.leagues) {
+                    console.log(`🐛 [BREAKPOINT] Leagues found: ${freshData.leagues.length}`);
+                }
                 
                 if (freshData) {
                     // Handle Fotmob API format - correct endpoint returns { leagues: [...], date: ... }
@@ -1031,7 +1243,17 @@ class BetOutcomeCalculator {
             
             // Create a fresh Fotmob instance to avoid state corruption
             const fotmob = new Fotmob();
+            
+            console.log(`🔍 Fetching detailed match information for ID: ${matchId}`);
+            
             const matchDetails = await fotmob.getMatchDetails(matchId);
+            
+            console.log(`🐛 [BREAKPOINT] FotMob API response received for match ${matchId}`);
+            console.log(`🐛 [BREAKPOINT] Response data available: ${!!matchDetails}`);
+            if (matchDetails) {
+                console.log(`🐛 [BREAKPOINT] Match: ${matchDetails.general?.homeTeam?.name} vs ${matchDetails.general?.awayTeam?.name}`);
+                console.log(`🐛 [BREAKPOINT] Status: ${matchDetails.general?.finished ? 'Finished' : matchDetails.general?.started ? 'In Progress' : 'Not Started'}`);
+            }
             
             if (matchDetails) {
                 console.log(`✅ Successfully fetched match details for ${matchId}`);
@@ -2660,10 +2882,19 @@ class BetOutcomeCalculator {
                 teamFromMarket = marketNameLower.split(' - ')[1] || '';
             }
             
-            console.log(`🔍 Team Total Cards analysis: "${bet.marketName}"`);
+            // Get home and away team names from match details for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 TEAM TOTAL CARDS MARKET:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: "${bet.outcomeLabel}" (${sel})`);
+            console.log(`   - Line: ${line}`);
+            console.log(`   - Home Team (Match): ${homeTeamName}`);
+            console.log(`   - Away Team (Match): ${awayTeamName}`);
+            console.log(`   - Bet Home Team: "${bet.homeName}"`);
+            console.log(`   - Bet Away Team: "${bet.awayName}"`);
             console.log(`   - Team from market: "${teamFromMarket}"`);
-            console.log(`   - Bet home team: "${bet.homeName}"`);
-            console.log(`   - Bet away team: "${bet.awayName}"`);
             
             // Match team from market with bet team names (not Fotmob names!)
             const betHomeLower = String(bet.homeName || '').toLowerCase();
@@ -2671,16 +2902,19 @@ class BetOutcomeCalculator {
             
             let targetIsHome = false;
             let targetIsAway = false;
+            let targetTeamName = '';
             
             // Check if market team matches bet home team using similarity
             if (this.namesMatch(teamFromMarket, bet.homeName)) {
                 targetIsHome = true;
-                console.log(`✅ Identified as HOME team bet: ${bet.homeName}`);
+                targetTeamName = bet.homeName;
+                console.log(`   ✅ Identified as HOME team bet: ${bet.homeName}`);
             } else if (this.namesMatch(teamFromMarket, bet.awayName)) {
                 targetIsAway = true;
-                console.log(`✅ Identified as AWAY team bet: ${bet.awayName}`);
+                targetTeamName = bet.awayName;
+                console.log(`   ✅ Identified as AWAY team bet: ${bet.awayName}`);
             } else {
-                console.log(`❌ No team match found for Team Total Cards`);
+                console.log(`   ❌ No team match found for Team Total Cards`);
                 return { 
                     status: 'cancelled', 
                     reason: 'Unable to determine team for Team Total Cards', 
@@ -2693,20 +2927,73 @@ class BetOutcomeCalculator {
                 };
             }
             
+            console.log(`   - Fetching card data...`);
             const cards = getTeamCards(matchDetails);
-            const teamTotal = targetIsHome ? cards.home.total : (targetIsAway ? cards.away.total : null);
+            
+            // Get card counts for the target team
+            const teamYellow = targetIsHome ? cards.home.yellow : cards.away.yellow;
+            const teamRed = targetIsHome ? cards.home.red : cards.away.red;
+            const teamTotal = targetIsHome ? cards.home.total : cards.away.total;
+            
+            // Also get opponent cards for context
+            const opponentYellow = targetIsHome ? cards.away.yellow : cards.home.yellow;
+            const opponentRed = targetIsHome ? cards.away.red : cards.home.red;
+            const opponentTotal = targetIsHome ? cards.away.total : cards.home.total;
+            const opponentTeamName = targetIsHome ? awayTeamName : homeTeamName;
+            
+            console.log(`   ✅ Card Data Retrieved:`);
+            console.log(`      - ${targetTeamName} (${targetIsHome ? 'Home' : 'Away'}):`);
+            console.log(`         • Yellow Cards: ${teamYellow}`);
+            console.log(`         • Red Cards: ${teamRed}`);
+            console.log(`         • Total Cards: ${teamTotal} (${teamYellow} yellow + ${teamRed} red)`);
+            console.log(`      - ${opponentTeamName} (${targetIsHome ? 'Away' : 'Home'}):`);
+            console.log(`         • Yellow Cards: ${opponentYellow}`);
+            console.log(`         • Red Cards: ${opponentRed}`);
+            console.log(`         • Total Cards: ${opponentTotal} (${opponentYellow} yellow + ${opponentRed} red)`);
+            
+            // Calculate outcome
+            const isOver = sel.includes('over');
+            const isUnder = sel.includes('under');
             let status;
-            if (teamTotal > line && sel.includes('over')) status = 'won';
-            else if (teamTotal < line && sel.includes('under')) status = 'won';
-            else if (teamTotal === line) status = 'void';
-            else status = 'lost';
+            let comparison = '';
+            
+            if (teamTotal > line && isOver) {
+                status = 'won';
+                comparison = `${teamTotal} > ${line} (Over)`;
+            } else if (teamTotal < line && isUnder) {
+                status = 'won';
+                comparison = `${teamTotal} < ${line} (Under)`;
+            } else if (teamTotal === line) {
+                status = 'void';
+                comparison = `${teamTotal} === ${line} (Push)`;
+            } else {
+                status = 'lost';
+                if (isOver) {
+                    comparison = `${teamTotal} <= ${line} (Over bet lost)`;
+                } else if (isUnder) {
+                    comparison = `${teamTotal} >= ${line} (Under bet lost)`;
+                } else {
+                    comparison = `${teamTotal} vs ${line}`;
+                }
+            }
+            
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Target Team: ${targetTeamName}`);
+            console.log(`      - Team Total Cards: ${teamTotal}`);
+            console.log(`      - Line: ${line}`);
+            console.log(`      - Bet: ${sel} ${line}`);
+            console.log(`      - Comparison: ${comparison}`);
+            console.log(`      - Result: ${status.toUpperCase()} ${status === 'won' ? '✅' : status === 'lost' ? '❌' : '⚪'}`);
+            
             return {
                 status,
                 team: targetIsHome ? 'home' : 'away',
                 teamCards: teamTotal,
+                teamYellowCards: teamYellow,
+                teamRedCards: teamRed,
                 line,
                 matchId: matchDetails.general?.matchId,
-                reason: `Team Total Cards ${sel} ${line}: teamCards=${teamTotal} → ${status}`
+                reason: `Team Total Cards ${sel} ${line}: ${targetTeamName} cards=${teamTotal} (${teamYellow}Y + ${teamRed}R) → ${status}`
             };
 
         } else if ((bet.marketName || '').toLowerCase().includes('total cards')) {
@@ -2840,44 +3127,43 @@ class BetOutcomeCalculator {
                 reason: `Team Red Card (${isHome ? 'home' : 'away'}): ${any ? 'Yes' : 'No'} (bet ${sel})`
             };
 
-        } else if (marketCode === MarketCodes.MOST_CARDS_1ST_HALF) {
-            // Most Cards - 1st Half
+        } else if (marketCode === MarketCodes.MOST_CARDS_2ND_HALF ||
+                   ((!marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN) && (bet.marketName || '').toLowerCase().includes('most cards') && ((bet.marketName || '').toLowerCase().includes('2nd half') || (bet.marketName || '').toLowerCase().includes('second half')))) {
+            // Most Cards - 2nd Half (check FIRST before 1st half)
             const sel = String(bet.outcomeLabel || '').toLowerCase();
-            const cards = getTeamCards(matchDetails, '1st half');
-            const home = cards.home.total;
-            const away = cards.away.total;
-            const actual = home > away ? '1' : (home < away ? '2' : 'x');
-            const won = (actual === '1' && (sel === '1' || sel.includes('home'))) || (actual === '2' && (sel === '2' || sel.includes('away'))) || (actual === 'x' && (sel === 'x' || sel.includes('draw')));
+            const marketName = String(bet.marketName || '').toLowerCase();
             
-            console.log(`🎯 MOST CARDS - 1ST HALF:`);
-            console.log(`   - Market: ${bet.marketName}`);
-            console.log(`   - Selection: ${sel}`);
-            console.log(`   - 1st Half Cards: home=${home}, away=${away}`);
-            console.log(`   - Result: ${actual} (bet: ${sel}) → ${won ? 'WON' : 'LOST'}`);
+            // Get home and away team names for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
             
-            return {
-                status: won ? 'won' : 'lost',
-                actualOutcome: actual,
-                cardTotals: { home, away },
-                period: '1st Half',
-                matchId: matchDetails.general?.matchId,
-                reason: `Most Cards - 1st Half: ${actual} (home=${home}, away=${away}) (bet ${sel})`
-            };
-
-        } else if (marketCode === MarketCodes.MOST_CARDS_2ND_HALF) {
-            // Most Cards - 2nd Half
-            const sel = String(bet.outcomeLabel || '').toLowerCase();
+            console.log(`🎯 MOST CARDS - 2ND HALF:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: ${sel}`);
+            console.log(`   - Home Team: ${homeTeamName}`);
+            console.log(`   - Away Team: ${awayTeamName}`);
+            const isFallback = !marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN;
+            console.log(`   - Market Code: ${marketCode || 'undefined'} (${isFallback ? '⚠️  FALLBACK - matched by market name' : '✅ Matched by registry'})`);
+            
+            console.log(`   - Fetching 2nd Half cards...`);
             const cards = getTeamCards(matchDetails, '2nd half');
             const home = cards.home.total;
             const away = cards.away.total;
+            
+            console.log(`   ✅ 2nd Half Cards Result:`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            
             const actual = home > away ? '1' : (home < away ? '2' : 'x');
             const won = (actual === '1' && (sel === '1' || sel.includes('home'))) || (actual === '2' && (sel === '2' || sel.includes('away'))) || (actual === 'x' && (sel === 'x' || sel.includes('draw')));
             
-            console.log(`🎯 MOST CARDS - 2ND HALF:`);
-            console.log(`   - Market: ${bet.marketName}`);
-            console.log(`   - Selection: ${sel}`);
-            console.log(`   - 2nd Half Cards: home=${home}, away=${away}`);
-            console.log(`   - Result: ${actual} (bet: ${sel}) → ${won ? 'WON' : 'LOST'}`);
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Period: 2nd Half`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            console.log(`      - Actual Outcome: ${actual} (${home > away ? homeTeamName + ' wins' : home < away ? awayTeamName + ' wins' : 'Draw'})`);
+            console.log(`      - Bet Selection: ${sel}`);
+            console.log(`      - Result: ${won ? 'WON ✅' : 'LOST ❌'}`);
             
             return {
                 status: won ? 'won' : 'lost',
@@ -2885,31 +3171,100 @@ class BetOutcomeCalculator {
                 cardTotals: { home, away },
                 period: '2nd Half',
                 matchId: matchDetails.general?.matchId,
-                reason: `Most Cards - 2nd Half: ${actual} (home=${home}, away=${away}) (bet ${sel})`
+                reason: `Most Cards - 2nd Half: ${actual} (${homeTeamName}=${home}, ${awayTeamName}=${away}) (bet ${sel})`
             };
 
-        } else if (marketCode === MarketCodes.MOST_CARDS) {
-            // Most Cards: compare totals (Full Time)
+        } else if (marketCode === MarketCodes.MOST_CARDS_1ST_HALF || 
+                   ((!marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN) && (bet.marketName || '').toLowerCase().includes('most cards') && ((bet.marketName || '').toLowerCase().includes('1st half') || (bet.marketName || '').toLowerCase().includes('first half')))) {
+            // Most Cards - 1st Half
             const sel = String(bet.outcomeLabel || '').toLowerCase();
-            const cards = getTeamCards(matchDetails, 'full');
+            const marketName = String(bet.marketName || '').toLowerCase();
+            
+            // Get home and away team names for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 MOST CARDS - 1ST HALF:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: ${sel}`);
+            console.log(`   - Home Team: ${homeTeamName}`);
+            console.log(`   - Away Team: ${awayTeamName}`);
+            const isFallback1st = !marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN;
+            console.log(`   - Market Code: ${marketCode || 'undefined'} (${isFallback1st ? '⚠️  FALLBACK - matched by market name' : '✅ Matched by registry'})`);
+            
+            console.log(`   - Fetching 1st Half cards...`);
+            const cards = getTeamCards(matchDetails, '1st half');
             const home = cards.home.total;
             const away = cards.away.total;
+            
+            console.log(`   ✅ 1st Half Cards Result:`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            
             const actual = home > away ? '1' : (home < away ? '2' : 'x');
             const won = (actual === '1' && (sel === '1' || sel.includes('home'))) || (actual === '2' && (sel === '2' || sel.includes('away'))) || (actual === 'x' && (sel === 'x' || sel.includes('draw')));
             
-            console.log(`🎯 MOST CARDS - FULL TIME:`);
-            console.log(`   - Market: ${bet.marketName}`);
-            console.log(`   - Selection: ${sel}`);
-            console.log(`   - Full Time Cards: home=${home}, away=${away}`);
-            console.log(`   - Result: ${actual} (bet: ${sel}) → ${won ? 'WON' : 'LOST'}`);
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Period: 1st Half`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            console.log(`      - Actual Outcome: ${actual} (${home > away ? homeTeamName + ' wins' : home < away ? awayTeamName + ' wins' : 'Draw'})`);
+            console.log(`      - Bet Selection: ${sel}`);
+            console.log(`      - Result: ${won ? 'WON ✅' : 'LOST ❌'}`);
             
             return {
                 status: won ? 'won' : 'lost',
                 actualOutcome: actual,
                 cardTotals: { home, away },
-                period: 'Full Time',
+                period: '1st Half',
                 matchId: matchDetails.general?.matchId,
-                reason: `Most Cards: ${actual} (home=${home}, away=${away}) (bet ${sel})`
+                reason: `Most Cards - 1st Half: ${actual} (${homeTeamName}=${home}, ${awayTeamName}=${away}) (bet ${sel})`
+            };
+
+        } else if (marketCode === MarketCodes.MOST_CARDS || 
+                   ((!marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN) && (bet.marketName || '').toLowerCase().includes('most cards') && !(bet.marketName || '').toLowerCase().includes('1st half') && !(bet.marketName || '').toLowerCase().includes('2nd half') && !(bet.marketName || '').toLowerCase().includes('first half') && !(bet.marketName || '').toLowerCase().includes('second half'))) {
+            // Most Cards: compare totals (Full Time)
+            const sel = String(bet.outcomeLabel || '').toLowerCase();
+            
+            // Get home and away team names for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 MOST CARDS - FULL MATCH:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: ${sel}`);
+            console.log(`   - Home Team: ${homeTeamName}`);
+            console.log(`   - Away Team: ${awayTeamName}`);
+            const isFallback = !marketCode || marketCode === 'undefined' || marketCode === MarketCodes.UNKNOWN;
+            console.log(`   - Market Code: ${marketCode || 'undefined'} (${isFallback ? '⚠️  FALLBACK - matched by market name' : '✅ Matched by registry'})`);
+            
+            console.log(`   - Fetching Full Match cards...`);
+            const cards = getTeamCards(matchDetails, 'full');
+            const home = cards.home.total;
+            const away = cards.away.total;
+            
+            console.log(`   ✅ Full Match Cards Result:`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            
+            const actual = home > away ? '1' : (home < away ? '2' : 'x');
+            const won = (actual === '1' && (sel === '1' || sel.includes('home'))) || (actual === '2' && (sel === '2' || sel.includes('away'))) || (actual === 'x' && (sel === 'x' || sel.includes('draw')));
+            
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Period: Full Match`);
+            console.log(`      - ${homeTeamName} (Home): ${home} cards`);
+            console.log(`      - ${awayTeamName} (Away): ${away} cards`);
+            console.log(`      - Actual Outcome: ${actual} (${home > away ? homeTeamName + ' wins' : home < away ? awayTeamName + ' wins' : 'Draw'})`);
+            console.log(`      - Bet Selection: ${sel}`);
+            console.log(`      - Result: ${won ? 'WON ✅' : 'LOST ❌'}`);
+            
+            return {
+                status: won ? 'won' : 'lost',
+                actualOutcome: actual,
+                cardTotals: { home, away },
+                period: 'Full Match',
+                matchId: matchDetails.general?.matchId,
+                reason: `Most Cards - Full Match: ${actual} (${homeTeamName}=${home}, ${awayTeamName}=${away}) (bet ${sel})`
             };
 
         } else if ((bet.marketName || '').toLowerCase().includes('most red cards')) {
@@ -2956,25 +3311,87 @@ class BetOutcomeCalculator {
 
         // ===== Phase 5 — Corners Markets =====
         } else if (marketCode === MarketCodes.CORNERS_TEAM_TOTAL_OU) {
-            // Team Total Corners (Over/Under)
+            // Team Total Corners (Over/Under) - Full Match, 1st Half, or 2nd Half
             const sel = String(bet.outcomeLabel || '').toLowerCase();
+            const marketName = String(bet.marketName || '').toLowerCase();
+            
+            // Get home and away team names from match details for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 TEAM TOTAL CORNERS MARKET:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: ${sel}`);
+            console.log(`   - Match Home Team: ${homeTeamName}`);
+            console.log(`   - Match Away Team: ${awayTeamName}`);
+            console.log(`   - Bet Home Name: "${bet.homeName || 'N/A'}"`);
+            console.log(`   - Bet Away Name: "${bet.awayName || 'N/A'}"`);
+            
+            // Check if this is a 1st half or 2nd half market
+            const isFirstHalf = marketName.includes('1st half') || marketName.includes('first half');
+            const isSecondHalf = marketName.includes('2nd half') || marketName.includes('second half');
+            const period = isFirstHalf ? '1st Half' : (isSecondHalf ? '2nd Half' : 'Full Match');
+            
+            console.log(`   - Period: ${period}`);
+            console.log(`   - Is 1st Half: ${isFirstHalf}`);
+            console.log(`   - Is 2nd Half: ${isSecondHalf}`);
             
             // Get line from multiple sources with proper conversion
             let line = null;
+            let lineSource = 'unknown';
             if (bet.betDetails?.total) {
                 line = parseFloat(bet.betDetails.total);
+                lineSource = 'bet.betDetails.total';
             } else if (typeof bet.handicapLine === 'number') {
                 line = bet.handicapLine / 1000; // Convert handicapLine from 7500 to 7.5
+                lineSource = 'bet.handicapLine (converted from ' + bet.handicapLine + ')';
             } else if (typeof bet.handicapRaw === 'number') {
                 line = bet.handicapRaw / 1000000; // Convert handicapRaw from 7500000 to 7.5
+                lineSource = 'bet.handicapRaw (converted from ' + bet.handicapRaw + ')';
             }
             
+            console.log(`   - Line Extraction:`);
+            console.log(`      - Source: ${lineSource}`);
+            console.log(`      - Raw bet.betDetails.total: ${bet.betDetails?.total || 'N/A'}`);
+            console.log(`      - Raw bet.handicapLine: ${bet.handicapLine || 'N/A'}`);
+            console.log(`      - Raw bet.handicapRaw: ${bet.handicapRaw || 'N/A'}`);
+            console.log(`      - Final Line: ${line}`);
+            
             if (line === null || Number.isNaN(line)) {
+                console.log(`   ❌ Invalid line - cancelling bet`);
                 return { status: 'cancelled', reason: 'Team Total Corners requires a valid line', debugInfo: { missing: 'handicapLine' } };
             }
-            const corners = getCornersFromStats(matchDetails);
+            
+            // Get corners based on period
+            let corners;
+            if (isFirstHalf) {
+                console.log(`   - Fetching 1st Half corners...`);
+                corners = getFirstHalfCorners(matchDetails);
+                console.log(`   ✅ 1st Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                console.log(`      - Total: ${corners.total} corners`);
+            } else if (isSecondHalf) {
+                console.log(`   - Fetching 2nd Half corners...`);
+                corners = getSecondHalfCorners(matchDetails);
+                console.log(`   ✅ 2nd Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                console.log(`      - Total: ${corners.total} corners`);
+            } else {
+                console.log(`   - Fetching Full Match corners from stats...`);
+                corners = getCornersFromStats(matchDetails);
+                if (corners) {
+                    console.log(`   ✅ Full Match Corners Result:`);
+                    console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                    console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                    console.log(`      - Total: ${corners.total} corners`);
+                }
+            }
+            
             if (!corners || corners.home === undefined || corners.away === undefined) {
-                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners' } };
+                console.log(`   ❌ Corners statistics unavailable`);
+                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners', period } };
             }
             
             // Extract team name from market name and match with bet team names
@@ -2982,16 +3399,27 @@ class BetOutcomeCalculator {
             let teamFromMarket = '';
             
             // Handle different market name formats: "Total Corners by Team" or "Total Corners - Team"
+            // Also handle "Total Corners by Team - 2nd Half" format
             if (marketNameLower.includes(' by ')) {
-                teamFromMarket = marketNameLower.split(' by ')[1] || '';
+                const afterBy = marketNameLower.split(' by ')[1] || '';
+                // Remove period suffixes like " - 2nd half", " - 1st half", etc.
+                teamFromMarket = afterBy.replace(/\s*-\s*(1st|2nd|first|second)\s+half/gi, '').trim();
             } else if (marketNameLower.includes(' - ')) {
-                teamFromMarket = marketNameLower.split(' - ')[1] || '';
+                const parts = marketNameLower.split(' - ');
+                // If it's "Total Corners - Team - 2nd Half", take the middle part
+                // If it's "Total Corners - Team", take the last part
+                if (parts.length > 2) {
+                    teamFromMarket = parts[1] || '';
+                } else {
+                    teamFromMarket = parts[1] || '';
+                }
+                // Remove period suffixes if any
+                teamFromMarket = teamFromMarket.replace(/\s*(1st|2nd|first|second)\s+half/gi, '').trim();
             }
             
-            console.log(`🔍 Team Total Corners analysis: "${bet.marketName}"`);
-            console.log(`   - Team from market: "${teamFromMarket}"`);
-            console.log(`   - Bet home team: "${bet.homeName}"`);
-            console.log(`   - Bet away team: "${bet.awayName}"`);
+            console.log(`   🔍 Team Identification:`);
+            console.log(`      - Market Name (lowercase): "${marketNameLower}"`);
+            console.log(`      - Extracted Team from Market: "${teamFromMarket}"`);
             
             // Match team from market with bet team names (not Fotmob names!)
             const betHomeLower = String(bet.homeName || '').toLowerCase();
@@ -3000,15 +3428,27 @@ class BetOutcomeCalculator {
             let targetIsHome = false;
             let targetIsAway = false;
             
+            console.log(`      - Comparing with bet teams:`);
+            console.log(`         - Bet Home: "${bet.homeName}" (normalized: "${betHomeLower}")`);
+            console.log(`         - Bet Away: "${bet.awayName}" (normalized: "${betAwayLower}")`);
+            
             // Check if market team matches bet home team using similarity
-            if (this.namesMatch(teamFromMarket, bet.homeName)) {
+            const homeMatch = this.namesMatch(teamFromMarket, bet.homeName);
+            const awayMatch = this.namesMatch(teamFromMarket, bet.awayName);
+            
+            console.log(`      - Name Matching Results:`);
+            console.log(`         - "${teamFromMarket}" vs "${bet.homeName}": ${homeMatch ? '✅ MATCH' : '❌ NO MATCH'}`);
+            console.log(`         - "${teamFromMarket}" vs "${bet.awayName}": ${awayMatch ? '✅ MATCH' : '❌ NO MATCH'}`);
+            
+            if (homeMatch) {
                 targetIsHome = true;
-                console.log(`✅ Identified as HOME team bet: ${bet.homeName}`);
-            } else if (this.namesMatch(teamFromMarket, bet.awayName)) {
+                console.log(`   ✅ Identified as HOME team bet: ${bet.homeName}`);
+            } else if (awayMatch) {
                 targetIsAway = true;
-                console.log(`✅ Identified as AWAY team bet: ${bet.awayName}`);
+                console.log(`   ✅ Identified as AWAY team bet: ${bet.awayName}`);
             } else {
-                console.log(`❌ No team match found for Team Total Corners`);
+                console.log(`   ❌ No team match found for Team Total Corners`);
+                console.log(`      - Could not match "${teamFromMarket}" with either bet home or bet away team`);
                 return { 
                     status: 'cancelled', 
                     reason: 'Unable to determine team for Team Total Corners', 
@@ -3022,53 +3462,175 @@ class BetOutcomeCalculator {
             }
             
             const teamTotal = targetIsHome ? corners.home : (targetIsAway ? corners.away : null);
+            const teamName = targetIsHome ? bet.homeName : bet.awayName;
+            const teamType = targetIsHome ? 'HOME' : 'AWAY';
+            const matchTeamName = targetIsHome ? homeTeamName : awayTeamName;
+            
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Selected Team: ${teamName} (${teamType})`);
+            console.log(`      - Match Team Name: ${matchTeamName}`);
+            console.log(`      - Team Corners: ${teamTotal}`);
+            console.log(`      - Line: ${line}`);
+            console.log(`      - Selection: ${sel}`);
+            
             let status;
-            if (teamTotal > line && sel.includes('over')) status = 'won';
-            else if (teamTotal < line && sel.includes('under')) status = 'won';
-            else if (teamTotal === line) status = 'void';
-            else status = 'lost';
+            let comparison;
+            if (teamTotal > line && sel.includes('over')) {
+                status = 'won';
+                comparison = `${teamTotal} > ${line} = TRUE (Over)`;
+            } else if (teamTotal < line && sel.includes('under')) {
+                status = 'won';
+                comparison = `${teamTotal} < ${line} = TRUE (Under)`;
+            } else if (teamTotal === line) {
+                status = 'void';
+                comparison = `${teamTotal} === ${line} = VOID`;
+            } else {
+                status = 'lost';
+                if (sel.includes('over')) {
+                    comparison = `${teamTotal} > ${line} = FALSE (needed Over, got ${teamTotal})`;
+                } else if (sel.includes('under')) {
+                    comparison = `${teamTotal} < ${line} = FALSE (needed Under, got ${teamTotal})`;
+                } else {
+                    comparison = 'Unknown selection';
+                }
+            }
+            
+            console.log(`      - Comparison: ${comparison}`);
+            console.log(`      - Result: ${status.toUpperCase()} ${status === 'won' ? '✅' : status === 'lost' ? '❌' : '⚪'}`);
+            
             return {
                 status,
                 team: targetIsHome ? 'home' : 'away',
                 teamCorners: teamTotal,
                 line,
+                period: period,
                 matchId: matchDetails.general?.matchId,
-                reason: `Team Total Corners ${sel} ${line}: teamCorners=${teamTotal} → ${status}`
+                reason: `Team Total Corners ${period} ${sel} ${line}: ${teamName} (${teamType}) corners=${teamTotal} vs line=${line} → ${status}`
             };
 
         } else if (marketCode === MarketCodes.CORNERS_TOTAL_OU) {
-            // Total Corners (Over/Under)
+            // Total Corners (Over/Under) - Full Match, 1st Half, or 2nd Half
             const sel = String(bet.outcomeLabel || '').toLowerCase();
+            const marketName = String(bet.marketName || '').toLowerCase();
+            
+            // Get home and away team names for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 TOTAL CORNERS MARKET:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Bet Selection: ${sel}`);
+            console.log(`   - Home Team: ${homeTeamName}`);
+            console.log(`   - Away Team: ${awayTeamName}`);
+            
+            // Check if this is a 1st half or 2nd half market
+            const isFirstHalf = marketName.includes('1st half') || marketName.includes('first half');
+            const isSecondHalf = marketName.includes('2nd half') || marketName.includes('second half');
+            const period = isFirstHalf ? '1st Half' : (isSecondHalf ? '2nd Half' : 'Full Match');
+            
+            console.log(`   - Period: ${period}`);
+            console.log(`   - Is 1st Half: ${isFirstHalf}`);
+            console.log(`   - Is 2nd Half: ${isSecondHalf}`);
             
             // Get line from multiple sources with proper conversion
             let line = null;
+            let lineSource = 'unknown';
             if (bet.betDetails?.total) {
                 line = parseFloat(bet.betDetails.total);
+                lineSource = 'bet.betDetails.total';
             } else if (typeof bet.handicapLine === 'number') {
                 line = bet.handicapLine / 1000; // Convert handicapLine from 7500 to 7.5
+                lineSource = 'bet.handicapLine (converted from ' + bet.handicapLine + ')';
             } else if (typeof bet.handicapRaw === 'number') {
                 line = bet.handicapRaw / 1000000; // Convert handicapRaw from 7500000 to 7.5
+                lineSource = 'bet.handicapRaw (converted from ' + bet.handicapRaw + ')';
             }
             
+            console.log(`   - Line Extraction:`);
+            console.log(`      - Source: ${lineSource}`);
+            console.log(`      - Raw bet.betDetails.total: ${bet.betDetails?.total || 'N/A'}`);
+            console.log(`      - Final Line: ${line}`);
+            
             if (line === null || Number.isNaN(line)) {
+                console.log(`   ❌ Invalid line - cancelling bet`);
                 return { status: 'cancelled', reason: 'Total Corners requires a valid line', debugInfo: { missing: 'handicapLine' } };
             }
-            const corners = getCornersFromStats(matchDetails);
-            if (!corners || corners.total === undefined) {
-                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners' } };
+            
+            let corners;
+            if (isFirstHalf) {
+                // Get 1st half corners
+                console.log(`   - Fetching 1st Half corners...`);
+                corners = getFirstHalfCorners(matchDetails);
+                console.log(`   ✅ 1st Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                console.log(`      - Total: ${corners.total} corners`);
+            } else if (isSecondHalf) {
+                // Get 2nd half corners
+                console.log(`   - Fetching 2nd Half corners...`);
+                corners = getSecondHalfCorners(matchDetails);
+                console.log(`   ✅ 2nd Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                console.log(`      - Total: ${corners.total} corners`);
+            } else {
+                // Get full match corners from stats
+                console.log(`   - Fetching Full Match corners from stats...`);
+                corners = getCornersFromStats(matchDetails);
+                if (corners) {
+                    console.log(`   ✅ Full Match Corners Result:`);
+                    console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                    console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                    console.log(`      - Total: ${corners.total} corners`);
+                }
             }
+            
+            if (!corners || corners.total === undefined) {
+                console.log(`   ❌ Corners statistics unavailable`);
+                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners', period } };
+            }
+            
             const total = corners.total;
+            
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Period: ${period}`);
+            console.log(`      - Total Corners: ${total}`);
+            console.log(`      - Line: ${line}`);
+            console.log(`      - Selection: ${sel}`);
+            
             let status;
-            if (total > line && sel.includes('over')) status = 'won';
-            else if (total < line && sel.includes('under')) status = 'won';
-            else if (total === line) status = 'void';
-            else status = 'lost';
+            let comparison;
+            if (total > line && sel.includes('over')) {
+                status = 'won';
+                comparison = `${total} > ${line} = TRUE (Over)`;
+            } else if (total < line && sel.includes('under')) {
+                status = 'won';
+                comparison = `${total} < ${line} = TRUE (Under)`;
+            } else if (total === line) {
+                status = 'void';
+                comparison = `${total} === ${line} = VOID`;
+            } else {
+                status = 'lost';
+                if (sel.includes('over')) {
+                    comparison = `${total} > ${line} = FALSE (needed Over, got ${total})`;
+                } else if (sel.includes('under')) {
+                    comparison = `${total} < ${line} = FALSE (needed Under, got ${total})`;
+                } else {
+                    comparison = 'Unknown selection';
+                }
+            }
+            
+            console.log(`      - Comparison: ${comparison}`);
+            console.log(`      - Result: ${status.toUpperCase()} ${status === 'won' ? '✅' : status === 'lost' ? '❌' : '⚪'}`);
+            
             return {
                 status,
                 totalCorners: total,
                 line,
+                period: period,
+                cornerTotals: { home: corners.home, away: corners.away, total },
                 matchId: matchDetails.general?.matchId,
-                reason: `Total Corners ${sel} ${line}: total=${total} → ${status}`
+                reason: `Total Corners ${period} ${sel} ${line}: total=${total} vs line=${line} → ${status}`
             };
 
         } else if (marketCode === MarketCodes.TEAM_TOTAL_SHOTS_OU) {
@@ -3935,12 +4497,14 @@ class BetOutcomeCalculator {
                 // Away team scored first
                 actualOutcome = '2';
                 // ✅ FIX: Check against matchDetails team names, not bet team names (bet teams might be swapped)
+                const awayTeamLower = String(matchAwayName || '').toLowerCase();
+                const betAwayLower = String(bet.awayName || '').toLowerCase();
                 // Check both matchDetails name and bet name (in case bet has different name format) using similarity
                 won = sel === '2' || sel === 'away' || 
                       this.namesMatch(sel, matchAwayName) ||
                       this.namesMatch(sel, bet.awayName);
                 console.log(`   - Away team scored first → 2`);
-                console.log(`   - Checking away team match: sel="${sel}", matchAwayTeam="${awayTeamLower}", betAwayTeam="${betAwayLower}"`);
+                console.log(`   - Checking away team match: sel="${sel}", matchAwayTeam="${matchAwayName}", betAwayTeam="${bet.awayName}"`);
             }
             
             const status = won ? 'won' : 'lost';
@@ -4309,20 +4873,77 @@ class BetOutcomeCalculator {
         } else if (marketCode === MarketCodes.CORNERS_MOST) {
             // Most Corners: compare team corner counts
             const sel = String(bet.outcomeLabel || '').toLowerCase();
-            const corners = getCornersFromStats(matchDetails);
-            if (!corners) {
-                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners' } };
+            const marketName = String(bet.marketName || '').toLowerCase();
+            
+            // Get home and away team names for logging
+            const homeTeamName = matchDetails?.general?.homeTeam?.name || matchDetails?.header?.teams?.[0]?.name || 'Home Team';
+            const awayTeamName = matchDetails?.general?.awayTeam?.name || matchDetails?.header?.teams?.[1]?.name || 'Away Team';
+            
+            console.log(`🎯 MOST CORNERS MARKET:`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
+            console.log(`   - Home Team: ${homeTeamName}`);
+            console.log(`   - Away Team: ${awayTeamName}`);
+            console.log(`   - Bet Selection: ${sel}`);
+            
+            // Check if this is a 1st half or 2nd half market
+            const isFirstHalf = marketName.includes('1st half') || marketName.includes('first half');
+            const isSecondHalf = marketName.includes('2nd half') || marketName.includes('second half');
+            const period = isFirstHalf ? '1st Half' : (isSecondHalf ? '2nd Half' : 'Full Match');
+            
+            console.log(`   - Period: ${period}`);
+            console.log(`   - Is 1st Half: ${isFirstHalf}`);
+            console.log(`   - Is 2nd Half: ${isSecondHalf}`);
+            
+            let corners;
+            if (isFirstHalf) {
+                // Get 1st half corners from stats/events
+                console.log(`   - Fetching 1st Half corners...`);
+                corners = getFirstHalfCorners(matchDetails);
+                console.log(`   ✅ 1st Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+            } else if (isSecondHalf) {
+                // Get 2nd half corners from stats/events
+                console.log(`   - Fetching 2nd Half corners...`);
+                corners = getSecondHalfCorners(matchDetails);
+                console.log(`   ✅ 2nd Half Corners Result:`);
+                console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+            } else {
+                // Get full match corners from stats
+                console.log(`   - Fetching Full Match corners from stats...`);
+                corners = getCornersFromStats(matchDetails);
+                if (corners) {
+                    console.log(`   ✅ Full Match Corners Result:`);
+                    console.log(`      - ${homeTeamName} (Home): ${corners.home} corners`);
+                    console.log(`      - ${awayTeamName} (Away): ${corners.away} corners`);
+                }
+            }
+            
+            if (!corners || (corners.home === undefined && corners.away === undefined)) {
+                console.log(`   ❌ Corners statistics unavailable`);
+                return { status: 'cancelled', reason: 'Corners statistics unavailable', debugInfo: { missing: 'corners', period } };
             }
             const home = Number(corners.home || 0);
             const away = Number(corners.away || 0);
             const actual = home > away ? '1' : (home < away ? '2' : 'x');
             const won = (actual === '1' && (sel === '1' || sel.includes('home'))) || (actual === '2' && (sel === '2' || sel.includes('away'))) || (actual === 'x' && (sel === 'x' || sel.includes('draw')));
+            
+            console.log(`   📊 Outcome Calculation:`);
+            console.log(`      - Period: ${period}`);
+            console.log(`      - ${homeTeamName} (Home): ${home} corners`);
+            console.log(`      - ${awayTeamName} (Away): ${away} corners`);
+            console.log(`      - Actual Outcome: ${actual} (${home > away ? homeTeamName + ' wins' : home < away ? awayTeamName + ' wins' : 'Draw'})`);
+            console.log(`      - Bet Selection: ${sel}`);
+            console.log(`      - Result: ${won ? 'WON ✅' : 'LOST ❌'}`);
+            
             return {
                 status: won ? 'won' : 'lost',
                 actualOutcome: actual,
                 cornerTotals: { home, away },
+                period: period,
                 matchId: matchDetails.general?.matchId,
-                reason: `Most Corners: ${actual} (home=${home}, away=${away}) (bet ${sel})`
+                reason: `Most Corners ${period}: ${actual} (${homeTeamName}=${home}, ${awayTeamName}=${away}) (bet ${sel})`
             };
 
         } else if (marketCode === MarketCodes.CORNERS_HANDICAP_3WAY) {
@@ -6350,36 +6971,64 @@ class BetOutcomeCalculator {
             const { homeName, awayName } = getTeamNames(matchDetails);
             
             console.log(`🎯 TEAM SCORE FROM PENALTY MARKET: "${selection}"`);
+            console.log(`   - Market Name: "${bet.marketName}"`);
             console.log(`   - Selection: "${selection}"`);
             console.log(`   - Full Time: ${ftHome}-${ftAway}`);
-            console.log(`   - Teams: ${homeName} vs ${awayName}`);
+            console.log(`   - Home Team (Match): ${homeName}`);
+            console.log(`   - Away Team (Match): ${awayName}`);
+            console.log(`   - Bet Home Team: "${bet.homeName}"`);
+            console.log(`   - Bet Away Team: "${bet.awayName}"`);
             
-            // Extract team name from the market name or bet details
+            // Extract team name from market name
+            // Market format: "PSG to score from a penalty" or "Team Name to score from a penalty"
+            const marketNameLower = String(bet.marketName || '').toLowerCase();
+            let teamFromMarket = '';
+            
+            // Extract team name before "to score from a penalty"
+            if (marketNameLower.includes(' to score from a penalty')) {
+                teamFromMarket = marketNameLower.split(' to score from a penalty')[0].trim();
+            } else if (marketNameLower.includes(' to score from penalty')) {
+                teamFromMarket = marketNameLower.split(' to score from penalty')[0].trim();
+            }
+            
+            console.log(`   - Team extracted from market: "${teamFromMarket}"`);
+            
+            // Match team from market with bet team names using namesMatch (similar to Team Total Cards)
+            const betHomeLower = String(bet.homeName || '').toLowerCase();
+            const betAwayLower = String(bet.awayName || '').toLowerCase();
+            
             let targetTeamName = null;
+            let targetIsHome = false;
+            let targetIsAway = false;
             
-            // Try to get team name from various sources
-            if (bet.unibetMeta?.homeName && bet.unibetMeta?.awayName) {
-                // Check if the market name contains either team name
-                const marketName = (bet.marketName || '').toLowerCase();
-                if (marketName.includes(homeName.toLowerCase())) {
+            // Check if market team matches bet home team using similarity
+            if (teamFromMarket && this.namesMatch(teamFromMarket, bet.homeName)) {
+                targetTeamName = homeName; // Use match team name, not bet name
+                targetIsHome = true;
+                console.log(`   ✅ Identified as HOME team bet: ${bet.homeName} → ${homeName}`);
+            } else if (teamFromMarket && this.namesMatch(teamFromMarket, bet.awayName)) {
+                targetTeamName = awayName; // Use match team name, not bet name
+                targetIsAway = true;
+                console.log(`   ✅ Identified as AWAY team bet: ${bet.awayName} → ${awayName}`);
+            } else if (teamFromMarket) {
+                // Try direct matching with match team names
+                if (this.namesMatch(teamFromMarket, homeName)) {
                     targetTeamName = homeName;
-                } else if (marketName.includes(awayName.toLowerCase())) {
+                    targetIsHome = true;
+                    console.log(`   ✅ Identified as HOME team (direct match): ${homeName}`);
+                } else if (this.namesMatch(teamFromMarket, awayName)) {
                     targetTeamName = awayName;
-                }
-            }
-            
-            // Fallback: try to extract from bet details or market name
-            if (!targetTeamName) {
-                const marketName = (bet.marketName || '').toLowerCase();
-                if (marketName.includes('atlético mineiro') || marketName.includes('atletico mineiro')) {
-                    targetTeamName = homeName; // Assuming this is the home team
-                } else if (marketName.includes('bolívar') || marketName.includes('bolivar')) {
-                    targetTeamName = awayName; // Assuming this is the away team
+                    targetIsAway = true;
+                    console.log(`   ✅ Identified as AWAY team (direct match): ${awayName}`);
                 }
             }
             
             if (!targetTeamName) {
-                console.log(`❌ Could not determine target team for penalty scoring market`);
+                console.log(`   ❌ Could not determine target team for penalty scoring market`);
+                console.log(`      - Market name: "${bet.marketName}"`);
+                console.log(`      - Extracted team: "${teamFromMarket}"`);
+                console.log(`      - Bet teams: "${bet.homeName}" / "${bet.awayName}"`);
+                console.log(`      - Match teams: "${homeName}" / "${awayName}"`);
                 return {
                     status: 'cancelled',
                     reason: 'Could not determine target team for penalty scoring market',
@@ -6392,7 +7041,7 @@ class BetOutcomeCalculator {
                 };
             }
             
-            console.log(`   - Target team: ${targetTeamName}`);
+            console.log(`   - Target team: ${targetTeamName} (${targetIsHome ? 'Home' : 'Away'})`);
             
             // Get penalty goals for the target team
             const penaltyGoals = getTeamPenaltyGoals(matchDetails, targetTeamName);
@@ -6981,6 +7630,16 @@ class BetOutcomeCalculator {
      * Process a single bet with detailed logging
      */
     async processBet(bet, updateDatabase = true) {
+        // 🐛 BREAKPOINT: START - Live matches details extraction for bet calculation
+        console.log(`🐛 [BREAKPOINT] ========================================`);
+        console.log(`🐛 [BREAKPOINT] ===== START: PROCESSING BET =====`);
+        console.log(`🐛 [BREAKPOINT] ========================================`);
+        console.log(`🐛 [BREAKPOINT] Bet ID: ${bet._id || bet.id || 'N/A'}`);
+        console.log(`🐛 [BREAKPOINT] Bet Match ID: ${bet.matchId || bet.eventId || 'N/A'}`);
+        console.log(`🐛 [BREAKPOINT] Is Live Match: ${bet.inplay || false}`);
+        console.log(`🐛 [BREAKPOINT] Market: ${bet.marketName || 'N/A'}`);
+        console.log(`\n🔍 ===== PROCESSING BET ${bet._id} =====`);
+        
         try {
             console.log(`\n🔍 ===== PROCESSING BET ${bet._id} =====`);
             console.log(`📋 Bet Details:`);
@@ -7130,9 +7789,17 @@ class BetOutcomeCalculator {
             // Step 4: Check if match is finished before making API call
             console.log(`\n🔍 STEP 4: Checking match finished status...`);
             
-            // Check if bet has matchFinished flag set
-            if (bet.matchFinished === false) {
-                console.log(`⏳ Match not finished yet - skipping detailed API call`);
+            // First check the match status from FotMob match result
+            const matchStatusFinished = matchResult.match.status?.finished === true;
+            const matchStatusReason = matchResult.match.status?.reason?.short?.toLowerCase() || '';
+            const isMatchFinishedFromStatus = matchStatusFinished || 
+                matchStatusReason.includes('ft') || 
+                matchStatusReason.includes('full') || 
+                matchStatusReason.includes('finished');
+            
+            // Check if bet has matchFinished flag set (if explicitly false, skip)
+            if (bet.matchFinished === false && !isMatchFinishedFromStatus) {
+                console.log(`⏳ Match not finished yet (bet flag = false, status check = ${isMatchFinishedFromStatus}) - skipping detailed API call`);
                 return {
                     success: true,
                     outcome: { status: 'pending', reason: 'Match not finished yet' },
@@ -7141,15 +7808,31 @@ class BetOutcomeCalculator {
                 };
             }
             
-            if (bet.matchFinished === undefined) {
-                console.log(`⚠️ Match finished status unknown - proceeding with API call (legacy behavior)`);
+            // If match appears finished from status, proceed even if bet flag is not set
+            if (isMatchFinishedFromStatus) {
+                console.log(`✅ Match finished confirmed from FotMob status - proceeding with detailed API call`);
+            } else if (bet.matchFinished === undefined) {
+                console.log(`⚠️ Match finished status unknown - proceeding with API call to verify (time-based filtering selected this bet)`);
             } else {
                 console.log(`✅ Match finished status confirmed - proceeding with detailed API call`);
             }
             
             // Fetch detailed match information using new API
             console.log(`\n🔍 STEP 4B: Fetching detailed match information...`);
+            
+            // 🐛 BREAKPOINT: About to fetch FotMob match details for live match
+            console.log(`🐛 [BREAKPOINT] ===== ABOUT TO FETCH FOTMOB MATCH DETAILS =====`);
+            console.log(`\n🔍 STEP 4B: Fetching detailed match information...`);
+            console.log(`   Match ID: ${matchResult.match.id}`);
+            console.log(`   Match: ${matchResult.match.home?.name} vs ${matchResult.match.away?.name}`);
+            
             const matchDetails = await this.fetchMatchDetails(matchResult.match.id);
+            
+            if (matchDetails) {
+                console.log(`✅ Match details received: ${matchDetails.general?.homeTeam?.name} vs ${matchDetails.general?.awayTeam?.name}`);
+            } else {
+                console.log(`⚠️ Match details is NULL/UNDEFINED - No data received!`);
+            }
             
             if (!matchDetails) {
                 console.log(`❌ STEP 4B FAILED: Could not fetch match details for ID ${matchResult.match.id}`);
@@ -7662,6 +8345,7 @@ class BetOutcomeCalculator {
                 lost: 0,
                 void: 0,
                 errors: 0,
+                skipped: 0, // Track skipped bets (match not finished)
                 details: [],
                 onlyFinished: onlyFinished
             };
@@ -7669,13 +8353,37 @@ class BetOutcomeCalculator {
             console.log(`Processing ${pendingBets.length} bets (finished matches only: ${onlyFinished})`);
             // console.log("*************aaaaaaaaaaaaa",pendingBets);
             for (const bet of pendingBets) {
-                const result = await this.processBet(bet);
+                let result;
+                
+                // Wrap each bet processing in try-catch to prevent one bet's error from stopping all bets
+                try {
+                    result = await this.processBet(bet);
+                } catch (betError) {
+                    console.error(`❌ Error processing bet ${bet._id}:`, betError.message);
+                    console.error(`📋 Bet error stack:`, betError.stack);
+                    
+                    // Create error result so we can continue processing other bets
+                    result = {
+                        success: false,
+                        error: betError.message,
+                        outcome: {
+                            status: 'pending',
+                            reason: `Processing error: ${betError.message}`
+                        }
+                    };
+                }
 
                 if (result.success) {
-                    results.processed++;
-                    if (result.outcome.status === 'won') results.won++;
-                    else if (result.outcome.status === 'lost') results.lost++;
-                    else if (result.outcome.status === 'void') results.void++;
+                    // Check if bet was skipped (match not finished)
+                    if (result.skipped === true) {
+                        results.skipped++;
+                        console.log(`⏭️ Bet ${bet._id} skipped - match not finished yet`);
+                    } else {
+                        results.processed++;
+                        if (result.outcome.status === 'won') results.won++;
+                        else if (result.outcome.status === 'lost') results.lost++;
+                        else if (result.outcome.status === 'void') results.void++;
+                    }
                 } else {
                     results.errors++;
                 }
@@ -7772,6 +8480,11 @@ class BetOutcomeCalculator {
      * Process a specific bet with known match ID
      */
     async processBetWithMatchId(bet, fotmobMatchId, updateDatabase = true) {
+        // 🐛 BREAKPOINT: Start of bet processing - Live matches details extraction
+        console.log(`🐛 [BREAKPOINT] ===== START: Processing bet with match ID =====`);
+        console.log(`🐛 [BREAKPOINT] Bet ID: ${bet._id || bet.id || 'N/A'}`);
+        console.log(`🐛 [BREAKPOINT] FotMob Match ID: ${fotmobMatchId}`);
+        console.log(`\n🔍 ===== PROCESSING BET WITH MATCH ID ${bet._id} =====`);
         // Implementation similar to processBet but with specific match ID
         // console.log("****************ccccccccccccccccccccccccccccc******************",bet);
         return this.processBet(bet, updateDatabase);

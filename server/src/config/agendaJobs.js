@@ -100,10 +100,13 @@ const cancelBetProcessingJob = async () => {
 // Function to schedule FotMob cache refresh job
 const scheduleFotmobCacheJob = async () => {
   if (!fotmobCacheJobScheduled) {
-    console.log('[Agenda] Scheduling FotMob multi-day cache refresh job...');
-    await agenda.every("24 hours", "refreshFotmobMultidayCache");
+    // Schedule at 9:00 PM Pakistan Time (UTC+5) = 4:00 PM UTC (16:00 UTC)
+    // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
+    // "0 16 * * *" = 4:00 PM UTC every day (which is 9:00 PM PKT)
+    console.log('[Agenda] Scheduling FotMob multi-day cache refresh job at 9:00 PM PKT (4:00 PM UTC) daily...');
+    await agenda.every("0 16 * * *", "refreshFotmobMultidayCache");
     fotmobCacheJobScheduled = true;
-    console.log('[Agenda] FotMob multi-day cache refresh job scheduled successfully');
+    console.log('[Agenda] FotMob multi-day cache refresh job scheduled successfully for 9:00 PM PKT daily');
   }
 };
 
@@ -337,13 +340,22 @@ agenda.define("processPendingBets", async (job) => {
 
 // Define FotMob multi-day cache refresh job
 agenda.define("refreshFotmobMultidayCache", async (job) => {
+  console.log(`[Agenda] Starting FotMob multi-day cache refresh job`);
+  
   try {
-    console.log(`[Agenda] Starting FotMob multi-day cache refresh job at ${new Date().toISOString()}`);
+    const now = new Date();
+    const utcTime = now.toISOString();
+    // Convert to Pakistan time (UTC+5)
+    const pktTime = new Date(now.getTime() + (5 * 60 * 60 * 1000)).toISOString().replace('Z', ' PKT');
+    console.log(`[Agenda] Starting FotMob multi-day cache refresh job`);
+    console.log(`[Agenda] UTC Time: ${utcTime}`);
+    console.log(`[Agenda] Pakistan Time: ${pktTime}`);
     
     const fotmobController = new FotmobController();
     
     // Refresh multi-day cache (20 days + yesterday = 21 days total)
-    await fotmobController.refreshMultidayCache({
+    
+    const result = await fotmobController.refreshMultidayCache({
       body: { days: 20 }
     }, {
       json: (data) => {
@@ -351,7 +363,13 @@ agenda.define("refreshFotmobMultidayCache", async (job) => {
       }
     });
     
-    console.log(`[Agenda] FotMob multi-day cache refresh completed at ${new Date().toISOString()}`);
+    
+    const endTime = new Date();
+    const endUtcTime = endTime.toISOString();
+    const endPktTime = new Date(endTime.getTime() + (5 * 60 * 60 * 1000)).toISOString().replace('Z', ' PKT');
+    console.log(`[Agenda] FotMob multi-day cache refresh completed`);
+    console.log(`[Agenda] Completed at UTC: ${endUtcTime}`);
+    console.log(`[Agenda] Completed at PKT: ${endPktTime}`);
   } catch (error) {
     console.error("[Agenda] Error refreshing FotMob multi-day cache:", error);
   }
@@ -398,6 +416,23 @@ export const initializeAgendaJobs = async () => {
     
     // Check fixture cache and manage jobs accordingly
     await checkFixtureCacheAndManageJobs();
+    
+    // Immediately refresh FotMob cache when server starts
+    console.log('[Agenda] Triggering immediate FotMob cache refresh on server startup...');
+    try {
+      const fotmobController = new FotmobController();
+      await fotmobController.refreshMultidayCache({
+        body: { days: 20 }
+      }, {
+        json: (data) => {
+          console.log(`[Agenda] FotMob cache refresh completed on startup:`, data);
+        }
+      });
+      console.log('[Agenda] FotMob cache refresh completed successfully on startup');
+    } catch (error) {
+      console.error('[Agenda] Error refreshing FotMob cache on startup:', error);
+      // Don't block server startup if cache refresh fails
+    }
     
     console.log('[Agenda] Agenda jobs initialization completed');
     

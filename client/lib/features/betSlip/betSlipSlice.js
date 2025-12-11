@@ -125,9 +125,13 @@ const betSlipSlice = createSlice({
           id: match.id,
           // ✅ Fix team assignment by checking home/away property instead of array index
           team1: match.team1 || match.homeName || (match.participants ? 
-            (match.participants.find(p => p.home === true)?.name || match.participants[0]?.name) : 'Team 1'),
+            (match.participants.find(p => 
+              (p.position && p.position.toLowerCase() === 'home') || p.home === true
+            )?.name || match.participants[0]?.name) : 'Team 1'),
           team2: match.team2 || match.awayName || (match.participants ? 
-            (match.participants.find(p => p.home === false)?.name || match.participants[1]?.name) : 'Team 2'),
+            (match.participants.find(p => 
+              (p.position && p.position.toLowerCase() === 'away') || p.home === false
+            )?.name || match.participants[1]?.name) : 'Team 2'),
           competition: match.competition || match.league?.name || "Football",
           time: match.time || match.startTime || (match.starting_at ? match.starting_at.split(' ')[1].slice(0, 5) : ''),
           isLive: match.isLive || false,

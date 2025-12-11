@@ -1135,55 +1135,164 @@ export function getTeamOffsides(matchDetails) {
 export function getPenaltyKicksAwarded(matchDetails) {
     console.log(`🔍 Getting penalty kicks awarded from match data...`);
     
-    const events = matchDetails?.header?.events?.events || [];
-    let penaltyKicksAwarded = 0;
+    // Primary source: header.events.events (main event timeline)
+    const headerEvents = matchDetails?.header?.events?.events || [];
     
-    for (const event of events) {
-        // Check for penalty kick events
-        if (event.type === 'Penalty' || 
-            (event.type === 'Goal' && event.raw?.shotmapEvent?.situation === 'Penalty') ||
-            (event.type === 'MissedPenalty') ||
-            (event.type === 'SavedPenalty')) {
+    // Alternative source: content.matchFacts.events.events (if available)
+    const matchFactsEvents = matchDetails?.content?.matchFacts?.events?.events || [];
+    
+    // Combine both event sources
+    const allEvents = [...headerEvents, ...matchFactsEvents];
+    
+    console.log(`   - Header events: ${headerEvents.length}`);
+    console.log(`   - Match facts events: ${matchFactsEvents.length}`);
+    console.log(`   - Total events to check: ${allEvents.length}`);
+    
+    let penaltyKicksAwarded = 0;
+    const penaltyDetails = [];
+    
+    for (const event of allEvents) {
+        let isPenalty = false;
+        let penaltyType = '';
+        let minute = event.time || event.minute || event.timeStr || 'Unknown';
+        
+        // Method 1: Check for explicit penalty event types
+        if (event.type === 'Penalty') {
+            isPenalty = true;
+            penaltyType = 'Penalty (awarded)';
+        } else if (event.type === 'MissedPenalty') {
+            isPenalty = true;
+            penaltyType = 'MissedPenalty';
+        } else if (event.type === 'SavedPenalty') {
+            isPenalty = true;
+            penaltyType = 'SavedPenalty';
+        }
+        
+        // Method 2: Check for penalty goals (scored penalties)
+        // Penalty goals have specific indicators:
+        // - goalDescription: "Penalty"
+        // - goalDescriptionKey: "penalty"
+        // - shotmapEvent.situation: "Penalty"
+        if (event.type === 'Goal') {
+            const isPenaltyGoal = 
+                event.goalDescription === 'Penalty' ||
+                event.goalDescriptionKey === 'penalty' ||
+                event.shotmapEvent?.situation === 'Penalty' ||
+                event.raw?.shotmapEvent?.situation === 'Penalty';
+            
+            if (isPenaltyGoal) {
+                isPenalty = true;
+                penaltyType = 'Penalty Goal';
+            }
+        }
+        
+        // Method 3: Check in nested raw data (fallback)
+        if (!isPenalty && event.raw) {
+            if (event.raw.shotmapEvent?.situation === 'Penalty') {
+                isPenalty = true;
+                penaltyType = 'Penalty (from raw data)';
+            }
+        }
+        
+        if (isPenalty) {
             penaltyKicksAwarded++;
-            console.log(`   - Found penalty kick at minute ${event.minute}: ${event.type}`);
+            const team = event.isHome ? 'Home' : 'Away';
+            const playerName = event.player?.name || event.nameStr || 'Unknown';
+            penaltyDetails.push({
+                minute,
+                type: penaltyType,
+                team,
+                player: playerName,
+                isHome: event.isHome
+            });
+            console.log(`   ✅ Found penalty kick at minute ${minute}: ${penaltyType} (${team} - ${playerName})`);
         }
     }
     
-    console.log(`   - Total penalty kicks awarded: ${penaltyKicksAwarded}`);
+    console.log(`   📊 Summary:`);
+    console.log(`      - Total penalty kicks awarded: ${penaltyKicksAwarded}`);
+    if (penaltyDetails.length > 0) {
+        console.log(`      - Penalty details:`);
+        penaltyDetails.forEach((p, idx) => {
+            console.log(`         ${idx + 1}. Min ${p.minute}: ${p.type} - ${p.player} (${p.team})`);
+        });
+    }
+    
     return penaltyKicksAwarded;
 }
 
 export function getTeamPenaltyGoals(matchDetails, teamName) {
     console.log(`🔍 Getting penalty goals for team: ${teamName}`);
     
-    const events = matchDetails?.header?.events?.events || [];
+    // Use getGoalEvents to get all goals from homeTeamGoals and awayTeamGoals (not just events array)
+    const allGoals = getGoalEvents(matchDetails);
+    console.log(`   - Total goals in match: ${allGoals.length}`);
+    
     let penaltyGoals = 0;
+    const penaltyGoalDetails = [];
     
     // Get team names to determine which team is home/away
     const { homeName, awayName } = getTeamNames(matchDetails);
-    const isHomeTeam = teamName.toLowerCase().includes(homeName.toLowerCase()) || 
-                      homeName.toLowerCase().includes(teamName.toLowerCase());
-    const isAwayTeam = teamName.toLowerCase().includes(awayName.toLowerCase()) || 
-                      awayName.toLowerCase().includes(teamName.toLowerCase());
     
-    console.log(`   - Home team: ${homeName}, Away team: ${awayName}`);
+    // Use name similarity matching (generic, no hardcoded names)
+    // Check if teamName matches homeName or awayName using includes (both ways)
+    const teamNameLower = teamName.toLowerCase();
+    const homeNameLower = homeName.toLowerCase();
+    const awayNameLower = awayName.toLowerCase();
+    
+    const isHomeTeam = teamNameLower.includes(homeNameLower) || 
+                      homeNameLower.includes(teamNameLower);
+    const isAwayTeam = teamNameLower.includes(awayNameLower) || 
+                      awayNameLower.includes(teamNameLower);
+    
+    console.log(`   - Home team (FotMob): ${homeName}`);
+    console.log(`   - Away team (FotMob): ${awayName}`);
     console.log(`   - Target team: ${teamName}`);
     console.log(`   - Is home team: ${isHomeTeam}, Is away team: ${isAwayTeam}`);
     
-    for (const event of events) {
-        // Check for penalty goals
-        if (event.type === 'Goal' && event.raw?.shotmapEvent?.situation === 'Penalty') {
-            const isEventForTargetTeam = (isHomeTeam && event.isHome === true) || 
-                                       (isAwayTeam && event.isHome === false);
+    for (const goal of allGoals) {
+        // Check for penalty goals using multiple indicators (same as getPenaltyKicksAwarded)
+        const isPenaltyGoal = 
+            goal.goalDescription === 'Penalty' ||
+            goal.goalDescriptionKey === 'penalty' ||
+            goal.shotmapEvent?.situation === 'Penalty' ||
+            goal.raw?.shotmapEvent?.situation === 'Penalty';
+        
+        if (isPenaltyGoal) {
+            // Check if this goal belongs to the target team using isHome flag
+            const isEventForTargetTeam = (isHomeTeam && goal.isHome === true) || 
+                                       (isAwayTeam && goal.isHome === false);
             
             if (isEventForTargetTeam) {
                 penaltyGoals++;
-                console.log(`   - Found penalty goal at minute ${event.minute} for ${teamName}`);
+                const minute = goal.time || goal.minute || goal.timeStr || 'Unknown';
+                const playerName = goal.player?.name || goal.nameStr || goal.playerName || 'Unknown';
+                penaltyGoalDetails.push({
+                    minute,
+                    player: playerName,
+                    team: goal.isHome ? 'Home' : 'Away'
+                });
+                console.log(`   ✅ Found penalty goal at minute ${minute} by ${playerName} (${goal.isHome ? 'Home' : 'Away'})`);
+            } else {
+                // Log for debugging - penalty goal but wrong team
+                const minute = goal.time || goal.minute || goal.timeStr || 'Unknown';
+                const playerName = goal.player?.name || goal.nameStr || goal.playerName || 'Unknown';
+                console.log(`   ⚠️  Penalty goal found but wrong team: Min ${minute} by ${playerName} (${goal.isHome ? 'Home' : 'Away'})`);
             }
         }
     }
     
-    console.log(`   - Total penalty goals for ${teamName}: ${penaltyGoals}`);
+    console.log(`   📊 Summary:`);
+    console.log(`      - Total penalty goals for ${teamName}: ${penaltyGoals}`);
+    if (penaltyGoalDetails.length > 0) {
+        console.log(`      - Penalty goal details:`);
+        penaltyGoalDetails.forEach((p, idx) => {
+            console.log(`         ${idx + 1}. Min ${p.minute}: ${p.player} (${p.team})`);
+        });
+    } else {
+        console.log(`      - No penalty goals found for ${teamName}`);
+    }
+    
     return penaltyGoals;
 }
 

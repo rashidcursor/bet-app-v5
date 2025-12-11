@@ -4,11 +4,24 @@ import apiClient from "@/config/axios";
 // Async thunk to fetch user bets
 export const fetchUserBets = createAsyncThunk(
   "bets/fetchUserBets",
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get("/bet"); // Adjust endpoint as needed
+      // Build query params from filters - only include non-empty values
+      const params = {};
+      if (filters.dateFrom && filters.dateFrom.trim() !== '') {
+        params.dateFrom = filters.dateFrom;
+      }
+      if (filters.dateTo && filters.dateTo.trim() !== '') {
+        params.dateTo = filters.dateTo;
+      }
+      if (filters.status && filters.status.trim() !== '' && filters.status !== 'all') {
+        params.status = filters.status;
+      }
+      
+      const response = await apiClient.get("/bet", { params });
       return response.data;
     } catch (error) {
+      console.error('Error fetching user bets:', error);
       return rejectWithValue(
         error.response?.data || {
           success: false,

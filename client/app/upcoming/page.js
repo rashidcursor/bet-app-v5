@@ -92,24 +92,26 @@ const UpcomingMatchesPage = () => {
         match.mainBetOffer.outcomes.forEach(outcome => {
           // Convert Unibet API odds format (divide by 1000)
           const convertedOdds = outcome.oddsDecimal || (parseFloat(outcome.odds) / 1000).toFixed(2);
+          // Read suspended status from outcome.status (OPEN = not suspended, anything else = suspended)
+          const isSuspended = outcome.status !== 'OPEN';
           
           if (outcome.label === '1' || outcome.label === 'Home') {
             odds.home = {
               value: convertedOdds,
               oddId: outcome.id || outcome.outcomeId,
-              suspended: false
+              suspended: isSuspended
             };
           } else if (outcome.label === 'X' || outcome.label === 'Draw') {
             odds.draw = {
               value: convertedOdds,
               oddId: outcome.id || outcome.outcomeId,
-              suspended: false
+              suspended: isSuspended
             };
           } else if (outcome.label === '2' || outcome.label === 'Away') {
             odds.away = {
               value: convertedOdds,
               oddId: outcome.id || outcome.outcomeId,
-              suspended: false
+              suspended: isSuspended
             };
           }
         });

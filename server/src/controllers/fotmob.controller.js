@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Fotmob from '@max-xoo/fotmob';
+import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,10 +76,51 @@ export class FotmobController {
             const date = req.params.date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
             const dateStr = date.replace(/-/g, ''); // YYYYMMDD
 
-            console.log(`Refreshing FotMob cache for date: ${date}`);
+            console.log(`Refreshing FotMob cache for date: ${date} (${dateStr})`);
 
-            // Fetch matches for the date
-            const matches = await this.fotmob.getMatchesByDate(dateStr);
+            // Use direct API call (same as refreshMultidayCache)
+            const timezone = 'Asia/Karachi';
+            const ccode3 = 'PAK';
+            const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
+            
+            // Get x-mas token (required for authentication)
+            let xmasToken = null;
+            try {
+                const xmasResponse = await axios.get('http://46.101.91.154:6006/');
+                xmasToken = xmasResponse.data['x-mas'];
+                console.log(`✅ Got x-mas token`);
+            } catch (xmasError) {
+                console.warn(`⚠️ Could not get x-mas token, trying without it...`);
+            }
+            
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Referer': 'https://www.fotmob.com/'
+            };
+            
+            if (xmasToken) {
+                headers['x-mas'] = xmasToken;
+            }
+            
+            console.log(`📡 Calling FotMob API: ${apiUrl}`);
+            const response = await axios.get(apiUrl, { headers });
+            const apiData = response.data;
+            
+            // Convert API response format to expected format
+            let matches = [];
+            if (apiData?.leagues && Array.isArray(apiData.leagues)) {
+                // Flatten all matches from all leagues
+                apiData.leagues.forEach(league => {
+                    if (league.matches && Array.isArray(league.matches)) {
+                        matches = matches.concat(league.matches);
+                    }
+                });
+                console.log(`✅ Fetched ${matches.length} matches from ${apiData.leagues.length} leagues`);
+            } else {
+                console.log(`⚠️ WARNING: API response does not have expected structure`);
+                matches = Array.isArray(apiData) ? apiData : [];
+            }
             
             // Save to cache file
             const cacheFile = path.join(STORAGE_PATH, `fotmob_matches_${dateStr}_${date}.json`);
@@ -111,8 +153,12 @@ export class FotmobController {
 
     // Refresh multi-day cache
     refreshMultidayCache = async (req, res) => {
+        console.log(`[FotMob] Starting refreshMultidayCache`);
+        console.log(`[FotMob] Request body:`, req.body);
+        
         try {
             if (!this.fotmobAvailable) {
+                console.log(`[FotMob] Service not available`);
                 return res.status(503).json({
                     success: false,
                     message: 'FotMob service not available',
@@ -124,54 +170,131 @@ export class FotmobController {
             const startDate = new Date();
             const cacheData = {};
 
-            console.log(`Building multi-day cache for ${days + 1} days (including 1 previous day)`);
+            console.log(`[FotMob] Building multi-day cache for ${days + 1} days (including 1 previous day)`);
+            console.log(`[FotMob] Start date: ${startDate.toISOString()}`);
+            console.log(`[FotMob] Days to fetch: ${days + 1}`);
 
             // Start from yesterday (i = -1) to include previous day
             for (let i = -1; i < days; i++) {
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
                 const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+                const dateFormatted = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+                console.log(`\n[FotMob] Processing date ${i + 2}/${days + 1}: ${dateFormatted} (${dateStr})`);
 
                 try {
-                    const matches = await this.fotmob.getMatchesByDate(dateStr);
-                    cacheData[dateStr] = matches;
+                    console.log(`[FotMob] Calling FotMob API for date: ${dateStr}`);
+                    
+                    // Use direct API call (same as bet-outcome-calculator.js)
+                    const timezone = 'Asia/Karachi';
+                    const ccode3 = 'PAK';
+                    const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
+                    
+                    // Get x-mas token (required for authentication)
+                    let xmasToken = null;
+                    try {
+                        const xmasResponse = await axios.get('http://46.101.91.154:6006/');
+                        xmasToken = xmasResponse.data['x-mas'];
+                        console.log(`✅ Got x-mas token`);
+                    } catch (xmasError) {
+                        console.warn(`⚠️ Could not get x-mas token, trying without it...`);
+                    }
+                    
+                    const headers = {
+                        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                        'Accept': 'application/json',
+                        'Referer': 'https://www.fotmob.com/'
+                    };
+                    
+                    if (xmasToken) {
+                        headers['x-mas'] = xmasToken;
+                    }
+                    
+                    const response = await axios.get(apiUrl, { headers });
+                    const apiData = response.data;
+                    
+                    // API returns: { leagues: [...], date: ... }
+                    // Save in correct format: { "20251210": { leagues: [...] } }
+                    if (apiData?.leagues && Array.isArray(apiData.leagues)) {
+                        const totalMatches = apiData.leagues.reduce((sum, league) => sum + (league.matches?.length || 0), 0);
+                        console.log(`✅ Successfully fetched ${totalMatches} matches from ${apiData.leagues.length} leagues for ${dateStr}`);
+                        
+                        // Save in correct format that getCachedDailyMatches expects
+                        cacheData[dateStr] = { leagues: apiData.leagues };
+                    } else {
+                        console.log(`⚠️ WARNING: API response does not have expected structure`);
+                        console.log(`   Response keys:`, apiData ? Object.keys(apiData) : 'null');
+                        cacheData[dateStr] = { leagues: [] };
+                    }
                     
                     // Add delay to respect rate limits
                     if (i < days - 1) {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 } catch (error) {
-                    console.error(`Error fetching matches for ${dateStr}:`, error);
-                    cacheData[dateStr] = [];
+                    console.error(`❌ ERROR fetching matches for ${dateStr}:`, error.message);
+                    console.error(`   Error details:`, {
+                        message: error.message,
+                        stack: error.stack,
+                        dateStr: dateStr,
+                        dateFormatted: dateFormatted
+                    });
+                    cacheData[dateStr] = { leagues: [] };
+                    console.log(`⚠️  Set empty leagues for ${dateStr} due to error`);
                 }
             }
+
+            console.log(`\n[FotMob] Loop completed. Total dates processed: ${Object.keys(cacheData).length}`);
+            console.log(`[FotMob] Cache data summary:`);
+            Object.keys(cacheData).forEach(dateKey => {
+                const leagues = cacheData[dateKey]?.leagues || [];
+                const matchCount = leagues.reduce((sum, league) => sum + (league.matches?.length || 0), 0);
+                console.log(`   - ${dateKey}: ${matchCount} matches across ${leagues.length} leagues`);
+            });
 
             // Save multi-day cache
             const multiDayFile = path.join(STORAGE_PATH, 'fotmob_multiday_cache.json');
             fs.writeFileSync(multiDayFile, JSON.stringify(cacheData, null, 2));
+            console.log(`✅ Cache file saved successfully`);
 
             // Update metadata
             const metaFile = path.join(STORAGE_PATH, 'fotmob_cache_meta.json');
+            const totalMatches = Object.values(cacheData).reduce((sum, dateData) => {
+                const leagues = dateData?.leagues || [];
+                return sum + leagues.reduce((leagueSum, league) => leagueSum + (league.matches?.length || 0), 0);
+            }, 0);
             const meta = {
                 lastRefresh: new Date().toISOString(),
                 days: days + 1, // Include the previous day
-                totalMatches: Object.values(cacheData).reduce((sum, matches) => sum + (Array.isArray(matches) ? matches.length : 0), 0)
+                totalMatches: totalMatches
             };
             fs.writeFileSync(metaFile, JSON.stringify(meta, null, 2));
+            console.log(`✅ Metadata file saved`);
 
-            res.json({
+            const response = {
                 success: true,
                 message: `Multi-day cache built for ${days + 1} days (including 1 previous day)`,
                 totalMatches: meta.totalMatches,
                 cacheFile: multiDayFile
-            });
+            };
+            
+            if (res && typeof res.json === 'function') {
+                res.json(response);
+            }
+            
+            console.log(`[FotMob] refreshMultidayCache completed successfully`);
+            return response;
         } catch (error) {
-            console.error('Error refreshing multi-day cache:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Failed to refresh multi-day cache',
-                error: error.message
-            });
+            console.error('❌ ERROR refreshing multi-day cache:', error);
+            if (res && typeof res.status === 'function') {
+                res.status(500).json({
+                    success: false,
+                    message: 'Failed to refresh multi-day cache',
+                    error: error.message
+                });
+            }
+            throw error;
         }
     };
 

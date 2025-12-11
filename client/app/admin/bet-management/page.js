@@ -342,7 +342,7 @@ export default function BetManagement() {
             {/* Left side - Stake and Odds */}
             <div className="flex items-center gap-2 py-2" style={{paddingLeft:"10px"}}>
               <span className="text-lg font-semibold" style={{color: "#242424"}}>
-                {isCombo ? formatAmount(bet.stake * bet.combination.length) : formatAmount(bet.stake)}
+                {formatAmount(bet.stake)}
               </span>
               <span className="text-sm" style={{color: "#242424"}}>@ {parseFloat(bet.odds).toFixed(2)}</span>
             </div>

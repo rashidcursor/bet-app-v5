@@ -27,7 +27,7 @@ const BettingHistoryPage = ({ userId }) => {
   const user = useSelector(selectUser);
 
   // Keep filters for date range, but not bet type
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', status: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', status: 'all' });
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   
   // State for table view expansion
@@ -298,7 +298,7 @@ const BettingHistoryPage = ({ userId }) => {
             {/* Left side - Stake and Odds */}
             <div className="flex items-center gap-2 py-2" style={{paddingLeft:"10px"}}>
                 <span className="text-lg font-semibold" style={{color: "#242424"}}>
-                  {isCombo ? formatAmount(bet.stake * bet.combination.length) : formatAmount(bet.stake)}
+                  {formatAmount(bet.stake)}
                 </span>
                 <span className="text-sm" style={{color: "#242424"}}>@ {parseFloat(bet.odds).toFixed(2)}</span>
             </div>
@@ -798,7 +798,7 @@ const BettingHistoryPage = ({ userId }) => {
                                 )}
                               </TableCell>
                               <TableCell>
-                                {isCombo ? formatAmount(item.stake * item.combination.length) : formatAmount(item.stake)}
+                                {formatAmount(item.stake)}
                               </TableCell>
                               <TableCell>{parseFloat(item.odds).toFixed(2)}</TableCell>
                               <TableCell>

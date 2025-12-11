@@ -8,6 +8,38 @@ import { useBetting } from "@/hooks/useBetting"
 import { useDispatch, useSelector } from "react-redux"
 import { removeBet } from "@/lib/features/betSlip/betSlipSlice"
 
+// Helper function to get home and away team names correctly
+// This is defined outside components so it can be used by both BettingTabs and BettingOptionButton
+const getHomeAndAwayTeams = (matchData) => {
+    if (matchData?.participants && Array.isArray(matchData.participants)) {
+        // First try to find by position property
+        let homeParticipant = matchData.participants.find(p => 
+            (p.position && (p.position.toLowerCase() === 'home')) || 
+            p.home === true
+        );
+        let awayParticipant = matchData.participants.find(p => 
+            (p.position && (p.position.toLowerCase() === 'away')) || 
+            p.home === false
+        );
+        
+        // Fallback to array index if position/home property not found
+        if (!homeParticipant && matchData.participants.length > 0) {
+            homeParticipant = matchData.participants[0];
+        }
+        if (!awayParticipant && matchData.participants.length > 1) {
+            awayParticipant = matchData.participants[1];
+        }
+        
+        return {
+            homeTeam: homeParticipant?.name,
+            awayTeam: awayParticipant?.name
+        };
+    }
+    return {
+        homeTeam: matchData?.participants?.[0]?.name,
+        awayTeam: matchData?.participants?.[1]?.name
+    };
+};
 
 const BettingTabs = ({ matchData }) => {
     const [selectedTab, setSelectedTab] = useState("all")
@@ -311,8 +343,7 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
 
     // Helper function to sort result options in Home, Draw, Away order
     const sortResultOptions = (options, matchData) => {
-        const homeTeam = matchData?.participants?.[0]?.name;
-        const awayTeam = matchData?.participants?.[1]?.name;
+        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
 
         return options.sort((a, b) => {
             // Define the desired order: Home (1), Draw (X), Away (2)
@@ -627,7 +658,9 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                         && !section.title.toLowerCase().includes('specials')
                         && !section.title.toLowerCase().includes('clean sheet')) {
                         // Only set name to team name for 1/2 if NOT Specials and NOT Clean Sheet
-                        name = option.label === '1' ? matchData.participants[0].name : matchData.participants[1].name;
+                        // Use getHomeAndAwayTeams to correctly identify home/away teams
+                        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+                        name = option.label === '1' ? homeTeam : awayTeam;
                     } else {
                         name = option.name;
                     }
@@ -1022,8 +1055,9 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
 
     // Special rendering function for Team Total Goals markets only
     const renderTeamGoalMarketsOptions = (options, section) => {
-        const team1 = matchData?.participants?.[0]?.name || 'Team 1';
-        const team2 = matchData?.participants?.[1]?.name || 'Team 2';
+        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+        const team1 = homeTeam || 'Team 1';
+        const team2 = awayTeam || 'Team 2';
 
         // For Team Total Goals markets, filter by label "1" or "2"
         const team1Options = options.filter(opt => opt.label === '1');
@@ -1178,8 +1212,9 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
 
     // Special rendering function for Clean Sheet markets (Yes/No partition)
     const renderCleanSheetOptions = (options, section) => {
-        const team1 = matchData?.participants?.[0]?.name || 'Team 1';
-        const team2 = matchData?.participants?.[1]?.name || 'Team 2';
+        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+        const team1 = homeTeam || 'Team 1';
+        const team2 = awayTeam || 'Team 2';
 
         // Separate options by Yes/No
         const yesOptions = options.filter(opt => opt.name === 'Yes');
@@ -1258,8 +1293,9 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
     const renderGoalScorerCategory = (category) => {
         // Group all options by player name across all markets in the category
         const playerMap = {};
-        const team1 = matchData?.participants?.[0]?.name || '';
-        const team2 = matchData?.participants?.[1]?.name || '';
+        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+        const team1 = homeTeam || '';
+        const team2 = awayTeam || '';
         const isTeamName = (n) => {
             if (!n) return false;
             const lower = String(n).trim().toLowerCase();
@@ -1445,8 +1481,9 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
             const escapeRegex = (s) => String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const cleanMarketTitle = (title) => {
                 let t = String(title || '');
-                const team1 = matchData?.participants?.[0]?.name || '';
-                const team2 = matchData?.participants?.[1]?.name || '';
+                const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+                const team1 = homeTeam || '';
+                const team2 = awayTeam || '';
                 const patterns = [];
                 if (team1) {
                     patterns.push(new RegExp(`\\s*[—-]\\s*${escapeRegex(team1)}$`, 'i'));
@@ -1855,10 +1892,11 @@ const BettingOptionButton = ({
             }
         } else {
             // Create a properly formatted match object
+            const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
             const formattedMatch = {
                 id: matchData.id,
-                team1: matchData.participants?.[0]?.name || 'Home',
-                team2: matchData.participants?.[1]?.name || 'Away',
+                team1: homeTeam || 'Home',
+                team2: awayTeam || 'Away',
                 starting_at: matchData.starting_at,
                 participants: matchData.participants
             };
@@ -1890,8 +1928,9 @@ const BettingOptionButton = ({
 
     // Format the label to highlight the handicap value or over/under value
     const formattedLabel = () => {
-        const team1 = matchData?.participants?.[0]?.name;
-        const team2 = matchData?.participants?.[1]?.name;
+        const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+        const team1 = homeTeam;
+        const team2 = awayTeam;
 
         // For Correct Score markets: show ONLY the score text (no team name)
         if (
@@ -1950,8 +1989,9 @@ const BettingOptionButton = ({
             marketDescription.toLowerCase().includes('half time/full time') &&
             typeof label === 'string'
         ) {
-            const t1 = matchData?.participants?.[0]?.name || 'Home';
-            const t2 = matchData?.participants?.[1]?.name || 'Away';
+            const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
+            const t1 = homeTeam || 'Home';
+            const t2 = awayTeam || 'Away';
             const mapToken = (tok) => {
                 const s = String(tok).trim().toUpperCase();
                 if (s === '1') return t1;
@@ -2041,9 +2081,9 @@ const BettingOptionButton = ({
                 // If name is "1" or "2", show team name instead
                 let teamName = name;
                 if (name === '1') {
-                    teamName = matchData?.participants?.[0]?.name || 'Home Team';
+                    teamName = team1 || 'Home Team';
                 } else if (name === '2') {
-                    teamName = matchData?.participants?.[1]?.name || 'Away Team';
+                    teamName = team2 || 'Away Team';
                 }
                 // Render as plain text for combined markets (e.g., Result / Total Goals)
                 return (
@@ -2132,8 +2172,8 @@ const BettingOptionButton = ({
                 marketDescription.toLowerCase().includes('3 way line') ||
                 marketDescription.toLowerCase().includes('three way line'))
         ) {
-            if (label === '1') return matchData?.participants?.[0]?.name || 'Home';
-            if (label === '2') return matchData?.participants?.[1]?.name || 'Away';
+            if (label === '1') return team1 || 'Home';
+            if (label === '2') return team2 || 'Away';
             if (
                 label && (
                     label.trim().toLowerCase() === 'x' ||
@@ -2208,6 +2248,21 @@ const BettingOptionButton = ({
             );
         }
 
+        // For Most Corners markets: show only team name (no badge)
+        if (
+            marketDescription &&
+            marketDescription.toLowerCase().includes('most corners') &&
+            (label === '1' || label === '2' || label === 'X' || label === 'x')
+        ) {
+            if (label === '1') {
+                return <span>{team1}</span>;
+            } else if (label === '2') {
+                return <span>{team2}</span>;
+            } else if (label === 'X' || label === 'x') {
+                return <span>X</span>;
+            }
+        }
+
         // For Clean Sheet markets: show team name and "Yes"/"No" as badge
         if (
             marketDescription &&
@@ -2272,11 +2327,12 @@ const BettingOptionButton = ({
     };
 
     // Determine if this is a team name (for styling)
+    const { homeTeam, awayTeam } = getHomeAndAwayTeams(matchData);
     const isTeamName = matchData?.participants && (
-        label === matchData.participants[0]?.name ||
-        label === matchData.participants[1]?.name ||
-        label.includes(matchData.participants[0]?.name) ||
-        label.includes(matchData.participants[1]?.name) ||
+        label === homeTeam ||
+        label === awayTeam ||
+        (homeTeam && label.includes(homeTeam)) ||
+        (awayTeam && label.includes(awayTeam)) ||
         (sectionType === 'corner-match-bet' && (label === '1' || label === '2'))
     );
 

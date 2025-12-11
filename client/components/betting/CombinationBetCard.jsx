@@ -28,7 +28,8 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
   };
 
   const calculateProfit = () => {
-    const totalStake = bet.stake * bet.combination.length;
+    // For combination bets, stake is the total stake (not per leg)
+    const totalStake = bet.stake; // Don't multiply by combination.length
     const status = bet.status.toLowerCase();
     
     // Use profit field from database if available (preferred)
@@ -77,7 +78,7 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-lg font-semibold">{formatAmount(bet.stake * bet.combination.length)}</div>
+            <div className="text-lg font-semibold">{formatAmount(bet.stake)}</div>
             <div className="text-sm text-gray-500">Stake</div>
           </div>
         </div>
@@ -92,7 +93,7 @@ const CombinationBetCard = ({ bet, isExpanded, onToggle }) => {
             </div>
             <div>
               <span className="text-sm text-gray-500">Potential Win:</span>
-              <span className="ml-2 font-semibold">{formatAmount((bet.stake * bet.combination.length) * bet.odds)}</span>
+              <span className="ml-2 font-semibold">{formatAmount(bet.stake * bet.odds)}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">

@@ -230,8 +230,13 @@ class BetController {
   async getUserBets(req, res, next) {
     try {
       const userId = req.user._id;
-      const bets = await BetService.getUserBets(userId);
-      console.log(`Fetched bets for user ${userId}:`, bets);
+      const filters = {
+        dateFrom: req.query.dateFrom,
+        dateTo: req.query.dateTo,
+        status: req.query.status
+      };
+      const bets = await BetService.getUserBets(userId, filters);
+      console.log(`Fetched ${bets.length} bets for user ${userId} with filters:`, filters);
       
       res.status(200).json({
         success: true,

@@ -71,35 +71,84 @@ export const preventConflictingBet = async (req, res, next) => {
     }
 
     // Check for conflicts with existing pending bets in the DB
-    for (const bet of betsToCheck) {
-      const matchId = bet.matchId;
-      const marketKey = bet.__marketKey || bet.marketId || (bet.betDetails && bet.betDetails.market_id);
+    if (isCombinationBetRequest) {
+      // For combination bets, check the entire combination as a whole
+      // Allow if new combination is a SUPERSET of existing combination (contains all existing legs + more)
+      // Block if new combination is exact match, subset, or has significant partial overlap
       
-      console.log('[conflictingBet] Checking for conflicts with:', { matchId, marketKey, isCombinationBetRequest });
+      // Get all pending combination bets for this user
+      const existingCombinationBets = await Bet.find({
+        userId,
+        status: 'pending',
+        combination: { $exists: true, $ne: [] }
+      });
 
-      if (isCombinationBetRequest) {
-        // For combination bets, check for conflicts with existing combination bets that have the same oddId
-        // This is more reliable than trying to match betDetails that don't exist yet
-        const existingCombinationBet = await Bet.findOne({
-          userId,
-          status: 'pending',
-          combination: { $exists: true, $ne: [] },
-          'combination': {
-            $elemMatch: {
-              matchId: matchId,
-              oddId: bet.oddId
-            }
-          }
+      // Create a set of all legs in the new combination for quick lookup
+      const newCombinationLegs = new Set();
+      betsToCheck.forEach(leg => {
+        const legKey = `${leg.matchId}:${leg.oddId}`;
+        newCombinationLegs.add(legKey);
+      });
+
+      console.log('[conflictingBet] New combination has', newCombinationLegs.size, 'legs');
+      console.log('[conflictingBet] Checking against', existingCombinationBets.length, 'existing combination bets');
+
+      // Check each existing combination bet
+      for (const existingBet of existingCombinationBets) {
+        if (!existingBet.combination || existingBet.combination.length === 0) continue;
+
+        // Create a set of all legs in the existing combination
+        const existingCombinationLegs = new Set();
+        existingBet.combination.forEach(leg => {
+          const legKey = `${leg.matchId}:${leg.oddId}`;
+          existingCombinationLegs.add(legKey);
         });
 
-        if (existingCombinationBet) {
-          console.log('[conflictingBet] Found conflicting combination bet with identical leg:', existingCombinationBet._id);
-          return res.status(400).json({ 
-            success: false, 
-            message: 'You already have a pending combination bet with the exact same selection on this market for this match.' 
-          });
+        // Check if new combination contains ALL legs of existing combination
+        const allExistingLegsPresent = Array.from(existingCombinationLegs).every(legKey => 
+          newCombinationLegs.has(legKey)
+        );
+
+        if (allExistingLegsPresent) {
+          // New combination contains all legs of existing combination
+          const newHasMoreLegs = newCombinationLegs.size > existingCombinationLegs.size;
+          
+          if (newHasMoreLegs) {
+            // New combination is a SUPERSET (contains all existing legs + more) - ALLOW
+            console.log('[conflictingBet] ✅ New combination is a superset of existing combination', existingBet._id);
+            console.log('[conflictingBet] Existing legs:', existingCombinationLegs.size, 'New legs:', newCombinationLegs.size);
+            // Continue checking other combinations - this one is allowed
+          } else {
+            // New combination is an EXACT MATCH - BLOCK
+            console.log('[conflictingBet] ❌ New combination is exact match of existing combination', existingBet._id);
+            return res.status(400).json({ 
+              success: false, 
+              message: 'You already have a pending combination bet with the exact same selections.' 
+            });
+          }
+        } else {
+          // Check if new combination is a subset (all new legs exist in existing, but existing has more)
+          const allNewLegsPresent = Array.from(newCombinationLegs).every(legKey => 
+            existingCombinationLegs.has(legKey)
+          );
+          
+          if (allNewLegsPresent && newCombinationLegs.size < existingCombinationLegs.size) {
+            // New combination is a SUBSET - BLOCK
+            console.log('[conflictingBet] ❌ New combination is a subset of existing combination', existingBet._id);
+            return res.status(400).json({ 
+              success: false, 
+              message: 'You already have a pending combination bet that includes these selections.' 
+            });
+          }
         }
-      } else {
+      }
+    } else {
+      // For single bets, check conflicts with other single bets only
+      for (const bet of betsToCheck) {
+        const matchId = bet.matchId;
+        const marketKey = bet.__marketKey || bet.marketId || (bet.betDetails && bet.betDetails.market_id);
+        
+        console.log('[conflictingBet] Checking for conflicts with:', { matchId, marketKey });
         // For single bets, check conflicts with other single bets only
         // Allow single bets to coexist with combination bets
         // Use oddId as the primary conflict identifier since it's unique per market+selection

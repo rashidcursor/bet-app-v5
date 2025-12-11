@@ -108,24 +108,27 @@ const InPlayPage = () => {
                     match.liveOdds.outcomes.forEach(outcome => {
                         // Convert Kambi API odds format (divide by 1000)
                         const convertedOdds = (parseFloat(outcome.odds) / 1000).toFixed(2);
+                        // Read suspended status from outcome.status (OPEN = not suspended, anything else = suspended)
+                        // Kambi API might use different field names, so check both status and suspended fields
+                        const isSuspended = outcome.status !== 'OPEN' || outcome.suspended === true;
                         
                         if (outcome.label === '1') {
                             odds.home = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         } else if (outcome.label === 'X') {
                             odds.draw = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         } else if (outcome.label === '2') {
                             odds.away = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         }
                     });
@@ -134,24 +137,26 @@ const InPlayPage = () => {
                     match.mainBetOffer.outcomes.forEach(outcome => {
                         // Convert Unibet API odds format (divide by 1000)
                         const convertedOdds = outcome.oddsDecimal || (parseFloat(outcome.odds) / 1000).toFixed(2);
+                        // Read suspended status from outcome.status (OPEN = not suspended, anything else = suspended)
+                        const isSuspended = outcome.status !== 'OPEN';
                         
                         if (outcome.label === '1' || outcome.label === 'Home') {
                             odds.home = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         } else if (outcome.label === 'X' || outcome.label === 'Draw') {
                             odds.draw = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         } else if (outcome.label === '2' || outcome.label === 'Away') {
                             odds.away = {
                                 value: convertedOdds,
                                 oddId: outcome.id || outcome.outcomeId,
-                                suspended: false
+                                suspended: isSuspended
                             };
                         }
                     });
