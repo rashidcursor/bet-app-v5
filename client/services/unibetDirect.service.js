@@ -94,10 +94,6 @@ class UnibetDirectService {
       
       console.log(`✅ [NEXT PROXY] Successfully fetched live matches`);
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'unibetDirect.service.js:95',message:'getLiveMatches - response received',data:{success:response.data.success,hasMatches:!!response.data.matches,matchesCount:response.data.matches?.length,hasAllMatches:!!response.data.allMatches,allMatchesCount:response.data.allMatches?.length,hasUpcomingMatches:!!response.data.upcomingMatches,upcomingMatchesCount:response.data.upcomingMatches?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      
       // Next.js API route returns: { success, matches, allMatches, upcomingMatches, totalMatches, ... }
       // Return the response data directly (not nested in "data" field)
       const result = {
@@ -110,10 +106,6 @@ class UnibetDirectService {
         lastUpdated: response.data.lastUpdated || response.data.timestamp || new Date().toISOString(),
         source: response.data.source || 'unibet-proxy-nextjs'
       };
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'unibetDirect.service.js:108',message:'getLiveMatches - returning result',data:{success:result.success,matchesCount:result.matches.length,allMatchesCount:result.allMatches.length,upcomingMatchesCount:result.upcomingMatches.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       
       return result;
     } catch (error) {

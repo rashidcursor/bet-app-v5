@@ -131,14 +131,29 @@ const LiveMatchClock = ({ matchId, isLive = false, initialLiveData = null, onSco
         const { matchClock } = liveData;
         setIsRunning(matchClock.running);
         
-        // Initialize with API data
-        setCurrentTime({
-            minute: matchClock.minute || 0,
-            second: matchClock.second || 0,
-            period: matchClock.period || '1st half',
-            minutesLeftInPeriod: matchClock.minutesLeftInPeriod,
-            secondsLeftInMinute: matchClock.secondsLeftInMinute
-        });
+        // ✅ FIX: Only update timer if:
+        // 1. Not initialized yet (currentTime is null)
+        // 2. New time is significantly newer (5+ seconds ahead) - major correction
+        // 3. Timer is not running (stopped state)
+        const apiTotalSeconds = (matchClock.minute || 0) * 60 + (matchClock.second || 0);
+        const currentTotalSeconds = currentTime ? 
+            (currentTime.minute || 0) * 60 + (currentTime.second || 0) : 0;
+        
+        const shouldUpdate = !currentTime || // First initialization
+                            !matchClock.running || // Timer stopped - safe to update
+                            apiTotalSeconds > currentTotalSeconds + 5; // Major correction (5+ seconds ahead)
+        
+        if (shouldUpdate) {
+            // Initialize or update with API data
+            setCurrentTime({
+                minute: matchClock.minute || 0,
+                second: matchClock.second || 0,
+                period: matchClock.period || '1st half',
+                minutesLeftInPeriod: matchClock.minutesLeftInPeriod,
+                secondsLeftInMinute: matchClock.secondsLeftInMinute
+            });
+        }
+        // Otherwise keep current time - let local timer continue running independently
 
         // Start local timer if match is running
         if (matchClock.running && !timerRef.current) {
@@ -176,7 +191,7 @@ const LiveMatchClock = ({ matchId, isLive = false, initialLiveData = null, onSco
                 timerRef.current = null;
             }
         };
-    }, [liveData, isLive]);
+    }, [liveData, isLive, currentTime]); // Add currentTime to dependencies for comparison
 
     // Don't render if not live or no time data
     if (!isLive || !currentTime) {

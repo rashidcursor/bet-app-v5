@@ -29,37 +29,19 @@ const CACHE_DURATION = 500; // 500ms cache to prevent duplicate requests while a
 
 // Helper function to extract football matches (SAME AS BACKEND - exact copy)
 function extractFootballMatches(data) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:9',message:'extractFootballMatches - entry',data:{hasData:!!data,hasLayout:!!data?.layout,hasSections:!!data?.layout?.sections},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
-  
   const allMatches = [];
   const liveMatches = [];
   const upcomingMatches = [];
   
   if (data && data.layout && data.layout.sections) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:15',message:'extractFootballMatches - has sections',data:{sectionsCount:data.layout.sections.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     const mainSection = data.layout.sections.find(s => s.position === 'MAIN');
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:16',message:'extractFootballMatches - mainSection',data:{hasMainSection:!!mainSection,hasWidgets:!!mainSection?.widgets,widgetsCount:mainSection?.widgets?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     
     if (mainSection && mainSection.widgets) {
       const tournamentWidget = mainSection.widgets.find(w => w.widgetType === 'TOURNAMENT');
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:18',message:'extractFootballMatches - tournamentWidget',data:{hasTournamentWidget:!!tournamentWidget,hasMatches:!!tournamentWidget?.matches,hasGroups:!!tournamentWidget?.matches?.groups,groupsCount:tournamentWidget?.matches?.groups?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       
       if (tournamentWidget && tournamentWidget.matches && tournamentWidget.matches.groups) {
         // Process each group (which represents a league/competition)
         tournamentWidget.matches.groups.forEach((group, groupIndex) => {
-          // #region agent log
-          if (groupIndex < 2) {
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:21',message:'extractFootballMatches - processing group',data:{groupIndex,hasSubGroups:!!group.subGroups,subGroupsCount:group.subGroups?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-          }
-          // #endregion
           if (group.subGroups) {
             group.subGroups.forEach(subGroup => {
               // Check if this subGroup has events directly
@@ -101,12 +83,6 @@ function extractFootballMatches(data) {
                       minute: event.liveData.minute || '0'
                     } : null
                   };
-
-                  // #region agent log
-                  if (allMatches.length < 3) {
-                    fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:36',message:'extractFootballMatches - processed event',data:{eventId:event.id,groupId:event.groupId,groupIdType:typeof event.groupId,state:event.state},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                  }
-                  // #endregion
 
                   allMatches.push(processedEvent);
 
@@ -190,18 +166,10 @@ function extractFootballMatches(data) {
     }
   }
   
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:145',message:'extractFootballMatches - before filtering',data:{allMatchesCount:allMatches.length,liveMatchesCount:liveMatches.length,upcomingMatchesCount:upcomingMatches.length,sampleGroupIds:allMatches.slice(0,5).map(m=>({id:m.id,groupId:m.groupId}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-  // #endregion
-  
   // Apply league filtering based on CSV file (SAME AS BACKEND)
   console.log('🔍 [NEXT API] Applying league filtering...');
   const stats = getLeagueFilterStats();
   console.log(`📊 [NEXT API] Total allowed leagues: ${stats.totalAllowedLeagues}`);
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:150',message:'extractFootballMatches - filter stats',data:{totalAllowedLeagues:stats.totalAllowedLeagues,sampleAllowedIds:stats.allowedLeagueIds.slice(0,5)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   
   const filteredAllMatches = filterMatchesByAllowedLeagues(allMatches);
   const filteredLiveMatches = filterMatchesByAllowedLeagues(liveMatches);
@@ -211,10 +179,6 @@ function extractFootballMatches(data) {
   console.log(`   - All matches: ${allMatches.length} → ${filteredAllMatches.length}`);
   console.log(`   - Live matches: ${liveMatches.length} → ${filteredLiveMatches.length}`);
   console.log(`   - Upcoming matches: ${upcomingMatches.length} → ${filteredUpcomingMatches.length}`);
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:157',message:'extractFootballMatches - after filtering',data:{allMatchesBefore:allMatches.length,allMatchesAfter:filteredAllMatches.length,liveMatchesBefore:liveMatches.length,liveMatchesAfter:filteredLiveMatches.length,upcomingMatchesBefore:upcomingMatches.length,upcomingMatchesAfter:filteredUpcomingMatches.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-  // #endregion
 
   // Filter upcoming matches to only show matches within next 24 hours (SAME AS BACKEND)
   const now = new Date();
@@ -396,16 +360,8 @@ export async function GET(request) {
     
     console.log(`✅ [NEXT API] Successfully fetched Unibet API response`);
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:222',message:'GET - Unibet response received',data:{hasData:!!data,hasLayout:!!data?.layout,responseKeys:Object.keys(data||{}).slice(0,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-    
     // Extract and filter matches (SAME LOGIC AS BACKEND)
     const { allMatches, liveMatches, upcomingMatches } = extractFootballMatches(data);
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.js:227',message:'GET - extraction complete',data:{allMatchesCount:allMatches.length,liveMatchesCount:liveMatches.length,upcomingMatchesCount:upcomingMatches.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     
     // Fetch Kambi live data (score, matchClock, statistics) for live matches
     console.log('🎲 [NEXT API] Fetching Kambi live data to enrich matches...');

@@ -257,14 +257,30 @@ const LiveMatches = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {transformedMatches.slice(0, 8).map((match) => {
-                    // Create a unique key that includes odds values to force re-render when odds change
-                    // Include both value and oddId to catch all changes
+                    // Create a unique key that includes odds values AND statistics to force re-render when anything changes
                     const oddsKey = `${match.odds?.['1']?.value || 'null'}-${match.odds?.['X']?.value || 'null'}-${match.odds?.['2']?.value || 'null'}`;
                     const oddIds = `${match.odds?.['1']?.oddId || ''}-${match.odds?.['X']?.oddId || ''}-${match.odds?.['2']?.oddId || ''}`;
                     const statusKey = `${match.odds?.['1']?.status || ''}-${match.odds?.['X']?.status || ''}-${match.odds?.['2']?.status || ''}`;
+                    
+                    // ✅ ADD STATISTICS TO KEY - This will force re-render when corners/cards change
+                    const stats = match.kambiLiveData?.statistics?.football;
+                    const statsKey = stats ? 
+                        `${stats.home?.corners || 0}-${stats.away?.corners || 0}-${stats.home?.yellowCards || 0}-${stats.away?.yellowCards || 0}-${stats.home?.redCards || 0}-${stats.away?.redCards || 0}` : 
+                        'no-stats';
+                    
+                    // ✅ ADD SCORE TO KEY - This will force re-render when score changes
+                    const scoreKey = match.kambiLiveData?.score ? 
+                        `${match.kambiLiveData.score.home || 0}-${match.kambiLiveData.score.away || 0}` : 
+                        'no-score';
+                    
+                    // ✅ ADD TIME TO KEY - This will force re-render when match time changes
+                    const timeKey = match.kambiLiveData?.matchClock ? 
+                        `${match.kambiLiveData.matchClock.minute || 0}-${match.kambiLiveData.matchClock.second || 0}` : 
+                        'no-time';
+                    
                     return (
                         <LiveMatchWithSync 
-                            key={`${match.id}-${oddsKey}-${oddIds}-${statusKey}`} 
+                            key={`${match.id}-${oddsKey}-${oddIds}-${statusKey}-${statsKey}-${scoreKey}-${timeKey}`} 
                             match={match} 
                         />
                     );
