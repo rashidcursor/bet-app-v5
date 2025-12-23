@@ -156,15 +156,15 @@ const LiveMatches = () => {
     const cacheAge = useSelector(selectLiveMatchesCacheAge);
 
 
-    // Auto-refresh live odds every 1 second for real-time updates
+    // Auto-refresh live odds every 500ms for ultra real-time updates
     useEffect(() => {
         // Initial fetch with loading state
         dispatch(fetchLiveMatches());
         
-        // Set up interval to refresh every 1 second with silent updates (real-time data requirement)
+        // Set up interval to refresh every 500ms with silent updates (ultra real-time data requirement)
         const refreshInterval = setInterval(() => {
             dispatch(silentUpdateLiveMatches());
-        }, 1000); // 1 second for real-time odds updates
+        }, 500); // 500ms for ultra real-time odds updates
 
         // Cleanup interval on unmount
         return () => {
@@ -256,12 +256,19 @@ const LiveMatches = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {transformedMatches.slice(0, 8).map((match) => (
-                    <LiveMatchWithSync 
-                        key={`${match.id}-${match.odds?.['1']?.value}-${match.odds?.['X']?.value}-${match.odds?.['2']?.value}`} 
-                        match={match} 
-                    />
-                ))}
+                {transformedMatches.slice(0, 8).map((match) => {
+                    // Create a unique key that includes odds values to force re-render when odds change
+                    // Include both value and oddId to catch all changes
+                    const oddsKey = `${match.odds?.['1']?.value || 'null'}-${match.odds?.['X']?.value || 'null'}-${match.odds?.['2']?.value || 'null'}`;
+                    const oddIds = `${match.odds?.['1']?.oddId || ''}-${match.odds?.['X']?.oddId || ''}-${match.odds?.['2']?.oddId || ''}`;
+                    const statusKey = `${match.odds?.['1']?.status || ''}-${match.odds?.['X']?.status || ''}-${match.odds?.['2']?.status || ''}`;
+                    return (
+                        <LiveMatchWithSync 
+                            key={`${match.id}-${oddsKey}-${oddIds}-${statusKey}`} 
+                            match={match} 
+                        />
+                    );
+                })}
             </div>
         </div>
     );

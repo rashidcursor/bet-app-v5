@@ -20,15 +20,15 @@ const InPlayPage = () => {
         dispatch(fetchLiveMatches());
     }, [dispatch]);
 
-    // Set up polling for live matches data (1 second for real-time updates)
+    // Set up polling for live matches data (500ms for ultra real-time updates)
     useEffect(() => {
-        // Start polling every 1 second for live matches (real-time data requirement)
+        // Start polling every 500ms for live matches (ultra real-time data requirement)
         const startPolling = () => {
             pollingIntervalRef.current = setInterval(() => {
                 if (typeof document !== 'undefined' && document.hidden) return; // pause when tab hidden
                 console.log('🔄 In-Play page polling live matches data...');
                 dispatch(silentUpdateLiveMatches());
-            }, 1000); // Poll every 1 second for real-time odds updates
+            }, 500); // Poll every 500ms for ultra real-time odds updates
         };
 
         // Start polling after initial load
@@ -62,7 +62,7 @@ const InPlayPage = () => {
                     pollingIntervalRef.current = setInterval(() => {
                         console.log('🔄 In-Play page resuming live matches polling...');
                         dispatch(silentUpdateLiveMatches());
-                    }, 1000); // 1 second polling interval for real-time updates
+                    }, 500); // 500ms polling interval for ultra real-time updates
                     console.log('▶️ In-Play page polling resumed - tab visible');
                 }
             }

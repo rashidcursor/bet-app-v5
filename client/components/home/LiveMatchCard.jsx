@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,17 @@ import { Tv } from 'lucide-react';
 import { getFotmobLogoByUnibetId } from '@/lib/leagueUtils';
 
 const LiveMatchCard = ({ match }) => {
+    // Track previous odds to detect changes and force re-render
+    const prevOddsRef = useRef(null);
+    
+    useEffect(() => {
+        const currentOdds = match.odds ? JSON.stringify(match.odds) : null;
+        if (prevOddsRef.current !== null && prevOddsRef.current !== currentOdds) {
+            // Odds changed - component will re-render automatically
+            console.log(`🔄 Odds changed for match ${match.id}`);
+        }
+        prevOddsRef.current = currentOdds;
+    }, [match.odds, match.id]);
     const { createBetHandler } = useBetting();
     
     // Create a properly formatted match object for betting (same as BettingTabs.jsx)

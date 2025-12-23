@@ -25,7 +25,7 @@ let cache = {
   isRefreshing: false
 };
 
-const CACHE_DURATION = 2000; // 2 seconds cache to prevent duplicate requests
+const CACHE_DURATION = 500; // 500ms cache to prevent duplicate requests while allowing real-time updates
 
 // Helper function to extract football matches (SAME AS BACKEND - exact copy)
 function extractFootballMatches(data) {
