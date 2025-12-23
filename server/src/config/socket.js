@@ -5,11 +5,36 @@ let io = null;
 export const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: [
-        process.env.CLIENT_URL || "http://localhost:3000",
-        "http://69.197.164.180:3000",
-        "http://69.197.164.180"
-      ],
+      origin: function (origin, callback) {
+        // Allow requests with no origin
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+          process.env.CLIENT_URL || "http://localhost:3000",
+          "http://69.197.164.180:3000",
+          "http://69.197.164.180",
+          // ✅ NEW VERCEL DEPLOYMENT
+          "https://bet-app-v1-qtnw.vercel.app",
+          "https://bet-app-v1-qtnw.vercel.app/",
+          // ✅ WILDCARD FOR ALL VERCEL DEPLOYMENTS
+          /^https:\/\/bet-app-v1.*\.vercel\.app$/,
+          /^https:\/\/betting.*\.vercel\.app$/,
+        ];
+        
+        if (allowedOrigins.some(allowed => {
+          if (typeof allowed === 'string') {
+            return origin === allowed;
+          } else if (allowed instanceof RegExp) {
+            return allowed.test(origin);
+          }
+          return false;
+        })) {
+          callback(null, true);
+        } else {
+          console.warn(`⚠️ Socket.IO CORS blocked origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ["GET", "POST"],
       credentials: true
     }

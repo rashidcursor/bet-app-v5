@@ -3242,7 +3242,7 @@
               "longName": "Macarthur FC"
             },
             "eliminatedTeamId": null,
-            "statusId": 3,
+            "statusId": 6,
             "tournamentStage": "8",
             "status": {
               "utcTime": "2025-12-23T08:15:00.000Z",
@@ -3251,18 +3251,16 @@
                 "secondHalfStarted": "23.12.2025 10:18:42"
               },
               "periodLength": 45,
-              "finished": false,
+              "finished": true,
               "started": true,
               "cancelled": false,
-              "ongoing": true,
+              "awarded": false,
               "scoreStr": "1 - 1",
-              "liveTime": {
-                "short": "59‎’‎",
-                "shortKey": "",
-                "long": "58:38",
-                "longKey": "",
-                "maxTime": 90,
-                "addedTime": 0
+              "reason": {
+                "short": "FT",
+                "shortKey": "fulltime_short",
+                "long": "Full-Time",
+                "longKey": "finished"
               }
             },
             "timeTS": 1766477700000
@@ -4379,37 +4377,36 @@
             "time": "23.12.2025 09:30",
             "home": {
               "id": 165200,
-              "score": 1,
+              "score": 2,
               "name": "Arema",
               "longName": "Arema"
             },
             "away": {
               "id": 165199,
-              "score": 1,
+              "score": 2,
               "name": "Madura United",
               "longName": "Madura United"
             },
             "eliminatedTeamId": null,
-            "statusId": 10,
+            "statusId": 6,
             "tournamentStage": "15",
             "status": {
               "utcTime": "2025-12-23T08:30:00.000Z",
               "halfs": {
-                "firstHalfStarted": "23.12.2025 09:33:12"
+                "firstHalfStarted": "23.12.2025 09:33:12",
+                "secondHalfStarted": "23.12.2025 10:33:29"
               },
               "periodLength": 45,
-              "finished": false,
+              "finished": true,
               "started": true,
               "cancelled": false,
-              "ongoing": true,
-              "scoreStr": "1 - 1",
-              "liveTime": {
-                "short": "HT",
-                "shortKey": "halftime_short",
-                "long": "Half-Time",
-                "longKey": "pause_match",
-                "maxTime": 45,
-                "addedTime": 0
+              "awarded": false,
+              "scoreStr": "2 - 2",
+              "reason": {
+                "short": "FT",
+                "shortKey": "fulltime_short",
+                "long": "Full-Time",
+                "longKey": "finished"
               }
             },
             "timeTS": 1766478600000
