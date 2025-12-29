@@ -3432,12 +3432,12 @@
             },
             "away": {
               "id": 1730344,
-              "score": 4,
+              "score": 5,
               "name": "SDS FC",
               "longName": "SDS FC"
             },
             "eliminatedTeamId": null,
-            "statusId": 3,
+            "statusId": 6,
             "tournamentStage": "10",
             "status": {
               "utcTime": "2025-12-29T18:05:00.000Z",
@@ -3446,18 +3446,16 @@
                 "secondHalfStarted": "29.12.2025 19:32:17"
               },
               "periodLength": 15,
-              "finished": false,
+              "finished": true,
               "started": true,
               "cancelled": false,
-              "ongoing": true,
-              "scoreStr": "4 - 4",
-              "liveTime": {
-                "short": "32‎’‎",
-                "shortKey": "",
-                "long": "31:13",
-                "longKey": "",
-                "maxTime": 30,
-                "addedTime": 0
+              "awarded": false,
+              "scoreStr": "4 - 5",
+              "reason": {
+                "short": "FT",
+                "shortKey": "fulltime_short",
+                "long": "Full-Time",
+                "longKey": "finished"
               }
             },
             "timeTS": 1767031500000
@@ -3491,7 +3489,7 @@
               "longName": "Ipswich Town"
             },
             "eliminatedTeamId": null,
-            "statusId": 2,
+            "statusId": 10,
             "tournamentStage": "24",
             "status": {
               "utcTime": "2025-12-29T18:00:00.000Z",
@@ -3505,10 +3503,10 @@
               "ongoing": true,
               "scoreStr": "0 - 0",
               "liveTime": {
-                "short": "48‎’‎",
-                "shortKey": "",
-                "long": "47:09",
-                "longKey": "",
+                "short": "HT",
+                "shortKey": "halftime_short",
+                "long": "Half-Time",
+                "longKey": "pause_match",
                 "maxTime": 45,
                 "addedTime": 0
               }
@@ -3741,9 +3739,9 @@
               "ongoing": true,
               "scoreStr": "0 - 0",
               "liveTime": {
-                "short": "18‎’‎",
+                "short": "26‎’‎",
                 "shortKey": "",
-                "long": "17:52",
+                "long": "25:52",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -4018,9 +4016,9 @@
               "ongoing": true,
               "scoreStr": "1 - 2",
               "liveTime": {
-                "short": "57‎’‎",
+                "short": "65‎’‎",
                 "shortKey": "",
-                "long": "56:55",
+                "long": "64:55",
                 "longKey": "",
                 "maxTime": 90,
                 "addedTime": 0
@@ -4060,9 +4058,9 @@
               "ongoing": true,
               "scoreStr": "0 - 0",
               "liveTime": {
-                "short": "57‎’‎",
+                "short": "65‎’‎",
                 "shortKey": "",
-                "long": "56:55",
+                "long": "64:55",
                 "longKey": "",
                 "maxTime": 90,
                 "addedTime": 0

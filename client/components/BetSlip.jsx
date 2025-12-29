@@ -81,19 +81,11 @@ const BetSlip = () => {
 
     // Effect for odds change monitoring during pending state
     useEffect(() => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:83',message:'Odds change monitor effect',data:{pendingPlaceBet,placeBetDisabled,willRestartTimer:pendingPlaceBet&&placeBetDisabled},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
-        
         if (pendingPlaceBet && placeBetDisabled) {
-            // Odds changed during validation - just restart timer silently
-            // User wants seamless experience: just ensure we wait for stability then send latest
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:93',message:'RESTARTING 7s TIMER - odds changed during validation',data:{oldCountdown:countdown,newCountdown:7},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
-            
-            setCountdown(7); 
+            // Odds changed during validation - STOP bet placement and wait for user decision
+            console.log('⏸️ Bet placement stopped - odds changed during validation');
+            setPendingPlaceBet(false);
+            setCountdown(0);
         }
     }, [placeBetDisabled, pendingPlaceBet]);
 
@@ -211,10 +203,6 @@ const BetSlip = () => {
 
 
     const handlePlaceBet = async () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:204',message:'handlePlaceBet called',data:{isAuthenticated,userRole:user?.role,betsCount:bets.length,currentOdds:bets.map(b=>({id:b.id,odds:b.odds,previousOdds:b.previousOdds}))},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        
         // Check if user is authenticated
         if (!isAuthenticated) {
             // Don't make API request, just return - the login dialog will be shown
@@ -230,24 +218,11 @@ const BetSlip = () => {
         // Start 7-second validation
         setPendingPlaceBet(true);
         setCountdown(7);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:224',message:'7-second validation started',data:{pendingPlaceBet:true,countdown:7,placeBetDisabled},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        // setStabilityWait(false); // Removed explicit stability wait logic
     };
 
     const executePlaceBet = async () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:238',message:'executePlaceBet called',data:{countdown,pendingPlaceBet,placeBetDisabled,betsBeforePlacing:bets.map(b=>({id:b.id,odds:b.odds,previousOdds:b.previousOdds,oddId:b.oddId}))},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
-        
         setIsPlacingBet(true);
         try {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BetSlip.jsx:246',message:'About to dispatch placeBetThunk',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'D'})}).catch(()=>{});
-            // #endregion
-            
             const resultAction = await dispatch(placeBetThunk());
             if (placeBetThunk.fulfilled.match(resultAction)) {
                 toast.success('Bet placed successfully!');
