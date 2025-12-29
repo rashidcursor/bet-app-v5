@@ -113,19 +113,11 @@ export const useLiveOddsSync = (matchId) => {
           // Synthetic oddIds follow the pattern: matchId_selection_number
           const isSyntheticOddId = bet.oddId.includes('_') && bet.oddId.startsWith(matchId.toString());
           
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:110',message:'Bet oddId not found in oddsMap',data:{betId:bet.id,oddId:bet.oddId,isSyntheticOddId,currentOdds:bet.odds,selection:bet.selection,matchId},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-          
           if (isSyntheticOddId) {
             // For synthetic oddIds, try to find the real odds by matching the bet selection
             // Extract selection type from synthetic ID: "1022760294_away_2" -> "away"
             const parts = bet.oddId.split('_');
             const selectionType = parts[parts.length - 2]; // "home", "draw", "away"
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:120',message:'Attempting to find real odds',data:{betId:bet.id,syntheticOddId:bet.oddId,selectionType,matchId,hasBetOffers:!!matchBetOffers,betOffersKeys:matchBetOffers?Object.keys(matchBetOffers):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-            // #endregion
             
             // Map selection type to possible outcome labels in the API
             const selectionMap = {
@@ -144,10 +136,6 @@ export const useLiveOddsSync = (matchId) => {
             if (liveMatch.mainBetOffer && liveMatch.mainBetOffer.outcomes) {
               const targetLabel = selectionType === 'home' ? '1' : selectionType === 'draw' ? 'x' : '2';
               
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:145',message:'Checking mainBetOffer',data:{hasMainBetOffer:true,outcomesCount:liveMatch.mainBetOffer.outcomes.length,targetLabel,selectionType},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-              // #endregion
-              
               for (const outcome of liveMatch.mainBetOffer.outcomes) {
                 const outcomeLabel = outcome.label?.toString().toLowerCase();
                 if (outcomeLabel === targetLabel || 
@@ -163,10 +151,6 @@ export const useLiveOddsSync = (matchId) => {
                     odds: oddsValue,
                     status: outcome.status || 'OPEN'
                   };
-                  
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:165',message:'MATCH FOUND in mainBetOffer (LATEST ODDS)!',data:{outcomeLabel,targetLabel,foundOdds:foundRealOdds.odds,rawOdds:outcome.odds,currentBetOdds:bet.odds,oddsDifference:Math.abs(foundRealOdds.odds-bet.odds)},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-                  // #endregion
                   break;
                 }
               }
@@ -191,10 +175,6 @@ export const useLiveOddsSync = (matchId) => {
                     odds: oddsValue,
                     status: outcome.status || 'OPEN'
                   };
-                  
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:189',message:'MATCH FOUND in liveOdds!',data:{outcomeLabel,targetLabel,foundOdds:foundRealOdds.odds,currentBetOdds:bet.odds},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-                  // #endregion
                   break;
                 }
               }
@@ -203,10 +183,6 @@ export const useLiveOddsSync = (matchId) => {
             // Priority 2: Fallback to betOffers if liveMatch.odds not available
             if (!foundRealOdds) {
               const betOffers = matchBetOffers[matchId];
-              
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:160',message:'BetOffers lookup (fallback)',data:{matchId,hasBetOffers:!!betOffers,betOffersCount:betOffers?betOffers.length:0,possibleLabels},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-              // #endregion
               
               if (betOffers && Array.isArray(betOffers)) {
                 for (const offer of betOffers) {
@@ -221,10 +197,6 @@ export const useLiveOddsSync = (matchId) => {
                             parseFloat(outcome.odds),
                           status: outcome.status || 'OPEN'
                         };
-                        
-                        // #region agent log
-                        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:180',message:'MATCH FOUND in betOffers (fallback)!',data:{outcomeLabel,matchedLabel:possibleLabels,foundOdds:foundRealOdds.odds,outcomeId:foundRealOdds.oddId},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-                        // #endregion
                         break;
                       }
                     }
@@ -234,16 +206,8 @@ export const useLiveOddsSync = (matchId) => {
               }
             }
             
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:175',message:'After betOffers search',data:{foundRealOdds:!!foundRealOdds,foundOddsValue:foundRealOdds?.odds,currentBetOdds:bet.odds,oddsDifference:foundRealOdds?Math.abs(foundRealOdds.odds-bet.odds):null},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-            // #endregion
-            
             if (foundRealOdds && Math.abs(foundRealOdds.odds - bet.odds) > 0.001) {
               // Found real odds that differ from current bet odds - update it!
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:185',message:'FOUND REAL ODDS for synthetic oddId - UPDATING!',data:{betId:bet.id,syntheticOddId:bet.oddId,realOddId:foundRealOdds.oddId,oldOdds:bet.odds,newOdds:foundRealOdds.odds},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-              // #endregion
-              
               console.log(`🔄 [useLiveOddsSync] Updating synthetic oddId bet ${bet.id}: ${bet.odds} → ${foundRealOdds.odds}`);
               dispatch(updateBetOdds({
                 matchId: bet.match.id,
@@ -255,10 +219,6 @@ export const useLiveOddsSync = (matchId) => {
             
             // Don't remove bets with synthetic oddIds - they're valid, just using fallback IDs
             console.log(`✅ [useLiveOddsSync] Keeping bet ${bet.id} - using synthetic oddId (valid fallback)`);
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:202',message:'No real odds found for synthetic oddId - keeping as is',data:{betId:bet.id,oddId:bet.oddId,currentOdds:bet.odds,oddsMapSize:oddsMap.size,foundRealOdds:!!foundRealOdds,reason:foundRealOdds?'odds match':'no match found'},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'F'})}).catch(()=>{});
-            // #endregion
             return;
           }
           
@@ -279,16 +239,8 @@ export const useLiveOddsSync = (matchId) => {
         const newOdds = outcomeData.odds;
         const currentOdds = bet.odds;
         
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:140',message:'Checking odds change',data:{betId:bet.id,oddId:bet.oddId,currentOdds,newOdds,difference:Math.abs(newOdds-currentOdds),willUpdate:Math.abs(newOdds-currentOdds)>0.001},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        
         if (Math.abs(newOdds - currentOdds) > 0.001) {
           console.log(`🔄 [useLiveOddsSync] Syncing odds for bet ${bet.id}: ${currentOdds} → ${newOdds}`);
-          
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/36e9cd0b-a351-407e-8f20-cf67918d6e8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useLiveOddsSync.js:149',message:'DISPATCHING updateBetOdds',data:{betId:bet.id,oddId:bet.oddId,matchId:bet.match.id,currentOdds,newOdds},timestamp:Date.now(),sessionId:'debug-session',runId:'home-page-bet',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
           
           dispatch(updateBetOdds({
             matchId: bet.match.id,
