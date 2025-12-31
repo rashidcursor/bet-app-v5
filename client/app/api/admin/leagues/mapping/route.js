@@ -54,6 +54,12 @@ export async function GET(request) {
     
     console.log(`🔍 [NEXT API] Fetching league mapping from backend: ${url}`);
     console.log(`🔍 [NEXT API] Backend URL resolved: ${backendUrl}`);
+    console.log(`🔍 [NEXT API] Environment check:`, {
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_API_URL,
+      hasApiUrl: !!process.env.NEXT_PUBLIC_API_URL,
+      baseUrl: process.env.NEXT_PUBLIC_BASE_API_URL,
+      apiUrl: process.env.NEXT_PUBLIC_API_URL
+    });
     
     const response = await fetch(url, {
       headers: {
@@ -63,21 +69,33 @@ export async function GET(request) {
       signal: AbortSignal.timeout(10000) // ✅ FIX: Increased to 10 seconds for Render
     });
     
+    console.log(`📡 [NEXT API] Backend response status: ${response.status} ${response.statusText}`);
+    
     if (!response.ok) {
       // ✅ DEBUG: Log more details about the error
       const errorText = await response.text().catch(() => 'Unable to read error response');
-      console.error(`❌ [NEXT API] Backend API error ${response.status}:`, errorText);
+      console.error(`❌ [NEXT API] Backend API error ${response.status}:`, errorText.substring(0, 500));
       throw new Error(`Backend API returned ${response.status}: ${errorText.substring(0, 200)}`);
     }
     
     const data = await response.json();
+    
+    console.log(`📦 [NEXT API] Raw backend response:`, {
+      success: data.success,
+      hasData: !!data.data,
+      dataKeys: data.data ? Object.keys(data.data) : [],
+      totalLeagues: data.data?.totalLeagues,
+      allowedLeagueIdsLength: data.data?.allowedLeagueIds?.length,
+      allowedLeagueIdsType: Array.isArray(data.data?.allowedLeagueIds) ? 'array' : typeof data.data?.allowedLeagueIds
+    });
     
     // ✅ FIX: Validate response structure
     if (!data.success || !data.data) {
       console.error('❌ [NEXT API] Invalid response structure:', {
         success: data.success,
         hasData: !!data.data,
-        dataKeys: data.data ? Object.keys(data.data) : []
+        dataKeys: data.data ? Object.keys(data.data) : [],
+        fullResponse: JSON.stringify(data).substring(0, 500)
       });
       throw new Error('Backend returned invalid response structure');
     }
@@ -86,13 +104,16 @@ export async function GET(request) {
     console.log(`📊 [NEXT API] Mapping data:`, {
       totalLeagues: data.data?.totalLeagues || 0,
       mappingCount: Object.keys(data.data?.unibetToFotmobMapping || {}).length,
-      allowedLeagueIdsCount: data.data?.allowedLeagueIds?.length || 0
+      allowedLeagueIdsCount: data.data?.allowedLeagueIds?.length || 0,
+      sampleLeagueIds: data.data?.allowedLeagueIds?.slice(0, 5) || []
     });
     
     // ✅ FIX: Validate that we actually have league IDs
     if (!data.data.allowedLeagueIds || data.data.allowedLeagueIds.length === 0) {
-      console.warn('⚠️ [NEXT API] Backend returned empty allowedLeagueIds array');
-      // Still cache it, but log warning
+      console.error('❌ [NEXT API] CRITICAL: Backend returned empty allowedLeagueIds array!');
+      console.error('❌ [NEXT API] This will cause all matches to be filtered out in STRICT MODE');
+      console.error('❌ [NEXT API] Full data structure:', JSON.stringify(data.data).substring(0, 1000));
+      // Still cache it, but log as error
     }
     
     // Update cache
