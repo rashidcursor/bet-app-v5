@@ -18,10 +18,29 @@ async function fetchLeagueMappingFromBackend() {
     let url;
     if (isServerSide) {
       // Server-side: Call backend directly (bypass Next.js API route)
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 
-                         process.env.API_URL || 
-                         'http://localhost:4000';
+      // ✅ FIX: Use NEXT_PUBLIC_BASE_API_URL first (without /api)
+      let backendUrl = process.env.NEXT_PUBLIC_BASE_API_URL;
+      
+      // If NEXT_PUBLIC_BASE_API_URL not set, try NEXT_PUBLIC_API_URL and remove /api suffix
+      if (!backendUrl && process.env.NEXT_PUBLIC_API_URL) {
+        backendUrl = process.env.NEXT_PUBLIC_API_URL;
+        // Remove /api suffix if present
+        if (backendUrl.endsWith('/api')) {
+          backendUrl = backendUrl.replace(/\/api$/, '');
+        }
+      }
+      
+      // Fallback to default
+      if (!backendUrl) {
+        backendUrl = process.env.API_URL || 'http://localhost:4000';
+      }
+      
+      // Ensure no trailing slash
+      backendUrl = backendUrl.replace(/\/$/, '');
+      
       url = `${backendUrl}/api/admin/leagues/mapping`;
+      
+      console.log(`🔍 [leagueFilter] Server-side backend URL: ${url}`);
     } else {
       // Client-side: Use Next.js API route (handles CORS)
       url = '/api/admin/leagues/mapping';

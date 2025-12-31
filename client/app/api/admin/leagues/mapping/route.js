@@ -111,14 +111,24 @@ export async function GET(request) {
       totalLeagues: data.data?.totalLeagues || 0,
       mappingCount: Object.keys(data.data?.unibetToFotmobMapping || {}).length,
       allowedLeagueIdsCount: data.data?.allowedLeagueIds?.length || 0,
-      sampleLeagueIds: data.data?.allowedLeagueIds?.slice(0, 5) || []
+      allowedLeagueIdsType: Array.isArray(data.data?.allowedLeagueIds) ? 'array' : typeof data.data?.allowedLeagueIds,
+      sampleLeagueIds: data.data?.allowedLeagueIds?.slice(0, 5) || [],
+      fullDataKeys: data.data ? Object.keys(data.data) : []
     });
     
     // ✅ FIX: Validate that we actually have league IDs
     if (!data.data.allowedLeagueIds || data.data.allowedLeagueIds.length === 0) {
       console.error('❌ [NEXT API] CRITICAL: Backend returned empty allowedLeagueIds array!');
       console.error('❌ [NEXT API] This will cause all matches to be filtered out in STRICT MODE');
-      console.error('❌ [NEXT API] Full data structure:', JSON.stringify(data.data).substring(0, 1000));
+      console.error('❌ [NEXT API] Response structure:', {
+        success: data.success,
+        hasData: !!data.data,
+        dataKeys: data.data ? Object.keys(data.data) : [],
+        allowedLeagueIds: data.data?.allowedLeagueIds,
+        allowedLeagueIdsType: typeof data.data?.allowedLeagueIds,
+        isArray: Array.isArray(data.data?.allowedLeagueIds),
+        fullResponse: JSON.stringify(data).substring(0, 2000)
+      });
       // Still cache it, but log as error
     }
     
