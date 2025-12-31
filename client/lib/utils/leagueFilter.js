@@ -44,11 +44,20 @@ async function fetchLeagueMappingFromBackend() {
       const { allowedLeagueIds, allowedLeagueNames, totalLeagues } = result.data;
       
       console.log(`✅ [NEXT API] Loaded ${totalLeagues} allowed leagues from backend`);
+      console.log(`✅ [NEXT API] Allowed league IDs (first 10):`, allowedLeagueIds?.slice(0, 10));
+      console.log(`✅ [NEXT API] Allowed league IDs type:`, typeof allowedLeagueIds?.[0]);
+      
+      // ✅ DEBUG: Ensure allowedLeagueIds is an array and convert all to strings
+      const leagueIdsArray = Array.isArray(allowedLeagueIds) ? allowedLeagueIds : [];
+      const leagueIdsSet = new Set(leagueIdsArray.map(id => String(id))); // Convert all to strings
+      
+      console.log(`✅ [NEXT API] Converted to Set: ${leagueIdsSet.size} league IDs`);
+      console.log(`✅ [NEXT API] Sample Set values:`, Array.from(leagueIdsSet).slice(0, 10));
       
       return {
-        allowedLeagueNames: new Set(allowedLeagueNames),
-        allowedLeagueIds: new Set(allowedLeagueIds),
-        totalLeagues
+        allowedLeagueNames: new Set(allowedLeagueNames || []),
+        allowedLeagueIds: leagueIdsSet,
+        totalLeagues: totalLeagues || 0
       };
     } else {
       throw new Error('Invalid API response format');
@@ -121,15 +130,44 @@ export async function filterMatchesByAllowedLeagues(matches) {
 
   const { allowedLeagueIds } = await loadLeagueMapping();
   
+  // ✅ DEBUG: Log filtering details
+  console.log(`🔍 [NEXT API] Filtering ${matches.length} matches with ${allowedLeagueIds.size} allowed league IDs`);
+  console.log(`🔍 [NEXT API] Sample allowed league IDs:`, Array.from(allowedLeagueIds).slice(0, 10));
+  
+  // Get sample match groupIds for debugging
+  const sampleGroupIds = matches.slice(0, 5).map(m => m.groupId).filter(Boolean);
+  console.log(`🔍 [NEXT API] Sample match groupIds:`, sampleGroupIds);
+  
   const filteredMatches = matches.filter(match => {
     // ONLY use groupId field (Unibet league ID) - STRICT METHOD (same as backend)
     const hasGroupId = !!match.groupId;
-    const isAllowed = hasGroupId && allowedLeagueIds.has(String(match.groupId));
+    if (!hasGroupId) {
+      return false;
+    }
     
-    return hasGroupId && isAllowed;
+    const groupIdStr = String(match.groupId);
+    const isAllowed = allowedLeagueIds.has(groupIdStr);
+    
+    // ✅ DEBUG: Log first few matches for debugging
+    if (matches.indexOf(match) < 3) {
+      console.log(`🔍 [NEXT API] Match ${match.id} (groupId: ${groupIdStr}): ${isAllowed ? '✅ ALLOWED' : '❌ FILTERED OUT'}`);
+    }
+    
+    return isAllowed;
   });
 
   console.log(`🔍 [NEXT API] League filtering: ${matches.length} total matches → ${filteredMatches.length} allowed matches`);
+  
+  // ✅ DEBUG: If no matches passed, log why
+  if (filteredMatches.length === 0 && matches.length > 0) {
+    const uniqueGroupIds = [...new Set(matches.map(m => m.groupId).filter(Boolean))];
+    console.warn(`⚠️ [NEXT API] No matches passed filtering!`);
+    console.warn(`⚠️ [NEXT API] Unique groupIds in matches:`, uniqueGroupIds.slice(0, 10));
+    console.warn(`⚠️ [NEXT API] Allowed league IDs:`, Array.from(allowedLeagueIds).slice(0, 10));
+    console.warn(`⚠️ [NEXT API] Checking if any match groupId exists in allowed list...`);
+    const foundMatches = matches.filter(m => allowedLeagueIds.has(String(m.groupId)));
+    console.warn(`⚠️ [NEXT API] Matches with matching groupIds: ${foundMatches.length}`);
+  }
   
   return filteredMatches;
 }
