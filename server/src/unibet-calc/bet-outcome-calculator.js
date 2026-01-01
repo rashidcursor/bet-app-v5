@@ -8214,8 +8214,69 @@ class BetOutcomeCalculator {
             // Apply rate limiting before next API call
             await this.applyRateLimit();
 
-            // Step 5: Calculate bet outcome
-            console.log(`\n🔍 STEP 5: Calculating bet outcome...`);
+            // Step 5: Verify match is actually finished before calculating outcome
+            console.log(`\n🔍 STEP 5: Verifying match is finished before calculating outcome...`);
+            
+            // Check if match is finished using multiple methods
+            let isMatchFinished = false;
+            let finishedReason = '';
+            
+            // Method 1: Check general.finished
+            if (matchDetails.general?.finished === true) {
+                isMatchFinished = true;
+                finishedReason = 'general.finished = true';
+            }
+            // Method 2: Check header.status.finished
+            else if (matchDetails.header?.status?.finished === true) {
+                isMatchFinished = true;
+                finishedReason = 'header.status.finished = true';
+            }
+            // Method 3: Check status reason (FT, Full-Time, etc.)
+            else if (matchDetails.header?.status?.reason?.short) {
+                const statusShort = matchDetails.header.status.reason.short.toLowerCase();
+                if (statusShort.includes('ft') || statusShort.includes('full') || 
+                    statusShort.includes('finished') || statusShort.includes('final')) {
+                    isMatchFinished = true;
+                    finishedReason = `Status reason: "${matchDetails.header.status.reason.short}"`;
+                }
+            }
+            
+            console.log(`   - Match finished check: ${isMatchFinished ? 'YES ✅' : 'NO ❌'}`);
+            console.log(`   - Reason: ${finishedReason || 'Match still in progress'}`);
+            console.log(`   - General finished: ${matchDetails.general?.finished || false}`);
+            console.log(`   - Header status finished: ${matchDetails.header?.status?.finished || false}`);
+            console.log(`   - Status reason: ${matchDetails.header?.status?.reason?.short || 'N/A'}`);
+            
+            if (!isMatchFinished) {
+                console.log(`⏳ Match is NOT finished yet - keeping bet as pending`);
+                console.log(`   - Match status: ${matchDetails.general?.finished ? 'Finished' : matchDetails.general?.started ? 'In Progress' : 'Not Started'}`);
+                console.log(`   - Header status: ${matchDetails.header?.status?.finished ? 'Finished' : 'Not Finished'}`);
+                
+                // Update last check time
+                try {
+                    await this.db.collection('bets').updateOne(
+                        { _id: bet._id },
+                        { $set: { lastFotmobCheckTime: new Date() } }
+                    );
+                } catch (updateError) {
+                    console.warn(`⚠️ Failed to update lastFotmobCheckTime: ${updateError.message}`);
+                }
+                
+                return {
+                    success: true,
+                    outcome: { 
+                        status: 'pending', 
+                        reason: `Match not finished yet - ${finishedReason || 'Match still in progress'}` 
+                    },
+                    skipped: true,
+                    reason: 'Match still in progress - will retry later'
+                };
+            }
+            
+            console.log(`✅ Match is finished - proceeding with outcome calculation`);
+
+            // Step 6: Calculate bet outcome (only if match is finished)
+            console.log(`\n🔍 STEP 6: Calculating bet outcome...`);
             const outcome = await this.calculateBetOutcome(bet, matchDetails);
 
             console.log(`📊 Outcome calculation:`);
@@ -8224,9 +8285,9 @@ class BetOutcomeCalculator {
             console.log(`   - Final score: ${outcome.finalScore || 'N/A'}`);
             console.log(`   - Reason: ${outcome.reason}`);
 
-            // Step 6: Update bet in database (only if updateDatabase is true)
+            // Step 7: Update bet in database (only if updateDatabase is true)
             if (updateDatabase) {
-            console.log(`\n🔍 STEP 6: Updating bet in database...`);
+            console.log(`\n🔍 STEP 7: Updating bet in database...`);
             console.log(`   - Bet ID: ${bet._originalBet?.id} (type: ${typeof bet._id})`);
             
             // Import Bet model
