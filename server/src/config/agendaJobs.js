@@ -123,22 +123,29 @@ const cancelBetProcessingJob = async () => {
 const scheduleFotmobCacheJob = async () => {
   if (!fotmobCacheJobScheduled) {
     try {
-      // Schedule at 11:00 PM Pakistan Time (UTC+5) = 6:00 PM UTC (18:00 UTC)
+      // Schedule at 1:30 PM Pakistan Time (13:30 PKT)
       // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
-      // TESTING: Schedule at 7:20 PM Pakistan Time (LOCAL)
-      // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
-      // NOTE: Agenda.js interprets cron in SERVER'S LOCAL TIMEZONE (PKT = UTC+5)
-      // "20 19 * * *" = 7:20 PM PKT (LOCAL) = 2:20 PM UTC
-      // TODO: Change back to "0 23 * * *" for production (11:00 PM PKT LOCAL TIME)
+      // NOTE: Agenda.js interprets cron in SERVER'S LOCAL TIMEZONE
+      // - On local dev (PKT): "30 13 * * *" = 1:30 PM PKT
+      // - On Render (UTC): "30 8 * * *" = 8:30 UTC = 1:30 PM PKT
+      const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
+      const cronExpression = isUTC ? "30 8 * * *" : "30 13 * * *";
+      
       console.log('[Agenda] ========================================');
       console.log('[Agenda] Scheduling FotMob cache refresh job...');
-      console.log('[Agenda] ⚠️ TESTING MODE: Time: 7:20 PM PKT (LOCAL TIME)');
-      console.log('[Agenda] Cron: "20 19 * * *"');
-      console.log('[Agenda] NOTE: Cron uses server local timezone (PKT)');
+      console.log('[Agenda] Target Time: 13:30 PM (1:30 PM) PKT');
+      console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
+      console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
+      if (isUTC) {
+        console.log('[Agenda] Using UTC cron: "30 8 * * *" = 8:30 UTC = 1:30 PM PKT');
+      } else {
+        console.log('[Agenda] Using PKT cron: "30 13 * * *" = 1:30 PM PKT');
+      }
       console.log('[Agenda] ========================================');
       
       // ✅ FIX: Add timeout to prevent hanging
-      const jobPromise = agenda.every("20 19 * * *", "refreshFotmobMultidayCache");
+      const jobPromise = agenda.every(cronExpression, "refreshFotmobMultidayCache");
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Timeout: agenda.every() took too long (10s)')), 10000)
       );
@@ -184,26 +191,26 @@ const scheduleLeagueMappingJob = async () => {
   
   if (!leagueMappingJobScheduled) {
     try {
-      // Schedule at 18:00 PM (6:00 PM) Pakistan Time
+      // Schedule at 1:30 PM (13:30) Pakistan Time
       // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
       // IMPORTANT: Agenda.js uses server's LOCAL timezone for cron
-      // - On local dev (PKT): "0 18 * * *" = 6:00 PM PKT
-      // - On Render (UTC): "0 13 * * *" = 13:00 UTC = 6:00 PM PKT
+      // - On local dev (PKT): "30 13 * * *" = 1:30 PM PKT
+      // - On Render (UTC): "30 8 * * *" = 8:30 UTC = 1:30 PM PKT
       // Since we want same time on both, we need to detect timezone
       const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
-      // ✅ TESTING: Schedule job for 6:50 PM PKT (18:50 PKT) = 13:50 UTC
-      const cronExpression = isUTC ? "50 13 * * *" : "50 18 * * *"; // UTC: 13:50 = 6:50 PM PKT, PKT: 18:50 = 6:50 PM
+      // Schedule job for 1:30 PM PKT (13:30 PKT) = 8:30 UTC
+      const cronExpression = isUTC ? "30 8 * * *" : "30 13 * * *"; // UTC: 8:30 = 1:30 PM PKT, PKT: 13:30 = 1:30 PM PKT
       
       console.log('[Agenda] ========================================');
       console.log('[Agenda] Scheduling League Mapping auto-update job...');
-      console.log('[Agenda] Target Time: 18:50 PM (6:50 PM) PKT (TESTING)');
+      console.log('[Agenda] Target Time: 13:30 PM (1:30 PM) PKT');
       console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
       console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
       if (isUTC) {
-        console.log('[Agenda] Using UTC cron: "50 13 * * *" = 13:50 UTC = 6:50 PM PKT');
+        console.log('[Agenda] Using UTC cron: "30 8 * * *" = 8:30 UTC = 1:30 PM PKT');
       } else {
-        console.log('[Agenda] Using PKT cron: "50 18 * * *" = 6:50 PM PKT');
+        console.log('[Agenda] Using PKT cron: "30 13 * * *" = 1:30 PM PKT');
       }
       console.log('[Agenda] ========================================');
       
