@@ -29,6 +29,16 @@ let cache = {
 
 const CACHE_DURATION = 0; // No cache - always fetch fresh data for real-time updates
 
+// Kambi API cache to avoid rate limits and provide fallback
+let kambiCache = {
+  data: null,
+  lastUpdated: null,
+  isFetching: false
+};
+
+const KAMBI_CACHE_DURATION = 5000; // Use cached data for 5 seconds to avoid rate limits
+const KAMBI_RETRY_DELAY = 2000; // Wait 2 seconds before retry on 410
+
 // Helper function to extract football matches (SAME AS BACKEND - exact copy)
 function extractFootballMatches(data) {
   const allMatches = [];
@@ -177,10 +187,35 @@ function extractFootballMatches(data) {
 }
 
 // Function to fetch live data from Kambi API (score, matchClock, statistics)
-async function fetchKambiLiveData() {
+async function fetchKambiLiveData(retryCount = 0) {
   try {
+    // ✅ Check cache first (avoid hitting rate limits)
+    const now = Date.now();
+    if (kambiCache.data && kambiCache.lastUpdated && 
+        (now - kambiCache.lastUpdated) < KAMBI_CACHE_DURATION) {
+      console.log('📦 [NEXT API] Using cached Kambi data (to avoid rate limits)');
+      return kambiCache.data;
+    }
+
+    // ✅ Prevent multiple simultaneous requests
+    if (kambiCache.isFetching) {
+      console.log('⏳ [NEXT API] Kambi fetch already in progress, waiting...');
+      // Wait for current fetch to complete (max 3 seconds)
+      const maxWait = 3000;
+      const startWait = Date.now();
+      while (kambiCache.isFetching && (Date.now() - startWait) < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      // If cache was updated, return it
+      if (kambiCache.data && kambiCache.lastUpdated) {
+        return kambiCache.data;
+      }
+    }
+
+    kambiCache.isFetching = true;
+
     const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-    console.log('🎲 [NEXT API] Fetching live data from Kambi API...');
+    console.log(`🎲 [NEXT API] Fetching live data from Kambi API... (attempt ${retryCount + 1})`);
     
     // ✅ INCREASE TIMEOUT for deployment (3 seconds instead of 1) - better compatibility
     const controller = new AbortController();
@@ -194,12 +229,32 @@ async function fetchKambiLiveData() {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
+      // ✅ Special handling for 410 (Gone) - retry once after delay
+      if (response.status === 410 && retryCount === 0) {
+        console.warn(`⚠️ [NEXT API] Kambi API returned 410, retrying after ${KAMBI_RETRY_DELAY}ms...`);
+        kambiCache.isFetching = false;
+        await new Promise(resolve => setTimeout(resolve, KAMBI_RETRY_DELAY));
+        return fetchKambiLiveData(1); // Retry once
+      }
+      
+      // ✅ For 410 on retry, or other errors, use cached data if available
+      if (kambiCache.data && kambiCache.lastUpdated) {
+        console.warn(`⚠️ [NEXT API] Kambi API returned ${response.status}, using cached data`);
+        kambiCache.isFetching = false;
+        return kambiCache.data;
+      }
+      
       throw new Error(`Kambi API returned ${response.status}`);
     }
     
     const data = await response.json();
     
     if (data && data.liveEvents) {
+      // ✅ Update cache on success
+      kambiCache.data = data;
+      kambiCache.lastUpdated = Date.now();
+      kambiCache.isFetching = false;
+      
       console.log(`✅ [NEXT API] Successfully fetched Kambi live data:`, {
         hasLiveEvents: !!data.liveEvents,
         totalEvents: data.liveEvents?.length || 0,
@@ -208,8 +263,17 @@ async function fetchKambiLiveData() {
       return data;
     }
     
+    kambiCache.isFetching = false;
     return null;
   } catch (error) {
+    kambiCache.isFetching = false;
+    
+    // ✅ If fetch failed but we have cached data, use it
+    if (kambiCache.data && kambiCache.lastUpdated) {
+      console.warn(`⚠️ [NEXT API] Kambi fetch failed (${error.message}), using cached data`);
+      return kambiCache.data;
+    }
+    
     // ✅ BETTER ERROR LOGGING for deployment debugging
     console.error('❌ [NEXT API] Failed to fetch Kambi live data:', {
       message: error.message,

@@ -160,9 +160,22 @@ export default function BetManagement() {
   // Filtering
   const filteredBets = useMemo(() => {
     return allBets.filter((bet) => {
-      // Status
-      if (filter !== "all" && bet.status.toLowerCase() !== filter.toLowerCase())
-        return false;
+      // Status - handle both "canceled" and "cancelled" spellings
+      if (filter !== "all") {
+        const betStatus = bet.status.toLowerCase();
+        const filterStatus = filter.toLowerCase();
+        
+        // Special handling for cancelled/canceled
+        if (filterStatus === "cancelled") {
+          if (betStatus !== "canceled" && betStatus !== "cancelled") {
+            return false;
+          }
+        } else {
+          if (betStatus !== filterStatus) {
+            return false;
+          }
+        }
+      }
       // User
       if (selectedUser !== "all" && bet.user !== selectedUser) return false;
       // Bet Type
@@ -890,6 +903,21 @@ export default function BetManagement() {
                                   }
                                 </span>
                               </SelectItem>
+                              <SelectItem
+                                value="cancelled"
+                                className="py-2 px-3 text-gray-600"
+                              >
+                                Cancelled
+                                <span className="ml-2 text-xs bg-gray-50 px-2 py-0.5 rounded-full text-gray-600">
+                                  {
+                                    allBets.filter(
+                                      (bet) =>
+                                        bet.status &&
+                                        (bet.status.toLowerCase() === "canceled" || bet.status.toLowerCase() === "cancelled")
+                                    ).length
+                                  }
+                                </span>
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1254,7 +1282,7 @@ export default function BetManagement() {
                 className="flex items-center gap-1 py-1 px-3"
               >
                 <span>
-                  Status: {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  Status: {filter === "cancelled" ? "Cancelled" : filter.charAt(0).toUpperCase() + filter.slice(1)}
                 </span>
                 <button
                   className="ml-1 cursor-pointer"
@@ -1414,7 +1442,7 @@ export default function BetManagement() {
         )}
 
         {/* Stats Cards - Text left, icon right layout */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mb-8">
           <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="px-5 py-0">
               <div className="flex items-center justify-between">
@@ -1492,6 +1520,28 @@ export default function BetManagement() {
                 </div>
                 <div className="h-12 w-12 rounded-full bg-rose-50 flex items-center justify-center">
                   <ThumbsDown className="h-5 w-5 text-rose-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-none shadow-sm border-0 overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="px-5 py-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1">Cancelled</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {
+                      filteredBets.filter(
+                        (bet) => 
+                          bet.status && 
+                          (bet.status.toLowerCase() === "canceled" || bet.status.toLowerCase() === "cancelled")
+                      ).length
+                    }
+                  </p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center">
+                  <X className="h-5 w-5 text-gray-600" />
                 </div>
               </div>
             </CardContent>
@@ -1746,6 +1796,7 @@ export default function BetManagement() {
                                       <SelectItem value="won">Won</SelectItem>
                                       <SelectItem value="lost">Lost</SelectItem>
                                       <SelectItem value="canceled">Canceled</SelectItem>
+                                      <SelectItem value="cancelled">Cancelled</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

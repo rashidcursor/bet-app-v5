@@ -421,17 +421,24 @@ export class UnibetCalcController {
             
             // Update bet status to cancelled
             // ✅ FIX: Preserve existing result fields and add cancellation reason
+            const existingBet = await Bet.findById(betId);
+            const existingResult = existingBet?.result || {};
+            
             const updatedBet = await Bet.findByIdAndUpdate(
                 betId,
                 {
-                        status: 'cancelled',
-                        payout: 0,
+                    status: 'cancelled',
+                    payout: 0,
                     profit: 0,
                     $set: {
+                        'result.actualOutcome': existingResult.actualOutcome || null,
+                        'result.finalScore': existingResult.finalScore || null,
+                        'result.fotmobMatchId': existingResult.fotmobMatchId || null,
                         'result.status': 'cancelled',
                         'result.payout': 0,
-                        'result.reason': reason || 'Bet cancelled due to validation failure or processing error',
-                        'result.processedAt': new Date()
+                        'result.reason': reason || existingResult.reason || 'Bet cancelled due to validation failure or processing error',
+                        'result.processedAt': new Date(),
+                        'result.similarity': existingResult.similarity || null
                     }
                 },
                 { new: true }

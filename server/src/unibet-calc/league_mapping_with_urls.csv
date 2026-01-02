@@ -12,3 +12,7 @@ Unibet_ID,Unibet_URL,Unibet_Name,Fotmob_URL,Fotmob_Name,Match_Type,Country/Regio
 1000094987,https://www.unibet.com.au/betting/sports/filter/football/england/league_two,League Two,https://www.fotmob.com/leagues/109,League Two,Exact Match,England
 2000054030,https://www.unibet.com.au/betting/sports/filter/football/england/northern_league_premier_division,Northern League Premier Division,https://www.fotmob.com/leagues/8947,Northern Premier Division,Different Name,England
 1000182606,https://www.unibet.com.au/betting/sports/filter/football/australia/a-league,A-League,https://www.fotmob.com/leagues/113,A-League Men,Different Name,Australia
+2000063156,https://www.unibet.com.au/betting/sports/filter/football/bangladesh/premier_league,Premier League,https://www.fotmob.com/leagues/10443,Bangladesh Football League,Different Name,Bangladesh
+1000251950,https://www.unibet.com.au/betting/sports/filter/football/cyprus/1st_division,1st Division,https://www.fotmob.com/leagues/136,Cyprus League,Different Name,Cyprus
+1000253277,https://www.unibet.com.au/betting/sports/filter/football/united_arab_emirates/arabian_gulf_league,Arabian Gulf League,https://www.fotmob.com/leagues/538,Pro League,Different Name,United Arab Emirates
+2000063156,https://www.unibet.com.au/betting/sports/filter/football/bangladesh/premier_league,Premier League,https://www.fotmob.com/leagues/10443/,Bangladesh Football League,Different Name,Bangladesh

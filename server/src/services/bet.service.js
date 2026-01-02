@@ -3013,6 +3013,14 @@ class BetService {
         status: outcomeResult.status,
         payout: 0,
         profit: 0, // Profit = payout - stake
+        result: {
+          actualOutcome: outcomeResult.actualOutcome || null,
+          finalScore: outcomeResult.finalScore || null,
+          fotmobMatchId: outcomeResult.matchId || null,
+          reason: outcomeResult.reason || null,
+          processedAt: new Date(),
+          similarity: outcomeResult.similarity || null
+        }
       };
 
       // Handle different outcome statuses

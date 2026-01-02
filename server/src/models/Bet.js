@@ -83,6 +83,17 @@ const betSchema = new mongoose.Schema(
       required: false, // Optional for backward compatibility
       // This field stores when the bet outcome check should run (2h 5min after match start)
     },
+    lastFotmobCheckTime: {
+      type: Date,
+      required: false,
+      // Tracks when we last checked FotMob API for this bet (for retry logic)
+    },
+    fotmobRetryCount: {
+      type: Number,
+      required: false,
+      default: 0,
+      // Tracks number of FotMob retry attempts after 2hrs 15mins (max 30 = 150 mins)
+    },
     teams: {
       type: String,
       required: false,
