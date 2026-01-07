@@ -15,20 +15,20 @@ Unibet_ID,Unibet_Name,Fotmob_ID,Fotmob_Name,Match_Type,Country/Region
 1000251950,1st Division,136,Cyprus League,Different Name,Cyprus
 1000253277,Arabian Gulf League,538,Pro League,Different Name,United Arab Emirates
 2000063156,Premier League,10443,Bangladesh Football League,Different Name,Bangladesh
-2000051179,"Super League",8985,"Liga Super",Different Name,Malaysia
-1000095042,"Primeira Liga",61,"Liga Portugal",Different Name,Portugal
-1000093393,"Club Friendly Matches",489,"Club Friendlies",Different Name,International
-2000050279,"Ligue 1",516,"Ligue 1",Exact Match,Algeria
-2000095699,"Liga 1",8983,"Super League",Different Name,Indonesia
-2000050214,"Liga Leumit",128,"Leumit League",Different Name,Israel
-2000079607,"Serie C Girone A",147,"Serie C",Different Name,Italy
-2000109034,"Liga MX Femenil (W)",9906,"Liga MX Femenil Clausura",Different Name,Mexico
-1000265213,"Liga 2",185,"Liga Portugal 2",Different Name,Portugal
-1000095677,"Süper Kupa",166,"Super Cup",Different Name,Turkey
-1000385084,"National League South",8944,"National League South",Exact Match,England
-1000095001,"Serie A",55,"Serie A",Exact Match,Italy
-2000054001,"Qatar Stars League",535,"Qatar Stars League",Exact Match,Qatar
-1000095050,"Copa del Rey",138,"Copa del Rey",Exact Match,Spain
-1000245807,"Cup",330,"Cup",Exact Match,Cyprus
-1000094273,"Cup",145,"Cup Final Stage",Different Name,Greece
-1000094818,"Segunda RFEF 3",9138,"Segunda Federación",Different Name,Spain
+2000051179,Super League,8985,Liga Super,Different Name,Malaysia
+1000095042,Primeira Liga,61,Liga Portugal,Different Name,Portugal
+1000093393,Club Friendly Matches,489,Club Friendlies,Different Name,International
+2000050279,Ligue 1,516,Ligue 1,Exact Match,Algeria
+2000095699,Liga 1,8983,Super League,Different Name,Indonesia
+2000050214,Liga Leumit,128,Leumit League,Different Name,Israel
+2000079607,Serie C Girone A,147,Serie C,Different Name,Italy
+2000109034,Liga MX Femenil (W),9906,Liga MX Femenil Clausura,Different Name,Mexico
+1000265213,Liga 2,185,Liga Portugal 2,Different Name,Portugal
+1000095677,Süper Kupa,166,Super Cup,Different Name,Turkey
+1000385084,National League South,8944,National League South,Exact Match,England
+1000095001,Serie A,55,Serie A,Exact Match,Italy
+2000054001,Qatar Stars League,535,Qatar Stars League,Exact Match,Qatar
+1000095050,Copa del Rey,138,Copa del Rey,Exact Match,Spain
+1000245807,Cup,330,Cup,Exact Match,Cyprus
+1000094273,Cup,145,Cup Final Stage,Different Name,Greece
+1000094818,Segunda RFEF 3,9138,Segunda Federación,Different Name,Spain

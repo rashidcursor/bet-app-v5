@@ -331,9 +331,18 @@ const Sidebar = () => {
         const groups = {};
         const searchTerm = search.trim().toLowerCase();
         
+        // ✅ Track seen league IDs to prevent duplicates
+        const seenLeagueIds = new Set();
+        
         if (searchTerm.length > 0) {
             // Search mode: filter accordions based on country name or league name
             popularLeagues.forEach(league => {
+                // ✅ Skip if we've already seen this league ID
+                const leagueId = String(league.id || league.unibetId);
+                if (seenLeagueIds.has(leagueId)) {
+                    return; // Skip duplicate
+                }
+                
                 // Get country name from the league data
                 let countryName = league.country?.name || league.country?.official_name;
                 
@@ -364,12 +373,27 @@ const Sidebar = () => {
                             leagues: []
                         };
                     }
-                    groups[countryId].leagues.push(league);
+                    
+                    // ✅ Only add if not already in this country's leagues
+                    const alreadyInCountry = groups[countryId].leagues.some(l => 
+                        String(l.id || l.unibetId) === leagueId
+                    );
+                    
+                    if (!alreadyInCountry) {
+                        groups[countryId].leagues.push(league);
+                        seenLeagueIds.add(leagueId);
+                    }
                 }
             });
         } else {
             // No search: show all leagues grouped by country
             popularLeagues.forEach(league => {
+                // ✅ Skip if we've already seen this league ID
+                const leagueId = String(league.id || league.unibetId);
+                if (seenLeagueIds.has(leagueId)) {
+                    return; // Skip duplicate
+                }
+                
                 // Get country name from the league data
                 let countryName = league.country?.name || league.country?.official_name;
                 
@@ -392,9 +416,24 @@ const Sidebar = () => {
                         leagues: []
                     };
                 }
-                groups[countryId].leagues.push(league);
+                
+                // ✅ Only add if not already in this country's leagues
+                const alreadyInCountry = groups[countryId].leagues.some(l => 
+                    String(l.id || l.unibetId) === leagueId
+                );
+                
+                if (!alreadyInCountry) {
+                    groups[countryId].leagues.push(league);
+                    seenLeagueIds.add(leagueId);
+                }
             });
         }
+        
+        // ✅ Log duplicate detection stats
+        const totalLeaguesInGroups = Object.values(groups).reduce((sum, g) => sum + g.leagues.length, 0);
+        console.log(`🔍 Grouped ${Object.keys(groups).length} countries with ${totalLeaguesInGroups} unique leagues`);
+        console.log(`🔍 Total leagues in popularLeagues: ${popularLeagues.length}, Unique leagues: ${seenLeagueIds.size}`);
+        
         return groups;
     }, [popularLeagues, search]);
 

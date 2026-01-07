@@ -42,6 +42,12 @@ class LeagueMappingAutoUpdate {
 
             this.existingMappings.clear();
             this.existingFotmobIds.clear();
+            
+            // Track duplicates for reporting
+            const duplicateUnibetIds = new Set();
+            const duplicateFotmobIds = new Set();
+            const seenUnibetIds = new Set();
+            const seenFotmobIds = new Map(); // Map<fotmobId, unibetId> to track which Unibet ID mapped to this Fotmob ID
 
             for (const line of lines) {
                 if (!line.trim() || line.startsWith(',')) continue; // Skip empty lines
@@ -50,17 +56,46 @@ class LeagueMappingAutoUpdate {
                     line.split(',').map(s => s.trim().replace(/"/g, ''));
 
                 if (unibetId && fotmobId) {
-                    this.existingMappings.set(unibetId, {
-                        unibetId,
+                    // Normalize IDs to strings for consistent comparison
+                    const unibetIdStr = String(unibetId);
+                    const fotmobIdStr = String(fotmobId);
+                    
+                    // ✅ Check for duplicate Unibet IDs
+                    if (seenUnibetIds.has(unibetIdStr)) {
+                        duplicateUnibetIds.add(unibetIdStr);
+                        console.warn(`[LeagueMapping] ⚠️ Duplicate Unibet ID found in CSV: ${unibetIdStr} (${unibetName}) - skipping duplicate entry`);
+                        continue; // Skip duplicate, keep first occurrence
+                    }
+                    seenUnibetIds.add(unibetIdStr);
+                    
+                    // ✅ Check for duplicate Fotmob IDs (same Fotmob ID mapped to different Unibet IDs)
+                    if (seenFotmobIds.has(fotmobIdStr)) {
+                        const existingUnibetId = seenFotmobIds.get(fotmobIdStr);
+                        duplicateFotmobIds.add(fotmobIdStr);
+                        console.warn(`[LeagueMapping] ⚠️ Duplicate Fotmob ID found in CSV: ${fotmobIdStr} (${fotmobName}) - already mapped to Unibet ID ${existingUnibetId}, now also mapped to ${unibetIdStr} - keeping first mapping`);
+                        continue; // Skip duplicate, keep first occurrence
+                    }
+                    seenFotmobIds.set(fotmobIdStr, unibetIdStr);
+                    
+                    this.existingMappings.set(unibetIdStr, {
+                        unibetId: unibetIdStr,
                         unibetName,
-                        fotmobId,
+                        fotmobId: fotmobIdStr,
                         fotmobName,
                         matchType,
                         country
                     });
                     // Track Fotmob ID to prevent duplicate mappings
-                    this.existingFotmobIds.add(fotmobId);
+                    this.existingFotmobIds.add(fotmobIdStr);
                 }
+            }
+            
+            // Report duplicates found
+            if (duplicateUnibetIds.size > 0) {
+                console.warn(`[LeagueMapping] ⚠️ Found ${duplicateUnibetIds.size} duplicate Unibet ID(s) in CSV: ${Array.from(duplicateUnibetIds).join(', ')}`);
+            }
+            if (duplicateFotmobIds.size > 0) {
+                console.warn(`[LeagueMapping] ⚠️ Found ${duplicateFotmobIds.size} duplicate Fotmob ID(s) in CSV: ${Array.from(duplicateFotmobIds).join(', ')}`);
             }
 
             console.log(`[LeagueMapping] Loaded ${this.existingMappings.size} existing mappings`);
@@ -630,45 +665,78 @@ class LeagueMappingAutoUpdate {
      * @returns {Object|null} - { id, name } if match found, null otherwise
      */
     async findMatchingFotmobLeagueWithGemini(unibetLeague, fotmobLeagues) {
-        const geminiApiKey = process.env.GEMINI_API_KEY;
+        // Get both API keys
+        const geminiApiKey1 = process.env.GEMINI_API_KEY_1;
+        const geminiApiKey2 = process.env.GEMINI_API_KEY_2;
         
-        if (!geminiApiKey) {
-            console.log(`[LeagueMapping] ⚠️ GEMINI_API_KEY not found, skipping Gemini fallback`);
+        if (!geminiApiKey1 && !geminiApiKey2) {
+            console.log(`[LeagueMapping] ⚠️ No Gemini API keys found (GEMINI_API_KEY_1 or GEMINI_API_KEY_2), skipping Gemini fallback`);
             return null;
         }
 
-        try {
-            console.log(`[LeagueMapping] 🤖 Using Gemini AI fallback for: ${unibetLeague.name} (${unibetLeague.country || 'Unknown country'})`);
+        // Helper function to check if error is quota-related
+        const isQuotaError = (error) => {
+            if (!error) return false;
+            const errorMessage = (error.message || '').toLowerCase();
+            const errorCode = error.code || error.status || error.statusCode;
             
-            // Prepare Unibet league data for Gemini
-            const unibetData = {
-                leagueName: unibetLeague.englishName || unibetLeague.name,
-                country: unibetLeague.country || '',
-                matches: (unibetLeague.matches || []).slice(0, 5).map(m => ({
-                    homeTeam: m.homeName,
-                    awayTeam: m.awayName,
-                    startTime: m.start
-                }))
-            };
+            return (
+                errorCode === 429 ||
+                errorCode === 'RESOURCE_EXHAUSTED' ||
+                errorMessage.includes('quota') ||
+                errorMessage.includes('rate limit') ||
+                errorMessage.includes('resource_exhausted')
+            );
+        };
 
-            // Prepare FotMob leagues data (simplified for Gemini)
-            const fotmobData = fotmobLeagues.map(league => ({
-                id: String(league.primaryId || league.id),
-                name: (league.isGroup && league.parentLeagueName) 
-                    ? league.parentLeagueName 
-                    : (league.name || league.parentLeagueName || ''),
-                country: league.ccode || '',
-                matches: (league.matches || []).slice(0, 5).map(m => ({
-                    homeTeam: m.home?.name || m.home?.longName || '',
-                    awayTeam: m.away?.name || m.away?.longName || '',
-                    startTime: m.status?.utcTime || m.time || ''
-                }))
-            }));
+        // Try with first key, then fallback to second key if quota error
+        const apiKeys = [
+            { key: geminiApiKey1, name: 'GEMINI_API_KEY_1' },
+            { key: geminiApiKey2, name: 'GEMINI_API_KEY_2' }
+        ].filter(k => k.key); // Only include keys that exist
 
-            // Initialize Gemini
-            const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+        if (apiKeys.length === 0) {
+            console.log(`[LeagueMapping] ⚠️ No valid Gemini API keys found, skipping Gemini fallback`);
+            return null;
+        }
 
-            const prompt = `You are a football league matching expert. I need to find which FotMob league matches a given Unibet league.
+        let lastError = null;
+
+        for (let i = 0; i < apiKeys.length; i++) {
+            const { key: geminiApiKey, name: keyName } = apiKeys[i];
+            
+            try {
+                console.log(`[LeagueMapping] 🤖 Using Gemini AI fallback (${keyName}) for: ${unibetLeague.name} (${unibetLeague.country || 'Unknown country'})`);
+                
+                // Prepare Unibet league data for Gemini
+                const unibetData = {
+                    leagueName: unibetLeague.englishName || unibetLeague.name,
+                    country: unibetLeague.country || '',
+                    matches: (unibetLeague.matches || []).slice(0, 5).map(m => ({
+                        homeTeam: m.homeName,
+                        awayTeam: m.awayName,
+                        startTime: m.start
+                    }))
+                };
+
+                // Prepare FotMob leagues data (simplified for Gemini)
+                const fotmobData = fotmobLeagues.map(league => ({
+                    id: String(league.primaryId || league.id),
+                    name: (league.isGroup && league.parentLeagueName) 
+                        ? league.parentLeagueName 
+                        : (league.name || league.parentLeagueName || ''),
+                    country: league.ccode || '',
+                    matches: (league.matches || []).slice(0, 5).map(m => ({
+                        homeTeam: m.home?.name || m.home?.longName || '',
+                        awayTeam: m.away?.name || m.away?.longName || '',
+                        startTime: m.status?.utcTime || m.time || ''
+                    }))
+                }));
+
+                // Initialize Gemini
+                const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+
+                const prompt = `You are a football league matching expert. I need to find which FotMob league matches a given Unibet league.
 
 **Unibet League:**
 - Name: "${unibetData.leagueName}"
@@ -714,70 +782,106 @@ If no match found, return:
   "reason": "Why no match was found"
 }`;
 
-            console.log(`[LeagueMapping] 📤 Sending request to Gemini...`);
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt
-            });
+                console.log(`[LeagueMapping] 📤 Sending request to Gemini (${keyName})...`);
+                
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt
+                });
 
-            const responseText = (response.text || '').trim();
-            console.log(`[LeagueMapping] 📥 Gemini response: ${responseText.substring(0, 200)}...`);
+                const responseText = (response.text || '').trim();
+                console.log(`[LeagueMapping] 📥 Gemini response (${keyName}): ${responseText.substring(0, 200)}...`);
 
-            // Parse JSON response
-            let geminiResult;
-            try {
-                // Extract JSON from response (handle markdown code blocks)
-                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    geminiResult = JSON.parse(jsonMatch[0]);
-                } else {
-                    throw new Error('No JSON found in response');
+                // Parse JSON response
+                let geminiResult;
+                try {
+                    // Extract JSON from response (handle markdown code blocks)
+                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        geminiResult = JSON.parse(jsonMatch[0]);
+                    } else {
+                        throw new Error('No JSON found in response');
+                    }
+                } catch (parseError) {
+                    console.error(`[LeagueMapping] ❌ Could not parse Gemini response as JSON:`, parseError.message);
+                    console.error(`[LeagueMapping] Full response: ${responseText}`);
+                    return null;
                 }
-            } catch (parseError) {
-                console.error(`[LeagueMapping] ❌ Could not parse Gemini response as JSON:`, parseError.message);
-                console.error(`[LeagueMapping] Full response: ${responseText}`);
+
+                if (geminiResult.matched && geminiResult.fotmobLeagueId) {
+                    const matchedLeague = fotmobLeagues.find(l => 
+                        String(l.primaryId || l.id) === String(geminiResult.fotmobLeagueId)
+                    );
+
+                    if (matchedLeague) {
+                        console.log(`[LeagueMapping] ✅ Gemini matched (${keyName}): "${geminiResult.fotmobLeagueName}" (ID: ${geminiResult.fotmobLeagueId})`);
+                        console.log(`[LeagueMapping]    Reason: ${geminiResult.reason || 'Team names and league name matched'}`);
+                        
+                        return {
+                            id: parseInt(geminiResult.fotmobLeagueId),
+                            name: geminiResult.fotmobLeagueName || matchedLeague.name,
+                            exactMatch: false,
+                            geminiMatch: true
+                        };
+                    } else {
+                        console.log(`[LeagueMapping] ⚠️ Gemini returned ID ${geminiResult.fotmobLeagueId} but league not found in FotMob data`);
+                    }
+                } else {
+                    console.log(`[LeagueMapping] ❌ Gemini could not find a match: ${geminiResult.reason || 'No match found'}`);
+                }
+
+                // If we got here, the request succeeded but no match was found
                 return null;
-            }
 
-            if (geminiResult.matched && geminiResult.fotmobLeagueId) {
-                const matchedLeague = fotmobLeagues.find(l => 
-                    String(l.primaryId || l.id) === String(geminiResult.fotmobLeagueId)
-                );
-
-                if (matchedLeague) {
-                    console.log(`[LeagueMapping] ✅ Gemini matched: "${geminiResult.fotmobLeagueName}" (ID: ${geminiResult.fotmobLeagueId})`);
-                    console.log(`[LeagueMapping]    Reason: ${geminiResult.reason || 'Team names and league name matched'}`);
-                    
-                    return {
-                        id: parseInt(geminiResult.fotmobLeagueId),
-                        name: geminiResult.fotmobLeagueName || matchedLeague.name,
-                        exactMatch: false,
-                        geminiMatch: true
-                    };
-                } else {
-                    console.log(`[LeagueMapping] ⚠️ Gemini returned ID ${geminiResult.fotmobLeagueId} but league not found in FotMob data`);
+            } catch (error) {
+                lastError = error;
+                console.error(`[LeagueMapping] ❌ Gemini API error (${keyName}):`, error.message);
+                
+                // Check if it's a quota error and we have another key to try
+                if (isQuotaError(error) && i < apiKeys.length - 1) {
+                    console.log(`[LeagueMapping] ⚠️ Quota error with ${keyName}, trying fallback key...`);
+                    continue; // Try next key
                 }
-            } else {
-                console.log(`[LeagueMapping] ❌ Gemini could not find a match: ${geminiResult.reason || 'No match found'}`);
+                
+                // If it's not a quota error, or it's the last key, return null
+                if (!isQuotaError(error)) {
+                    // Non-quota error - don't try other keys
+                    return null;
+                }
             }
-
-            return null;
-        } catch (error) {
-            console.error(`[LeagueMapping] ❌ Gemini API error:`, error.message);
-            return null;
         }
+
+        // All keys failed
+        if (lastError && isQuotaError(lastError)) {
+            console.error(`[LeagueMapping] ❌ All Gemini API keys exhausted quota`);
+        }
+        return null;
     }
 
     /**
      * Add new mapping to CSV files
      */
     async addMappingToCsv(mapping) {
+        // ✅ Normalize IDs to strings for consistent comparison
+        const unibetIdStr = String(mapping.unibetId);
+        const fotmobIdStr = String(mapping.fotmobId);
+        
+        // ✅ Check for duplicates before adding
+        if (this.existingMappings.has(unibetIdStr)) {
+            console.log(`[LeagueMapping] ⚠️ Skipping duplicate Unibet ID: ${unibetIdStr} (${mapping.unibetName})`);
+            return false;
+        }
+        
+        if (this.existingFotmobIds.has(fotmobIdStr)) {
+            console.log(`[LeagueMapping] ⚠️ Skipping duplicate Fotmob ID: ${fotmobIdStr} (${mapping.fotmobName})`);
+            return false;
+        }
+        
         const matchType = mapping.exactMatch ? 'Exact Match' : 'Different Name';
         const row = [
-            mapping.unibetId,
+            unibetIdStr,
             `"${mapping.unibetName}"`,
-            mapping.fotmobId,
+            fotmobIdStr,
             `"${mapping.fotmobName}"`,
             matchType,
             mapping.country || ''
@@ -800,6 +904,20 @@ If no match found, return:
             // ✅ REMOVED: Client CSV update - Frontend now uses backend API
             // Append to server CSV file only
             if (fs.existsSync(this.serverCsvPath)) {
+                // ✅ Additional check: Parse CSV to verify no duplicate in file
+                const content = await fs.promises.readFile(this.serverCsvPath, 'utf8');
+                const lines = content.split('\n');
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    const parts = line.split(',');
+                    const existingUnibetId = parts[0]?.trim().replace(/"/g, '');
+                    const existingFotmobId = parts[2]?.trim().replace(/"/g, '');
+                    if (existingUnibetId === unibetIdStr || existingFotmobId === fotmobIdStr) {
+                        console.log(`[LeagueMapping] ⚠️ Duplicate found in CSV file - skipping: Unibet=${unibetIdStr}, Fotmob=${fotmobIdStr}`);
+                        return false;
+                    }
+                }
+                
                 await ensureNewline(this.serverCsvPath);
                 await fs.promises.appendFile(this.serverCsvPath, row + '\n', 'utf8');
                 console.log(`[LeagueMapping] ✅ Added to server CSV: ${mapping.unibetName} → ${mapping.fotmobName}`);
@@ -807,17 +925,19 @@ If no match found, return:
                 console.warn(`[LeagueMapping] ⚠️ Server CSV not found: ${this.serverCsvPath}`);
             }
 
-            // Also add to existing mappings cache
-            this.existingMappings.set(mapping.unibetId, {
-                unibetId: mapping.unibetId,
+            // Also add to existing mappings cache (normalize IDs)
+            this.existingMappings.set(unibetIdStr, {
+                unibetId: unibetIdStr,
                 unibetName: mapping.unibetName,
-                fotmobId: mapping.fotmobId,
+                fotmobId: fotmobIdStr,
                 fotmobName: mapping.fotmobName,
                 matchType,
                 country: mapping.country || ''
             });
-            // Track Fotmob ID
-            this.existingFotmobIds.add(mapping.fotmobId);
+            // Track Fotmob ID (normalize to string)
+            this.existingFotmobIds.add(fotmobIdStr);
+            
+            return true;
 
             return {
                 success: true,
@@ -963,10 +1083,16 @@ If no match found, return:
             console.log(`[LeagueMapping] 📄 Current file size: ${content.length} bytes`);
             console.log(`[LeagueMapping] 📄 Current file lines: ${content.split('\n').length}`);
             
-            // Check if entry already exists
-            if (content.includes(mapping.unibetId)) {
-                console.log(`[LeagueMapping] ⚠️ League ID ${mapping.unibetId} already exists in URLs CSV - skipping`);
-                return false;
+            // ✅ Check if entry already exists - parse CSV properly to check first column (Unibet_ID)
+            const lines = content.split('\n');
+            const unibetIdStr = String(mapping.unibetId);
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                const firstColumn = line.split(',')[0]?.trim().replace(/"/g, '');
+                if (firstColumn === unibetIdStr) {
+                    console.log(`[LeagueMapping] ⚠️ League ID ${unibetIdStr} already exists in URLs CSV - skipping`);
+                    return false;
+                }
             }
             
             // Ensure file ends with newline before appending
@@ -1237,9 +1363,10 @@ If no match found, return:
                     continue;
                 }
 
-                // Skip if already in CSV (by Unibet ID)
-                if (this.existingMappings.has(unibetLeague.id)) {
-                    console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Unibet ID ${unibetLeague.id} already exists in CSV`);
+                // Skip if already in CSV (by Unibet ID) - normalize to string for comparison
+                const unibetIdStr = String(unibetLeague.id);
+                if (this.existingMappings.has(unibetIdStr)) {
+                    console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Unibet ID ${unibetIdStr} already exists in CSV`);
                     skippedCount++;
                     continue;
                 }
@@ -1262,26 +1389,35 @@ If no match found, return:
 
                 if (fotmobLeague) {
                     const fotmobId = String(fotmobLeague.id);
+                    const unibetIdStr = String(unibetLeague.id);
                     
-                    // Check if this Fotmob ID is already mapped to any Unibet league
+                    // ✅ Check if this Fotmob ID is already mapped to any Unibet league
+                    // Normalize to string for comparison
                     if (this.existingFotmobIds.has(fotmobId)) {
                         console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Fotmob ID ${fotmobId} already mapped to another league`);
                         skippedCount++;
                         continue;
                     }
                     
-                    // Double check: Verify the combination doesn't exist
-                    // (This should already be covered by Unibet ID check, but extra safety)
-                    const existingMapping = this.existingMappings.get(unibetLeague.id);
-                    if (existingMapping && existingMapping.fotmobId === fotmobId) {
-                        console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Combination (Unibet ID: ${unibetLeague.id}, Fotmob ID: ${fotmobId}) already exists`);
+                    // ✅ Double check: Verify the combination doesn't exist
+                    // Normalize Unibet ID to string for comparison
+                    const existingMapping = this.existingMappings.get(unibetIdStr);
+                    if (existingMapping && String(existingMapping.fotmobId) === fotmobId) {
+                        console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Combination (Unibet ID: ${unibetIdStr}, Fotmob ID: ${fotmobId}) already exists`);
+                        skippedCount++;
+                        continue;
+                    }
+                    
+                    // ✅ Additional check: Verify Unibet ID doesn't already exist (should be caught above, but extra safety)
+                    if (this.existingMappings.has(unibetIdStr)) {
+                        console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Unibet ID ${unibetIdStr} already exists in CSV`);
                         skippedCount++;
                         continue;
                     }
                     
                     // Add to CSV
                     const mappingData = {
-                        unibetId: unibetLeague.id,
+                        unibetId: unibetIdStr,
                         unibetName: unibetLeague.englishName || unibetLeague.name, // Use englishName
                         fotmobId: fotmobId,
                         fotmobName: fotmobLeague.name, // Already using parentLeagueName for groups
@@ -1289,19 +1425,19 @@ If no match found, return:
                         country: unibetLeague.country || ''
                     };
 
-                    const result = await this.addMappingToCsv(mappingData);
+                    const success = await this.addMappingToCsv(mappingData);
 
-                    if (result.success) {
+                    if (success) {
                         newMappingsCount++;
-                        // Track the new Fotmob ID
-                        this.existingFotmobIds.add(fotmobId);
+                        // Track the new Fotmob ID (normalize to string)
+                        this.existingFotmobIds.add(String(fotmobId));
                         
                         // ✅ NEW: Sync to URLs CSV
                         try {
-                            await this.syncLeagueUrlsForNewMappings([result.mapping]);
-                            console.log(`[LeagueMapping] ✅ Synced ${result.mapping.unibetName} to URLs CSV`);
+                            await this.syncLeagueUrlsForNewMappings([mappingData]);
+                            console.log(`[LeagueMapping] ✅ Synced ${mappingData.unibetName} to URLs CSV`);
                         } catch (error) {
-                            console.warn(`[LeagueMapping] ⚠️ Failed to sync ${result.mapping.unibetName} to URLs CSV:`, error.message);
+                            console.warn(`[LeagueMapping] ⚠️ Failed to sync ${mappingData.unibetName} to URLs CSV:`, error.message);
                             // Don't fail the whole job if URL sync fails
                         }
                     }

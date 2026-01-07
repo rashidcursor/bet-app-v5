@@ -57,8 +57,9 @@ const transformApiMatchToDisplayFormat = (apiMatch, league) => {
     return {
         id: apiMatch.id,
         league: {
+            id: league.id, // Ensure Unibet ID is passed
             name: league.name,
-            imageUrl: getFotmobLogoByUnibetId(league.id) || league.imageUrl || '/api/placeholder/20/20'
+            imageUrl: getFotmobLogoByUnibetId(league.id) || league.imageUrl || null
         },
         team1: teamNames[0],
         team2: teamNames[1],
@@ -102,16 +103,27 @@ const FootballDaily = () => {
             </div>
 
             {footballDaily.map((leagueGroup, index) => {
+                // ✅ Get Fotmob logo URL using Unibet ID (groupId)
+                const leagueId = leagueGroup.league?.id;
+                const fotmobLogoUrl = getFotmobLogoByUnibetId(leagueId);
+                const hasLogo = fotmobLogoUrl || leagueGroup.league?.imageUrl;
                 
                 return (
                     <div key={leagueGroup.league?.id || index} className="mb-6">
                         <div className="flex items-center mb-3">
-                            {(getFotmobLogoByUnibetId(leagueGroup.league?.id) || leagueGroup.league?.imageUrl) && (
+                            {hasLogo ? (
                                 <img
-                                    src={getFotmobLogoByUnibetId(leagueGroup.league?.id) || leagueGroup.league?.imageUrl}
+                                    src={fotmobLogoUrl || leagueGroup.league?.imageUrl}
                                     alt={leagueGroup.league.name}
                                     className="w-6 h-6 mr-2 object-contain"
+                                    onError={(e) => {
+                                        // If logo fails to load, hide image and show fallback
+                                        e.target.style.display = 'none';
+                                    }}
                                 />
+                            ) : (
+                                // ✅ Show fallback icon if no logo available
+                                <span className="text-green-400 text-sm mr-2">⚽</span>
                             )}
                         <h3 className="text-lg font-semibold text-gray-700">
                             {leagueGroup.league?.name || 'Unknown League'}

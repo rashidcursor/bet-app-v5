@@ -1381,17 +1381,24 @@ const BettingMarketGroup = ({ groupedMarkets, emptyMessage, matchData }) => {
                 } else {
                     // Pure "To Score" only – exclude assist/combos/variants
                     const isPureToScore = (
-                        // starts with or equals "to score"
-                        (marketType === 'to score' || marketType.startsWith('to score')) &&
+                        // Check for "to score" (includes check to catch variations like "Player To Score")
+                        marketType.includes('to score')
+                    ) && (
                         // exclude variants we don't want
                         !marketType.includes('assist') &&
                         !marketType.includes('or assist') &&
                         !marketType.includes('at least') &&
                         !marketType.includes('team member') &&
+                        !marketType.includes('team to score') &&
                         !marketType.includes('from ') &&
                         !marketType.includes('header') &&
                         !marketType.includes('outside the penalty') &&
-                        !marketType.includes('penalty')
+                        !marketType.includes('penalty') &&
+                        !marketType.includes('penalty kick') &&
+                        // Exclude "First Goal Scorer" (already handled above)
+                        !marketType.includes('first goal scorer') &&
+                        // Exclude "Last Goal Scorer"
+                        !marketType.includes('last goal scorer')
                     );
                     if (isPureToScore) {
                         playerMap[playerName].toScore = option;

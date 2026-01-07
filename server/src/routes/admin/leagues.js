@@ -5,6 +5,41 @@ import { downloadLeagueMappingClean } from '../../utils/cloudinaryCsvLoader.js';
 
 const router = express.Router();
 
+/**
+ * Parse CSV line properly handling quoted fields with commas
+ * @param {string} line - CSV line to parse
+ * @returns {string[]} - Array of parsed fields
+ */
+function parseCsvLine(line) {
+  const fields = [];
+  let currentField = '';
+  let insideQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
+      fields.push(currentField.trim().replace(/^"|"$/g, ''));
+      currentField = '';
+    } else {
+      currentField += char;
+    }
+  }
+  // Add the last field
+  if (currentField.trim() || fields.length > 0) {
+    fields.push(currentField.trim().replace(/^"|"$/g, ''));
+  }
+  
+  // Ensure we have at least 6 fields (pad with empty strings if needed)
+  while (fields.length < 6) {
+    fields.push('');
+  }
+  
+  return fields;
+}
+
 // GET /api/admin/leagues - Get all leagues from Cloudinary CSV
 router.get('/', async (req, res) => {
   try {
@@ -17,52 +52,85 @@ router.get('/', async (req, res) => {
     // Skip header line
     const dataLines = lines.slice(1);
     
+    console.log(`📊 Total data lines in CSV: ${dataLines.length}`);
+    
     // Get popular leagues from database
     const popularLeaguesInDb = await League.find({}).lean();
     const popularLeaguesMap = new Map(
       popularLeaguesInDb.map((league) => [league.leagueId, league])
     );
 
-    const leagues = dataLines.map((line, index) => {
-      if (!line.trim()) return null;
+    const leagues = [];
+    let skippedCount = 0;
+    let errorCount = 0;
+    
+    dataLines.forEach((line, index) => {
+      if (!line.trim()) {
+        skippedCount++;
+        return;
+      }
       
-      // ✅ FIX: Properly parse CSV with quoted values
-      // Strip quotes from each field and trim whitespace
-      const fields = line.split(',').map(field => field.replace(/^"|"$/g, '').trim());
-      const [unibetId, unibetName, fotmobId, fotmobName, matchType, country] = fields;
-      const leagueId = parseInt(unibetId) || index + 1;
-      
-      // ✅ FIX: Normalize country name - trim and ensure consistent casing
-      const normalizedCountry = country?.trim() || 'Other';
-      
-      // Check if this league is marked as popular in database
-      const dbLeague = popularLeaguesMap.get(leagueId);
-      
-      return {
-        id: leagueId, // Use Unibet ID as the league ID
-        unibetId: unibetId?.trim(),
-        name: unibetName?.trim(),
-        fotmobId: fotmobId?.trim(),
-        fotmobName: fotmobName?.trim(),
-        matchType: matchType?.trim(),
-        country: {
-          name: normalizedCountry,
-          official_name: normalizedCountry,
-          image: null // No country images in CSV
-        },
-        image_path: null, // No league images in CSV
-        isPopular: dbLeague ? dbLeague.isPopular : false, // Get from database or default to false
-        popularOrder: dbLeague?.order || 0, // Get from database or default to 0
-        short_code: null // No short codes in CSV
-      };
-    }).filter(league => league !== null);
+      try {
+        // ✅ IMPROVED: Better CSV parsing that handles quoted values with commas
+        const fields = parseCsvLine(line);
+        const [unibetId, unibetName, fotmobId, fotmobName, matchType, country] = fields;
+        
+        // Skip if essential fields are missing
+        if (!unibetId || !unibetName || !fotmobId) {
+          console.warn(`⚠️ Line ${index + 2}: Skipping - Missing essential fields (Unibet ID: ${unibetId}, Name: ${unibetName}, Fotmob ID: ${fotmobId})`);
+          skippedCount++;
+          return;
+        }
+        
+        const leagueId = parseInt(unibetId);
+        if (isNaN(leagueId)) {
+          console.warn(`⚠️ Line ${index + 2}: Skipping - Invalid Unibet ID: ${unibetId}`);
+          skippedCount++;
+          return;
+        }
+        
+        // ✅ FIX: Normalize country name - trim and ensure consistent casing
+        const normalizedCountry = country?.trim() || 'Other';
+        
+        // Check if this league is marked as popular in database
+        const dbLeague = popularLeaguesMap.get(leagueId);
+        
+        leagues.push({
+          id: leagueId, // Use Unibet ID as the league ID
+          unibetId: unibetId.trim(),
+          name: unibetName.trim(),
+          fotmobId: fotmobId.trim(),
+          fotmobName: fotmobName.trim(),
+          matchType: matchType?.trim() || '',
+          country: {
+            name: normalizedCountry,
+            official_name: normalizedCountry,
+            image: null // No country images in CSV
+          },
+          image_path: null, // No league images in CSV
+          isPopular: dbLeague ? dbLeague.isPopular : false, // Get from database or default to false
+          popularOrder: dbLeague?.order || 0, // Get from database or default to 0
+          short_code: null // No short codes in CSV
+        });
+      } catch (error) {
+        console.error(`❌ Line ${index + 2}: Error parsing - ${error.message}`);
+        console.error(`   Line content: ${line.substring(0, 100)}...`);
+        errorCount++;
+      }
+    });
 
     console.log(`✅ Loaded ${leagues.length} leagues from CSV`);
+    console.log(`⚠️ Skipped ${skippedCount} empty/invalid lines`);
+    console.log(`❌ Errors: ${errorCount}`);
+    console.log(`📊 Expected: ${dataLines.length}, Got: ${leagues.length}, Skipped: ${skippedCount + errorCount}`);
 
     res.json({
       success: true,
       data: leagues,
-      total: leagues.length
+      total: leagues.length,
+      skipped: skippedCount,
+      errors: errorCount,
+      expected: dataLines.length
     });
 
   } catch (error) {
@@ -158,44 +226,72 @@ router.get('/mapping', async (req, res) => {
     // Skip header line
     const dataLines = lines.slice(1);
     
+    console.log(`📊 Total data lines in CSV: ${dataLines.length}`);
+    
     // Build mapping objects
     const unibetToFotmobMapping = {};
     const allowedLeagueIds = [];
     const allowedLeagueNames = [];
+    let skippedCount = 0;
+    let errorCount = 0;
     
-    dataLines.forEach((line) => {
-      if (!line.trim()) return;
-      
-      // Parse CSV with quoted values
-      const fields = line.split(',').map(field => field.replace(/^"|"$/g, '').trim());
-      const [unibetId, unibetName, fotmobId, fotmobName, matchType, country] = fields;
-      
-      // Add to Unibet→Fotmob mapping (for icons)
-      if (unibetId && fotmobId) {
-        unibetToFotmobMapping[unibetId] = fotmobId;
+    dataLines.forEach((line, index) => {
+      if (!line.trim()) {
+        skippedCount++;
+        return;
       }
       
-      // Add to allowed league IDs (for filtering)
-      if (unibetId) {
-        allowedLeagueIds.push(unibetId.trim());
-      }
-      
-      // Add to allowed league names (for filtering)
-      if (unibetName && unibetName.trim()) {
-        allowedLeagueNames.push(unibetName.trim());
-        allowedLeagueNames.push(unibetName.trim().toLowerCase());
+      try {
+        // ✅ IMPROVED: Better CSV parsing that handles quoted values with commas
+        const fields = parseCsvLine(line);
+        const [unibetId, unibetName, fotmobId, fotmobName, matchType, country] = fields;
         
-        // Also add Fotmob name for matching
-        if (fotmobName && fotmobName.trim()) {
-          allowedLeagueNames.push(fotmobName.trim());
-          allowedLeagueNames.push(fotmobName.trim().toLowerCase());
+        // Skip if essential fields are missing
+        if (!unibetId || !unibetName || !fotmobId) {
+          console.warn(`⚠️ Line ${index + 2}: Skipping - Missing essential fields (Unibet ID: ${unibetId}, Name: ${unibetName}, Fotmob ID: ${fotmobId})`);
+          skippedCount++;
+          return;
         }
+        
+        const trimmedUnibetId = unibetId.trim();
+        const trimmedUnibetName = unibetName.trim();
+        const trimmedFotmobId = fotmobId.trim();
+        const trimmedFotmobName = fotmobName?.trim() || '';
+        
+        // Add to Unibet→Fotmob mapping (for icons)
+        if (trimmedUnibetId && trimmedFotmobId) {
+          unibetToFotmobMapping[trimmedUnibetId] = trimmedFotmobId;
+        }
+        
+        // Add to allowed league IDs (for filtering)
+        if (trimmedUnibetId) {
+          allowedLeagueIds.push(trimmedUnibetId);
+        }
+        
+        // Add to allowed league names (for filtering)
+        if (trimmedUnibetName) {
+          allowedLeagueNames.push(trimmedUnibetName);
+          allowedLeagueNames.push(trimmedUnibetName.toLowerCase());
+          
+          // Also add Fotmob name for matching
+          if (trimmedFotmobName) {
+            allowedLeagueNames.push(trimmedFotmobName);
+            allowedLeagueNames.push(trimmedFotmobName.toLowerCase());
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Line ${index + 2}: Error parsing - ${error.message}`);
+        console.error(`   Line content: ${line.substring(0, 100)}...`);
+        errorCount++;
       }
     });
 
     console.log(`✅ Built mapping: ${Object.keys(unibetToFotmobMapping).length} leagues`);
     console.log(`✅ Allowed league IDs: ${allowedLeagueIds.length}`);
     console.log(`✅ Allowed league names: ${allowedLeagueNames.length}`);
+    console.log(`⚠️ Skipped ${skippedCount} empty/invalid lines`);
+    console.log(`❌ Errors: ${errorCount}`);
+    console.log(`📊 Expected: ${dataLines.length}, Got: ${allowedLeagueIds.length}, Skipped: ${skippedCount + errorCount}`);
 
     res.json({
       success: true,

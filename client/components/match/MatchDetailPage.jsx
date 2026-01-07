@@ -228,10 +228,12 @@ const MatchDetailPage = ({ matchId }) => {
                     }
                     return isImplemented;
                 })
-                .map(offer => ({
-                    id: offer.id,
-                    name: offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name,
-                    outcomes: (offer.outcomes || []).map(outcome => ({
+                .map(offer => {
+                    const offerName = offer.criterion?.label || offer.criterion?.englishLabel || offer.betOfferType?.name;
+                    return ({
+                        id: offer.id,
+                        name: offerName,
+                        outcomes: (offer.outcomes || []).map(outcome => ({
                         id: outcome.id,
                         name: outcome.label || outcome.participant || outcome.name, // Use participant name if available, otherwise use label
                         odds: outcome.odds / 1000, // Convert from Unibet format (13000 -> 13.00)
@@ -243,8 +245,9 @@ const MatchDetailPage = ({ matchId }) => {
                         eventParticipantId: outcome.eventParticipantId,
                         marketId: offer.id, // ✅ Use betOffer ID as marketId
                         market_id: offer.id // ✅ Also set market_id for compatibility
-                    }))
-                }))
+                        }))
+                    });
+                })
         };
 
         bettingData = displayMatchData.betting_data;
@@ -359,13 +362,19 @@ const MatchDetailPage = ({ matchId }) => {
                             lowerMarket.includes('to score from outside the penalty box') ||
                             lowerMarket.includes('to score from a header') ||
                             lowerMarket.includes('to score or assist');
+                        // ✅ FIX: Unibet "To Score" is a Player Occurrence Line with label "Yes" and participant = player name.
+                        // Treat it like a player YES-style market so displayName becomes the player name (not "Yes").
+                        const isPlayerToScoreYesMarket =
+                            lowerMarket === 'to score' &&
+                            Boolean(outcome.participant) &&
+                            String(outcome.name || '').toLowerCase() === 'yes';
                         if (isPlayerShotsMarket) {
                             console.log('🔍 Player shots market found:', lowerMarket, 'Outcome:', outcome);
                         }
                         // For team line markets (e.g., Cards Line), populate handicap from line
                         const isLineMarket = lowerMarket.includes(' line') || lowerMarket === 'line';
                         const displayName =
-                            (isPlayerCardMarket || isPlayerShotsMarket || isPlayerYesSpecialMarket)
+                            (isPlayerCardMarket || isPlayerShotsMarket || isPlayerYesSpecialMarket || isPlayerToScoreYesMarket)
                                 ? (outcome.participant || displayLabel)
                                 : displayLabel;
                         acc[marketName].odds.push({
@@ -789,6 +798,8 @@ function categorizeMarkets(bettingData) {
             return assign('goal-scorer');
         }
 
+        // ✅ FIX: "To Score" / "Anytime Goal Scorer" should also go to 'goal-scorer' category
+        // so they can be grouped with "First Goal Scorer" in the Goal Scorer section
         if (
             marketName.includes('to score') &&
             !marketName.includes('assist') &&
@@ -799,7 +810,8 @@ function categorizeMarkets(bettingData) {
             !marketName.includes('header') &&
             !marketName.includes('outside the penalty')
         ) {
-            return assign('player-goals');
+            // ✅ Send to 'goal-scorer' instead of 'player-goals' so it groups with First Goal Scorer
+            return assign('goal-scorer');
         }
 
         // Goalkeeper saves

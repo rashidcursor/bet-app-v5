@@ -202,7 +202,26 @@ const leaguesSlice = createSlice({
       })
       .addCase(fetchPopularLeagues.fulfilled, (state, action) => {
         state.popularLoading = false;
-        state.popularLeagues = action.payload;
+        
+        // ✅ Remove duplicates based on league ID
+        const uniqueLeagues = [];
+        const seenIds = new Set();
+        
+        action.payload.forEach(league => {
+          const leagueId = String(league.id || league.unibetId);
+          if (!seenIds.has(leagueId)) {
+            seenIds.add(leagueId);
+            uniqueLeagues.push(league);
+          }
+        });
+        
+        state.popularLeagues = uniqueLeagues;
+        
+        if (action.payload.length !== uniqueLeagues.length) {
+          console.log(`✅ Loaded ${uniqueLeagues.length} unique leagues (removed ${action.payload.length - uniqueLeagues.length} duplicates)`);
+        } else {
+          console.log(`✅ Loaded ${uniqueLeagues.length} leagues from CSV`);
+        }
       })
       .addCase(fetchPopularLeagues.rejected, (state, action) => {
         state.popularLoading = false;
