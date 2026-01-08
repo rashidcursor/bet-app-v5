@@ -84,7 +84,7 @@ const MatchHeader = ({ matchData, onScoreUpdate }) => {
                 
                 if (match && match.kambiLiveData) {
                     const kambiData = match.kambiLiveData;
-                    
+            
                     // Transform Kambi data to match expected format
                     const transformedLiveData = {
                         score: kambiData.score ? {

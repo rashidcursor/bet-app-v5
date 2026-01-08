@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server';
 import { filterMatchesByAllowedLeagues, getLeagueFilterStats } from '@/lib/utils/leagueFilter.js';
 import axios from 'axios';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import proxyRotator from '@/lib/utils/proxyRotator.js';
 
 const UNIBET_LIVE_MATCHES_API = 'https://www.unibet.com.au/sportsbook-feeds/views/filter/football/all/matches';
 
@@ -43,16 +43,6 @@ const KAMBI_RETRY_DELAY = 2000; // Wait 2 seconds before retry on 410
 
 // ✅ Track previous stats and suspension timers per match
 const matchStatsHistory = new Map(); // { matchId: { corners, goals, cards, suspendedUntil } }
-
-// Proxy configuration (for 410 fallback)
-const PROXY_CONFIG = {
-  host: process.env.KAMBI_PROXY_HOST || '104.252.62.178',
-  port: process.env.KAMBI_PROXY_PORT || '5549',
-  username: process.env.KAMBI_PROXY_USER || 'xzskxfzx',
-  password: process.env.KAMBI_PROXY_PASS || 't3xvzuubsk2d'
-};
-
-const PROXY_URL = `http://${PROXY_CONFIG.username}:${PROXY_CONFIG.password}@${PROXY_CONFIG.host}:${PROXY_CONFIG.port}`;
 
 // Helper function to extract football matches (SAME AS BACKEND - exact copy)
 function extractFootballMatches(data) {
@@ -201,36 +191,43 @@ function extractFootballMatches(data) {
   };
 }
 
-// Function to fetch Kambi data through proxy (fallback for 410)
+// Function to fetch Kambi data through proxy with automatic rotation
 async function fetchKambiLiveDataViaProxy() {
+  console.log(`🔄 [NEXT API] Fetching Kambi data via PROXY with rotation...`);
+  
+  const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
+
   try {
-    console.log(`🔄 [NEXT API] Fetching Kambi data via PROXY (410 fallback)...`);
-    
-    const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-    
-    // Create proxy agent
-    const httpsAgent = new HttpsProxyAgent(PROXY_URL);
-    
-    // Use axios with proxy (more reliable than fetch for proxy)
-    const response = await axios.get(url, {
-      headers: KAMBI_LIVE_HEADERS,
-      httpsAgent: httpsAgent,
-      httpAgent: httpsAgent,
-      timeout: 5000, // 5 seconds for proxy
-      validateStatus: () => true // Don't throw on non-200
-    });
-    
-    if (response.status === 200 && response.data && response.data.liveEvents) {
-      console.log(`✅ [NEXT API] Successfully fetched Kambi data via PROXY:`, {
-        hasLiveEvents: !!response.data.liveEvents,
-        totalEvents: response.data.liveEvents?.length || 0
-      });
-      return response.data;
-    }
-    
-    throw new Error(`Proxy request returned ${response.status}`);
+    return await proxyRotator.executeWithRotation(
+      async (httpsAgent, proxy) => {
+        const response = await axios.get(url, {
+          headers: KAMBI_LIVE_HEADERS,
+          httpsAgent: httpsAgent,
+          httpAgent: httpsAgent,
+          timeout: 5000, // 5 seconds for proxy
+          validateStatus: () => true // Don't throw on non-200
+        });
+        
+        if (response.status === 200 && response.data && response.data.liveEvents) {
+          console.log(`✅ [NEXT API] Successfully fetched Kambi data via PROXY ${proxy.host}:${proxy.port}:`, {
+            hasLiveEvents: !!response.data.liveEvents,
+            totalEvents: response.data.liveEvents?.length || 0
+          });
+          return response.data;
+        }
+        
+        throw new Error(`Proxy request returned ${response.status}`);
+      },
+      {
+        maxRetries: 10, // Try up to 10 different proxies (we have 147 total)
+        retryDelay: 500, // 500ms between retries (faster rotation)
+        onRetry: (attempt, maxRetries, proxy, error) => {
+          console.warn(`⚠️ [NEXT API] Proxy ${proxy.host}:${proxy.port} failed (${attempt}/${maxRetries}), rotating...`);
+        }
+      }
+    );
   } catch (error) {
-    console.error(`❌ [NEXT API] Proxy fallback failed:`, error.message);
+    console.error(`❌ [NEXT API] All proxy attempts failed:`, error.message);
     return null;
   }
 }
@@ -343,15 +340,19 @@ async function fetchKambiLiveData(retryCount = 0) {
   } catch (error) {
     kambiCache.isFetching = false;
     
-    // ✅ If direct fetch failed and we haven't tried proxy yet, try proxy
-    if (retryCount === 0 && (error.message.includes('aborted') || error.message.includes('timeout') || error.name === 'AbortError')) {
-      console.warn(`⚠️ [NEXT API] Direct connection failed (${error.message}), trying PROXY fallback...`);
-      const proxyData = await fetchKambiLiveDataViaProxy();
-      if (proxyData) {
-        kambiCache.data = proxyData;
-        kambiCache.lastUpdated = Date.now();
-        console.log(`✅ [NEXT API] Proxy fallback successful after direct failure!`);
-        return proxyData;
+    // ✅ If direct fetch failed, ALWAYS try proxy (not just for timeout/abort)
+    if (retryCount === 0) {
+      console.warn(`⚠️ [NEXT API] Direct connection failed (${error.message}), trying PROXY fallback with rotation...`);
+      try {
+        const proxyData = await fetchKambiLiveDataViaProxy();
+        if (proxyData) {
+          kambiCache.data = proxyData;
+          kambiCache.lastUpdated = Date.now();
+          console.log(`✅ [NEXT API] Proxy fallback successful after direct failure!`);
+          return proxyData;
+        }
+      } catch (proxyError) {
+        console.error(`❌ [NEXT API] Proxy fallback also failed: ${proxyError.message}`);
       }
     }
     

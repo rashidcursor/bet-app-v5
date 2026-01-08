@@ -2,19 +2,9 @@
 // Node.js runtime required for proxy support
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import proxyRotator from '@/lib/utils/proxyRotator.js';
 
 const UNIBET_BETOFFERS_API = 'https://oc-offering-api.kambicdn.com/offering/v2018/ubau/betoffer/event';
-
-// Proxy configuration (for 410 fallback)
-const PROXY_CONFIG = {
-  host: process.env.KAMBI_PROXY_HOST || '104.252.62.178',
-  port: process.env.KAMBI_PROXY_PORT || '5549',
-  username: process.env.KAMBI_PROXY_USER || 'xzskxfzx',
-  password: process.env.KAMBI_PROXY_PASS || 't3xvzuubsk2d'
-};
-
-const PROXY_URL = `http://${PROXY_CONFIG.username}:${PROXY_CONFIG.password}@${PROXY_CONFIG.host}:${PROXY_CONFIG.port}`;
 
 // ✅ Track previous stats and suspension timers per match
 const matchStatsHistory = new Map(); // { matchId: { corners, goals, cards, suspendedUntil } }
@@ -220,52 +210,50 @@ function applySuspensionToBetoffers(betoffersData, shouldSuspend) {
   return betoffersData;
 }
 
-// Function to fetch bet offers through proxy (fallback for 410)
+// Function to fetch bet offers through proxy with automatic rotation
 async function fetchBetOffersViaProxy(eventId) {
   const startTime = Date.now();
+  const url = `${UNIBET_BETOFFERS_API}/${eventId}.json?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
+  
+  console.log(`🔄 [PROXY] [${eventId}] Starting proxy fetch with rotation...`);
+
   try {
-    console.log(`🔄 [PROXY] [${eventId}] Starting proxy fetch attempt...`);
-    
-    const url = `${UNIBET_BETOFFERS_API}/${eventId}.json?lang=en_AU&market=AU`;
-    
-    // Create proxy agent
-    const httpsAgent = new HttpsProxyAgent(PROXY_URL);
-    
-    console.log(`🔄 [PROXY] [${eventId}] Sending request via proxy (timeout: 5s)...`);
-    
-    // Use axios with proxy (more reliable than fetch for proxy)
-    const response = await axios.get(url, {
-      headers: UNIBET_BETOFFERS_HEADERS,
-      httpsAgent: httpsAgent,
-      httpAgent: httpsAgent,
-      timeout: 5000, // 5 seconds for proxy
-      validateStatus: () => true // Don't throw on non-200
-    });
-    
-    const duration = Date.now() - startTime;
-    console.log(`🔍 [PROXY] [${eventId}] Response received:`, {
-      status: response.status,
-      hasData: !!response.data,
-      dataType: typeof response.data,
-      dataKeys: response.data ? Object.keys(response.data).slice(0, 3) : [],
-      duration: `${duration}ms`
-    });
-    
-    if (response.status === 200 && response.data) {
-      const dataSize = JSON.stringify(response.data).length;
-      console.log(`✅ [PROXY] [${eventId}] SUCCESS - Status: 200, Data size: ${dataSize} bytes, Duration: ${duration}ms`);
-      return response.data;
-    }
-    
-    console.warn(`⚠️ [PROXY] [${eventId}] FAILED - Status: ${response.status}, No valid data returned`);
-    throw new Error(`Proxy request returned ${response.status}`);
+    return await proxyRotator.executeWithRotation(
+      async (httpsAgent, proxy) => {
+        console.log(`🔄 [PROXY] [${eventId}] Attempting via ${proxy.host}:${proxy.port}...`);
+        
+        const response = await axios.get(url, {
+          headers: UNIBET_BETOFFERS_HEADERS,
+          httpsAgent: httpsAgent,
+          httpAgent: httpsAgent,
+          timeout: 5000, // 5 seconds for proxy
+          validateStatus: () => true // Don't throw on non-200
+        });
+        
+        const duration = Date.now() - startTime;
+        
+        if (response.status === 200 && response.data) {
+          const dataSize = JSON.stringify(response.data).length;
+          console.log(`✅ [PROXY] [${eventId}] SUCCESS via ${proxy.host}:${proxy.port} - Status: 200, Data size: ${dataSize} bytes, Duration: ${duration}ms`);
+          return response.data;
+        }
+        
+        throw new Error(`Proxy request returned ${response.status}`);
+      },
+      {
+        maxRetries: 10, // Try up to 10 different proxies (we have 147 total)
+        retryDelay: 500, // 500ms between retries (faster rotation)
+        onRetry: (attempt, maxRetries, proxy, error) => {
+          console.warn(`⚠️ [PROXY] [${eventId}] Proxy ${proxy.host}:${proxy.port} failed (${attempt}/${maxRetries}): ${error.message}, rotating...`);
+        }
+      }
+    );
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ [PROXY] [${eventId}] ERROR after ${duration}ms:`, {
+    console.error(`❌ [PROXY] [${eventId}] All proxy attempts failed after ${duration}ms:`, {
       message: error.message,
       code: error.code,
       name: error.name,
-      isTimeout: error.message?.includes('timeout') || error.code === 'ECONNABORTED'
     });
     return null;
   }
@@ -485,19 +473,10 @@ export async function GET(request, { params }) {
       stack: error.stack?.split('\n')[0] // First line of stack only
     });
     
-    // ✅ If direct fetch failed and we haven't tried proxy yet, try proxy
-    const shouldTryProxy = error.message?.includes('410') || 
-                          error.message?.includes('aborted') || 
-                          error.message?.includes('timeout') ||
-                          error.code === 'ECONNABORTED';
+    // ✅ ALWAYS try proxy on ANY error (not just specific errors)
+    console.warn(`⚠️ [ERROR HANDLER] [${eventId}] Direct fetch failed (${error.message}), trying PROXY fallback with rotation...`);
     
-    if (shouldTryProxy) {
-      console.warn(`⚠️ [ERROR HANDLER] [${eventId}] Error suggests proxy might help - Trying proxy fallback...`, {
-        reason: error.message?.includes('410') ? '410 error' : 
-                error.message?.includes('aborted') ? 'Request aborted' : 
-                error.message?.includes('timeout') ? 'Timeout' : 'Unknown'
-      });
-      
+    try {
       const proxyData = await fetchBetOffersViaProxy(eventId);
       
       if (proxyData) {
@@ -534,10 +513,10 @@ export async function GET(request, { params }) {
           }
         });
       } else {
-        console.error(`❌ [ERROR HANDLER] [${eventId}] PROXY FALLBACK FAILED - Both direct and proxy failed`);
+        console.error(`❌ [ERROR HANDLER] [${eventId}] PROXY FALLBACK FAILED - All proxy attempts failed`);
       }
-    } else {
-      console.log(`ℹ️ [ERROR HANDLER] [${eventId}] Error type doesn't warrant proxy fallback`);
+    } catch (proxyError) {
+      console.error(`❌ [ERROR HANDLER] [${eventId}] Proxy fallback error: ${proxyError.message}`);
     }
     
     console.error(`❌ [ERROR HANDLER] [${eventId}] Returning 500 error to client`);
