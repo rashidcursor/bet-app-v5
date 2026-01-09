@@ -217,11 +217,12 @@ const MatchHeader = ({ matchData, onScoreUpdate }) => {
     useEffect(() => {
         if (isLive && matchData?.id) {
             fetchLiveData();
-            // Set up interval to refresh live data every 200ms (0.2 seconds) for real-time updates
+            // ✅ FIX: Use same polling interval as MatchDetailPage (1 second instead of 200ms)
+            // This reduces API calls and syncs better with match detail body
             const interval = setInterval(() => {
                 if (typeof document !== 'undefined' && document.hidden) return; // pause when tab hidden
                 fetchLiveData();
-            }, 200);
+            }, 1000); // ✅ Changed from 200ms to 1000ms to match MatchDetailPage polling
             return () => clearInterval(interval);
         }
     }, [matchData?.id, isLive]);

@@ -193,14 +193,25 @@ function applySuspensionToBetoffers(betoffersData, shouldSuspend) {
   if (betoffersData.betOffers && Array.isArray(betoffersData.betOffers)) {
     const suspendedData = {
       ...betoffersData,
-      betOffers: betoffersData.betOffers.map(betOffer => ({
-        ...betOffer,
-        outcomes: betOffer.outcomes?.map(outcome => ({
-          ...outcome,
-          status: shouldSuspend ? 'SUSPENDED' : (outcome.status || 'OPEN'),
-          suspendedByStats: shouldSuspend // Flag to indicate suspension due to stats
-        })) || []
-      }))
+      betOffers: betoffersData.betOffers.map(betOffer => {
+        // ✅ FIX 1: Preserve Unibet's original suspended flag
+        const isUnibetSuspended = betOffer.suspended === true;
+        // ✅ FIX 2: Combine stats suspension + Unibet suspension
+        const isSuspended = shouldSuspend || isUnibetSuspended;
+        
+        return {
+          ...betOffer,
+          // ✅ FIX 1: Set suspended flag on betOffer level
+          suspended: isSuspended,
+          outcomes: betOffer.outcomes?.map(outcome => ({
+            ...outcome,
+            // ✅ FIX 2: Check both stats suspension AND Unibet suspension
+            status: isSuspended ? 'SUSPENDED' : (outcome.status || 'OPEN'),
+            suspendedByStats: shouldSuspend, // Flag to indicate suspension due to stats
+            suspendedByUnibet: isUnibetSuspended // Flag to indicate Unibet suspension
+          })) || []
+        };
+      })
     };
     
     return suspendedData;
@@ -375,16 +386,26 @@ export async function GET(request, { params }) {
         try {
           const liveData = await fetchLiveDataForMatch(eventId);
           if (liveData) {
+            // ✅ FIX: Check if stats changed (this updates suspendedUntil)
             hasStatsChangedBetoffers(eventId, liveData);
+            // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
             shouldSuspend = isMatchSuspendedBetoffers(eventId);
             
             if (shouldSuspend) {
               console.log(`⏸️ [NEXT BETOFFERS] Match ${eventId}: Suspending proxy markets due to stats change`);
               betoffersData = applySuspensionToBetoffers(betoffersData, true);
+            } else {
+              // ✅ FIX: Even if stats didn't change, preserve Unibet suspensions
+              betoffersData = applySuspensionToBetoffers(betoffersData, false);
             }
+          } else {
+            // ✅ FIX: Even without live data, preserve Unibet suspensions
+            betoffersData = applySuspensionToBetoffers(betoffersData, false);
           }
         } catch (suspensionError) {
           console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for proxy match ${eventId}:`, suspensionError.message);
+          // ✅ FIX: Even on error, preserve Unibet suspensions
+          betoffersData = applySuspensionToBetoffers(betoffersData, false);
         }
         
         console.log(`✅ [410 HANDLER] [${eventId}] PROXY FALLBACK SUCCESS - Returning data from proxy (suspended: ${shouldSuspend})`);
@@ -431,8 +452,9 @@ export async function GET(request, { params }) {
       const liveData = await fetchLiveDataForMatch(eventId);
       
       if (liveData) {
-        // Check if stats changed and suspend if needed
+        // ✅ FIX: Check if stats changed (this updates suspendedUntil)
         hasStatsChangedBetoffers(eventId, liveData);
+        // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
         shouldSuspend = isMatchSuspendedBetoffers(eventId);
         
         if (shouldSuspend) {
@@ -442,11 +464,20 @@ export async function GET(request, { params }) {
           betoffersData = applySuspensionToBetoffers(betoffersData, true);
           const afterCount = betoffersData?.betOffers?.reduce((sum, bo) => sum + (bo.outcomes?.filter(o => o.status === 'SUSPENDED').length || 0), 0) || 0;
           console.log(`   ✅ Suspended ${afterCount} outcomes out of ${beforeCount} total outcomes`);
+        } else {
+          // ✅ FIX: Even if stats didn't change, check if Unibet suspended any markets
+          // This ensures Unibet suspensions are preserved
+          betoffersData = applySuspensionToBetoffers(betoffersData, false);
         }
+      } else {
+        // ✅ FIX: Even without live data, preserve Unibet suspensions
+        betoffersData = applySuspensionToBetoffers(betoffersData, false);
       }
     } catch (suspensionError) {
       // Don't fail the request if suspension check fails
       console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for match ${eventId}:`, suspensionError.message);
+      // ✅ FIX: Even on error, preserve Unibet suspensions
+      betoffersData = applySuspensionToBetoffers(betoffersData, false);
     }
     
     console.log(`✅ [RESULT] [${eventId}] DIRECT FETCH SUCCESS - Returning data (source: direct, suspended: ${shouldSuspend})`);
@@ -487,16 +518,26 @@ export async function GET(request, { params }) {
         try {
           const liveData = await fetchLiveDataForMatch(eventId);
           if (liveData) {
+            // ✅ FIX: Check if stats changed (this updates suspendedUntil)
             hasStatsChangedBetoffers(eventId, liveData);
+            // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
             shouldSuspend = isMatchSuspendedBetoffers(eventId);
             
             if (shouldSuspend) {
               console.log(`⏸️ [NEXT BETOFFERS] Match ${eventId}: Suspending error-handler proxy markets due to stats change`);
               betoffersData = applySuspensionToBetoffers(betoffersData, true);
+            } else {
+              // ✅ FIX: Even if stats didn't change, preserve Unibet suspensions
+              betoffersData = applySuspensionToBetoffers(betoffersData, false);
             }
+          } else {
+            // ✅ FIX: Even without live data, preserve Unibet suspensions
+            betoffersData = applySuspensionToBetoffers(betoffersData, false);
           }
         } catch (suspensionError) {
           console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for error-handler proxy match ${eventId}:`, suspensionError.message);
+          // ✅ FIX: Even on error, preserve Unibet suspensions
+          betoffersData = applySuspensionToBetoffers(betoffersData, false);
         }
         
         console.log(`✅ [ERROR HANDLER] [${eventId}] PROXY FALLBACK SUCCESS after error - Returning data from proxy (suspended: ${shouldSuspend})`);
