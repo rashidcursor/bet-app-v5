@@ -129,7 +129,7 @@ const HomePage = () => {
 
     return (
         <div className="flex-1 bg-gray-100">
-            <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 md:px-6 md:py-6 overflow-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(140px+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6">
+            <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-4 md:px-6 md:py-6 overflow-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(140px+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6">
                 <div className="flex flex-col xl:flex-row gap-4 lg:gap-6">
                     {/* Main content area */}
                     <div className="flex-1 min-w-0">
