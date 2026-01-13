@@ -630,7 +630,7 @@ const BettingHistoryPage = ({ userId }) => {
 
   return (
     <div className="flex-1 bg-gray-100">
-      <div className="px-4 py-4 max-[375px]:px-8 max-[375px]:py-8 md:px-6 md:py-6 space-y-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6">
+      <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 md:px-6 md:py-6 space-y-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>

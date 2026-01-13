@@ -218,7 +218,7 @@ const handleInputChange = useCallback((field, value) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-4 max-[375px]:px-8 max-[375px]:py-8 sm:px-4 sm:py-4 lg:p-6 max-w-7xl pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-6">
+      <div className="container mx-auto px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 sm:px-4 sm:py-4 lg:p-6 max-w-7xl pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-6">
         {/* Header Section */}
         <div className="mb-6 lg:mb-8 ">
           <div className="flex flex-col space-y-4 lg:space-y-0 sm:flex-row sm:justify-between items-center   lg:gap-6">

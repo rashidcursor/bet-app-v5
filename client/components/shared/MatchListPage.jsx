@@ -128,7 +128,7 @@ const MatchListPage = ({ config }) => {
         return (
             <div className="bg-slate-100 min-h-screen relative">
                 <div className="lg:mr-80 xl:mr-96">
-                    <div className="px-4 py-4 max-[375px]:px-8 max-[375px]:py-8 sm:px-3 sm:py-3 md:p-4">
+                    <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 sm:px-3 sm:py-3 md:p-4">
                         <div className="bg-white p-8 text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -150,7 +150,7 @@ const MatchListPage = ({ config }) => {
         return (
             <div className="bg-slate-100 min-h-screen relative">
                 <div className="lg:mr-80 xl:mr-96">
-                    <div className="px-4 py-4 max-[375px]:px-8 max-[375px]:py-8 sm:px-3 sm:py-3 md:p-4">
+                    <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 sm:px-3 sm:py-3 md:p-4">
                         <div className="bg-white p-8 text-center border-l-4 border-red-500">
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">
                                 Error Loading Matches
@@ -177,7 +177,7 @@ const MatchListPage = ({ config }) => {
         <div className="bg-slate-100 min-h-screen relative">
             {/* Main content */}
             <div className="lg:mr-80 xl:mr-96">
-                <div className="px-4 py-4 max-[375px]:px-8 max-[375px]:py-8 sm:px-3 sm:py-3 md:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-4">
+                <div className="px-4 py-4 min-[375px]:max-[390px]:px-8 min-[375px]:max-[390px]:py-8 sm:px-3 sm:py-3 md:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-4">
                     {/* Header */}
                     <div className="mb-4 bg-white p-3 w-full md:w-screen"> {/* Adjusted width for responsiveness */}
                         {/* Breadcrumb */}

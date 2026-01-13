@@ -14,7 +14,7 @@ const ContentWrapper = ({ children }) => {
             !isMobile && !isCollapsed ? 'ml-6' : ''
         }`}>
             {!isAdminPage && <SecondaryNavigation />}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-0 pt-2 max-[375px]:pt-8 md:pt-0">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] min-[375px]:max-[390px]:pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:pb-0 pt-2 min-[375px]:max-[390px]:pt-8 md:pt-0">
                 {children}
             </main>
         </div>

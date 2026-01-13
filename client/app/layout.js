@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
                 </div>
 
                 {/* Main Content Area - add padding-top on mobile to account for fixed header */}
-                <div className="flex flex-1 overflow-hidden pt-[calc(env(safe-area-inset-top)+5.5rem)] max-[375px]:pt-[calc(env(safe-area-inset-top)+7.5rem)] md:pt-0">
+                <div className="flex flex-1 overflow-hidden pt-[calc(env(safe-area-inset-top)+5.5rem)] min-[375px]:max-[390px]:pt-[calc(env(safe-area-inset-top)+7.5rem)] md:pt-0">
                   {/* Fixed Sidebar */}
                   <SidebarWrapper />
 
