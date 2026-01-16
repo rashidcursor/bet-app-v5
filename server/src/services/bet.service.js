@@ -2608,9 +2608,9 @@ class BetService {
 
       // ✅ REMOVED: Rescheduling - processPendingBets job will check automatically every 5 seconds
       // Match not finished yet, will be checked by processPendingBets job
-      console.log(
+        console.log(
         `[processSingleBetOutcome] Match is not yet finished (state: ${matchData.state?.name}). Will be checked by processPendingBets job every 5 seconds.`
-      );
+        );
 
       return {
         betId,

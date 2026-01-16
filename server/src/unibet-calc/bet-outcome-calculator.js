@@ -380,11 +380,26 @@ class BetOutcomeCalculator {
     async getCachedDailyMatches(date, bet = null) {
         // console.log(bet);
         try {
-            const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-            const dateFormatted = date.toISOString().slice(0, 10);
+            // ✅ FIX: Convert UTC date to PKT date for cache lookup
+            // Database stores matchDate in UTC, but Fotmob cache is stored with PKT dates
+            // Example: Match at 14 Jan 1 AM PKT = 13 Jan 8 PM UTC
+            // Cache key: "20260114" (PKT), but UTC date would be "20260113"
+            const utcDateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+            const utcDateFormatted = date.toISOString().slice(0, 10);
+            
+            // Convert to PKT timezone for cache lookup using Intl.DateTimeFormat
+            const pktFormatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Karachi',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const dateFormatted = pktFormatter.format(date); // Returns "YYYY-MM-DD" in PKT
+            const dateStr = dateFormatted.replace(/-/g, ''); // "YYYYMMDD" format
 
             console.log(`\n🔍 FOTMOB CACHE LOOKUP:`);
-            console.log(`   - Date: ${dateFormatted} (${dateStr})`);
+            console.log(`   - UTC Date: ${utcDateFormatted} (${utcDateStr})`);
+            console.log(`   - PKT Date: ${dateFormatted} (${dateStr}) - Using for cache lookup`);
 
             // Try specific daily cache first
             const cacheFile = path.join(__dirname, '../storage/fotmob', `fotmob_matches_${dateStr}_${dateFormatted}.json`);
@@ -485,7 +500,7 @@ class BetOutcomeCalculator {
                     leaguesData = { leagues: allLeagues };
                 }
 
-                // For test events, use specific dates; otherwise filter by actual date
+                // For test events, use specific dates; otherwise filter by PKT date
                 let filterDate;
                 if (bet && bet?.eventId === '1022853538') {
                     filterDate = '2025-08-11';
@@ -494,9 +509,10 @@ class BetOutcomeCalculator {
                 } else if (bet && (bet?.matchId === '1024820144' || bet?.eventId === '1024820144')) {
                     filterDate = '2025-11-26';
                 } else {
+                    // ✅ FIX: Use PKT date for filtering (dateFormatted is already PKT date)
                     filterDate = dateFormatted;
                 }
-                console.log(`   - Filtering matches for date: ${filterDate} ${useTestDate ? '(TEST MODE)' : ''}`);
+                console.log(`   - Filtering matches for date: ${filterDate} ${useTestDate ? '(TEST MODE)' : ''} (PKT timezone)`);
                 
                 let matchesForDate = 0;
                 
@@ -538,15 +554,27 @@ class BetOutcomeCalculator {
                         } else {
                             return;
                         }
-                        const matchDateStr = matchDate.toISOString().slice(0, 10);
                         
-                        // Check exact date first
+                        // ✅ FIX: Convert match UTC date to PKT date string for comparison
+                        // Use Intl.DateTimeFormat to get PKT date string (YYYY-MM-DD format)
+                        const pktFormatter = new Intl.DateTimeFormat('en-CA', {
+                            timeZone: 'Asia/Karachi',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        });
+                        const matchDateStr = pktFormatter.format(matchDate); // Returns "YYYY-MM-DD" in PKT
+                        
+                        // Check exact date first (both in PKT timezone)
                         if (matchDateStr === filterDate) {
                             exactDateMatches.push(match);
                         } else {
                             // Only check 25-hour window if no exact date matches found
-                            const betDate = new Date(filterDate);
-                            const timeDifference = Math.abs(matchDate.getTime() - betDate.getTime());
+                            // Convert filterDate (PKT date string) to UTC Date for time comparison
+                            // filterDate is "YYYY-MM-DD" in PKT, convert to UTC midnight
+                            // PKT is UTC+5, so PKT midnight = UTC 19:00 previous day
+                            const filterDateUTC = new Date(filterDate + 'T00:00:00+05:00'); // PKT midnight to UTC
+                            const timeDifference = Math.abs(matchDate.getTime() - filterDateUTC.getTime());
                             const hoursDifference = timeDifference / (1000 * 60 * 60);
                             
                             if (hoursDifference <= 25) {
@@ -622,16 +650,18 @@ class BetOutcomeCalculator {
             }
 
             // Fallback: fetch fresh data using correct API endpoint
-            console.log(`📡 FALLBACK: Fetching fresh Fotmob data for ${dateStr}`);
+            // ✅ FIX: Use PKT date for API call (dateStr is already PKT date)
+            console.log(`📡 FALLBACK: Fetching fresh Fotmob data for ${dateStr} (PKT date)`);
             try {
                 // Use correct API endpoint: /api/data/matches (not /api/matches)
                 const timezone = 'Asia/Karachi'; // Default timezone
                 const ccode3 = 'PAK'; // Default country code
                 
                 console.log(`📡 Calling correct Fotmob API endpoint...`);
+                console.log(`📡 Using PKT date: ${dateStr} (converted from UTC: ${utcDateStr})`);
                 const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
                 
-                console.log(`📡 Calling FotMob API for daily matches: ${dateStr} (${date})`);
+                console.log(`📡 Calling FotMob API for daily matches: ${dateStr} (PKT) - Original UTC date: ${utcDateFormatted}`);
                 
                 // Get x-mas token (required for authentication)
                 let xmasToken = null;
@@ -5256,10 +5286,13 @@ class BetOutcomeCalculator {
             
             // ✅ ENHANCED: Multi-step player resolution with Gemini fallback
             let foundPlayerId = null;
+            let geminiNoMatch = false; // ✅ FIX: Initialize geminiNoMatch variable
             if (participantName) {
                 console.log(`   - Looking up player ID by name: "${participantName}"`);
-                foundPlayerId = await findPlayerIdByName(matchDetails, participantName);
-                console.log(`   - Found Player ID by name: ${foundPlayerId}`);
+                const result = await findPlayerIdByName(matchDetails, participantName); // ✅ FIX: Capture full result object
+                foundPlayerId = result?.playerId || null; // ✅ FIX: Extract playerId from result
+                geminiNoMatch = result?.geminiNoMatch || false; // ✅ FIX: Extract geminiNoMatch flag
+                console.log(`   - Found Player ID by name: ${foundPlayerId}${geminiNoMatch ? ' (Gemini NO_MATCH)' : ''}`);
                 
                 if (foundPlayerId) {
                     playerId = foundPlayerId;

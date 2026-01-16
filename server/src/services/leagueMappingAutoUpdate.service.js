@@ -492,11 +492,11 @@ class LeagueMappingAutoUpdate {
     }
 
     /**
-     * Fetch Fotmob matches for tomorrow (next day)
-     * ✅ NEW: Added to fetch tomorrow's matches for better league mapping
+     * Fetch Fotmob matches for tomorrow (next day) - COMPLETE DAY
+     * ✅ FIX: Changed from 12-hour filter to complete day
      */
     async fetchFotmobMatchesTomorrow(dateStr) {
-        console.log(`[LeagueMapping] Fetching Fotmob matches for TOMORROW (12hr filter)...`);
+        console.log(`[LeagueMapping] Fetching Fotmob matches for TOMORROW (complete day)...`);
         
         try {
             // Calculate tomorrow's date
@@ -559,39 +559,7 @@ class LeagueMappingAutoUpdate {
             console.log(`[LeagueMapping]   - Tomorrow date: ${tomorrowDateStr}`);
             console.log(`[LeagueMapping]   - Total leagues: ${data.leagues.length}`);
             
-            // ✅ FIX: Calculate tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
-            // Create tomorrow date start: 00:01 AM PKT
-            const tomorrowStartPKTStr = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}T00:01:00+05:00`;
-            const tomorrowStartPKT = new Date(tomorrowStartPKTStr);
-            
-            // Create tomorrow date end: 12:01 PM PKT (first 12 hours)
-            const tomorrowEndPKTStr = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}T12:01:00+05:00`;
-            const tomorrowEndPKT = new Date(tomorrowEndPKTStr);
-            
-            const startTimeStr = tomorrowStartPKT.toLocaleString("en-US", { 
-                timeZone: "Asia/Karachi",
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            const endTimeStr = tomorrowEndPKT.toLocaleString("en-US", { 
-                timeZone: "Asia/Karachi",
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            
-            console.log(`[LeagueMapping] ⏰ Tomorrow's window: ${startTimeStr} to ${endTimeStr} PKT`);
-            
-            // ✅ FIX: Filter matches - only include matches within tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
+            // ✅ FIX: Filter matches - only include non-finished matches from TOMORROW (complete day)
             // ✅ STRICT: Exclude Esports and Club Friendly Matches
             const filteredLeagues = data.leagues
                 .filter(league => {
@@ -625,16 +593,13 @@ class LeagueMappingAutoUpdate {
                             return false;
                         }
                         
-                        // ✅ Check if match time is within tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
-                        // Match time is already in UTC, and Date objects store UTC timestamps internally
-                        // So we can compare directly: matchTimeUTC >= tomorrowStartPKT && matchTimeUTC <= tomorrowEndPKT
+                        // ✅ FIX: Verify match date is tomorrow (complete day, not just 12 hours)
                         const matchTimeUTC = new Date(match.status?.utcTime || match.timeTS);
+                        const matchDatePKT = new Date(matchTimeUTC.toLocaleString("en-US", { timeZone: "Asia/Karachi" }));
+                        const matchDateStr = `${matchDatePKT.getFullYear()}${String(matchDatePKT.getMonth() + 1).padStart(2, '0')}${String(matchDatePKT.getDate()).padStart(2, '0')}`;
+                        const isTomorrowDate = matchDateStr === tomorrowDateStr;
                         
-                        // Match should be >= tomorrow 00:01 AM PKT and <= tomorrow 12:01 PM PKT
-                        // (Date objects compare by UTC timestamp internally, so this works correctly)
-                        const isWithinTomorrowFirst12Hours = matchTimeUTC >= tomorrowStartPKT && matchTimeUTC <= tomorrowEndPKT;
-                        
-                        return isWithinTomorrowFirst12Hours;
+                        return isTomorrowDate;
                     });
                     
                     return {
@@ -643,7 +608,7 @@ class LeagueMappingAutoUpdate {
                     };
                 }).filter(league => league.matches && league.matches.length > 0);
             
-            console.log(`[LeagueMapping] ✅ Filtered to ${filteredLeagues.length} leagues with matches within tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)`);
+            console.log(`[LeagueMapping] ✅ Filtered to ${filteredLeagues.length} leagues with matches for tomorrow (complete day, non-finished matches only)`);
             
             // ✅ NEW: Save filtered response to temp file for debugging
             try {
@@ -651,13 +616,7 @@ class LeagueMappingAutoUpdate {
                 await fs.promises.writeFile(tempFilePath, JSON.stringify({
                     date: tomorrowDateStr,
                     timestamp: this.getPKTTimeString(),
-                    window: {
-                        start: tomorrowStartPKT.toISOString(),
-                        end: tomorrowEndPKT.toISOString(),
-                        startStr: startTimeStr,
-                        endStr: endTimeStr,
-                        description: "Tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)"
-                    },
+                    description: "Tomorrow's complete day (all matches, non-finished only)",
                     totalLeagues: data.leagues.length,
                     filteredLeagues: filteredLeagues.length,
                     leagues: filteredLeagues
@@ -671,6 +630,185 @@ class LeagueMappingAutoUpdate {
         } catch (error) {
             console.error('[LeagueMapping] Error fetching Fotmob matches for tomorrow:', error.message);
             // Don't throw - return empty array if tomorrow fetch fails
+            return [];
+        }
+    }
+
+    /**
+     * Fetch Fotmob matches for day after tomorrow (first 12 hours only)
+     * ✅ NEW: Added to fetch day after tomorrow's matches for better league mapping
+     */
+    async fetchFotmobMatchesDayAfterTomorrow(dateStr) {
+        console.log(`[LeagueMapping] Fetching Fotmob matches for DAY AFTER TOMORROW (12hr filter)...`);
+        
+        try {
+            // Calculate day after tomorrow's date
+            const today = new Date();
+            const year = parseInt(dateStr.substring(0, 4));
+            const month = parseInt(dateStr.substring(4, 6)) - 1; // Month is 0-indexed
+            const day = parseInt(dateStr.substring(6, 8));
+            const todayDate = new Date(year, month, day);
+            const dayAfterDate = new Date(todayDate);
+            dayAfterDate.setDate(dayAfterDate.getDate() + 2); // +2 for day after tomorrow
+            
+            const dayAfterYear = dayAfterDate.getFullYear();
+            const dayAfterMonth = String(dayAfterDate.getMonth() + 1).padStart(2, '0');
+            const dayAfterDay = String(dayAfterDate.getDate()).padStart(2, '0');
+            const dayAfterDateStr = `${dayAfterYear}${dayAfterMonth}${dayAfterDay}`;
+            
+            console.log(`[LeagueMapping] 📅 Day after tomorrow's date: ${dayAfterDateStr}`);
+            
+            const timezone = 'Asia/Karachi';
+            const ccode3 = 'PAK';
+            const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dayAfterDateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
+
+            // Get x-mas token (required for authentication)
+            let xmasToken = null;
+            try {
+                console.log(`[LeagueMapping] 🔑 Attempting to fetch x-mas token for day after tomorrow...`);
+                const xmasResponse = await Promise.race([
+                    axios.get('http://46.101.91.154:6006/', { timeout: 5000 }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('x-mas token fetch timeout')), 8000))
+                ]);
+                xmasToken = xmasResponse.data?.['x-mas'];
+                if (xmasToken) {
+                    console.log(`[LeagueMapping] ✅ Got x-mas token for day after tomorrow`);
+                } else {
+                    console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
+                }
+            } catch (xmasError) {
+                console.warn(`[LeagueMapping] ⚠️ Could not get x-mas token (${xmasError.message}), trying without it...`);
+            }
+
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Referer': 'https://www.fotmob.com/'
+            };
+
+            if (xmasToken) {
+                headers['x-mas'] = xmasToken;
+            }
+
+            const response = await axios.get(apiUrl, { headers, timeout: 30000 });
+            const data = response.data;
+
+            if (!data.leagues || !Array.isArray(data.leagues)) {
+                console.warn(`[LeagueMapping] ⚠️ Invalid Fotmob response format for day after tomorrow`);
+                return [];
+            }
+
+            console.log(`[LeagueMapping] 📥 FotMob Day After Tomorrow API Response:`);
+            console.log(`[LeagueMapping]   - Day after tomorrow date: ${dayAfterDateStr}`);
+            console.log(`[LeagueMapping]   - Total leagues: ${data.leagues.length}`);
+            
+            // ✅ Calculate day after tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
+            const dayAfterStartPKTStr = `${dayAfterYear}-${dayAfterMonth}-${dayAfterDay}T00:01:00+05:00`;
+            const dayAfterStartPKT = new Date(dayAfterStartPKTStr);
+            
+            const dayAfterEndPKTStr = `${dayAfterYear}-${dayAfterMonth}-${dayAfterDay}T12:01:00+05:00`;
+            const dayAfterEndPKT = new Date(dayAfterEndPKTStr);
+            
+            const startTimeStr = dayAfterStartPKT.toLocaleString("en-US", { 
+                timeZone: "Asia/Karachi",
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const endTimeStr = dayAfterEndPKT.toLocaleString("en-US", { 
+                timeZone: "Asia/Karachi",
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            console.log(`[LeagueMapping] ⏰ Day after tomorrow's window: ${startTimeStr} to ${endTimeStr} PKT`);
+            
+            // ✅ Filter matches - only include matches within day after tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
+            // ✅ STRICT: Exclude Esports and Club Friendly Matches
+            const filteredLeagues = data.leagues
+                .filter(league => {
+                    // ✅ STRICT: Filter out Esports leagues
+                    const leagueName = (league.name || '').toLowerCase();
+                    if (leagueName.includes('esports') || leagueName.includes('esport')) {
+                        console.log(`[LeagueMapping] ⏭️ Skipping Esports league from Fotmob (day after tomorrow): ${league.name}`);
+                        return false;
+                    }
+                    
+                    // ✅ STRICT: Filter out Club Friendly Matches
+                    if (leagueName.includes('club friendly') || leagueName.includes('club friendly matches')) {
+                        console.log(`[LeagueMapping] ⏭️ Skipping Club Friendly Matches league from Fotmob (day after tomorrow): ${league.name}`);
+                        return false;
+                    }
+                    
+                    return true;
+                })
+                .map(league => {
+                    if (!league.matches || !Array.isArray(league.matches)) {
+                        return league;
+                    }
+                    
+                    const filteredMatches = league.matches.filter(match => {
+                        // Check status
+                        const status = match.status || {};
+                        const isNotFinished = status.finished === false;
+                        const isNotStarted = status.started === false;
+                        
+                        if (!isNotFinished || !isNotStarted) {
+                            return false;
+                        }
+                        
+                        // ✅ Check if match time is within day after tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)
+                        const matchTimeUTC = new Date(match.status?.utcTime || match.timeTS);
+                        
+                        // Match should be >= day after tomorrow 00:01 AM PKT and <= day after tomorrow 12:01 PM PKT
+                        const isWithinDayAfterFirst12Hours = matchTimeUTC >= dayAfterStartPKT && matchTimeUTC <= dayAfterEndPKT;
+                        
+                        return isWithinDayAfterFirst12Hours;
+                    });
+                    
+                    return {
+                        ...league,
+                        matches: filteredMatches
+                    };
+                }).filter(league => league.matches && league.matches.length > 0);
+            
+            console.log(`[LeagueMapping] ✅ Filtered to ${filteredLeagues.length} leagues with matches within day after tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)`);
+            
+            // ✅ NEW: Save filtered response to temp file for debugging
+            try {
+                const tempFilePath = path.join(this.tempDir, `fotmob_filtered_dayafter_${dayAfterDateStr}.json`);
+                await fs.promises.writeFile(tempFilePath, JSON.stringify({
+                    date: dayAfterDateStr,
+                    timestamp: this.getPKTTimeString(),
+                    window: {
+                        start: dayAfterStartPKT.toISOString(),
+                        end: dayAfterEndPKT.toISOString(),
+                        startStr: startTimeStr,
+                        endStr: endTimeStr,
+                        description: "Day after tomorrow's first 12 hours (00:01 AM to 12:01 PM PKT)"
+                    },
+                    totalLeagues: data.leagues.length,
+                    filteredLeagues: filteredLeagues.length,
+                    leagues: filteredLeagues
+                }, null, 2));
+                console.log(`[LeagueMapping] 💾 Saved filtered Fotmob day after tomorrow response to: ${tempFilePath}`);
+            } catch (saveError) {
+                console.warn(`[LeagueMapping] ⚠️ Failed to save temp file:`, saveError.message);
+            }
+            
+            return filteredLeagues;
+        } catch (error) {
+            console.error('[LeagueMapping] Error fetching Fotmob matches for day after tomorrow:', error.message);
+            // Don't throw - return empty array if day after tomorrow fetch fails
             return [];
         }
     }
@@ -1048,16 +1186,16 @@ class LeagueMappingAutoUpdate {
                     });
                     
                     return {
-                        id: String(league.primaryId || league.id),
-                        name: (league.isGroup && league.parentLeagueName) 
-                            ? league.parentLeagueName 
-                            : (league.name || league.parentLeagueName || ''),
-                        country: league.ccode || '',
+                    id: String(league.primaryId || league.id),
+                    name: (league.isGroup && league.parentLeagueName) 
+                        ? league.parentLeagueName 
+                        : (league.name || league.parentLeagueName || ''),
+                    country: league.ccode || '',
                         matches: filteredMatches.map(m => ({
-                            homeTeam: m.home?.name || m.home?.longName || '',
-                            awayTeam: m.away?.name || m.away?.longName || '',
-                            startTime: m.status?.utcTime || m.time || ''
-                        }))
+                        homeTeam: m.home?.name || m.home?.longName || '',
+                        awayTeam: m.away?.name || m.away?.longName || '',
+                        startTime: m.status?.utcTime || m.time || ''
+                    }))
                     };
                 });
                 
@@ -1180,7 +1318,7 @@ If no match found, return:
                 } catch (saveError) {
                     console.warn(`[LeagueMapping] ⚠️ Failed to save Gemini request:`, saveError.message);
                 }
-                
+
                 console.log(`[LeagueMapping] 📤 Sending request to Gemini (${keyName})...`);
                 
                 const response = await ai.models.generateContent({
@@ -1286,8 +1424,8 @@ If no match found, return:
             const existingInDB = await LeagueMapping.findOne({ unibetId: unibetIdNum });
             if (existingInDB) {
                 console.log(`[LeagueMapping] ⚠️ Skipping duplicate Unibet ID: ${unibetIdStr} (${mapping.unibetName}) - already exists in DB`);
-                return false;
-            }
+            return false;
+        }
         } catch (dbError) {
             console.error(`[LeagueMapping] ❌ Error checking DB for duplicate:`, dbError.message);
             // Continue processing if DB check fails
@@ -1854,17 +1992,22 @@ If no match found, return:
             
             console.log(`[LeagueMapping] ✅ Step 4a complete: Found ${fotmobLeagues.length} Fotmob leagues (today, non-finished matches only)`);
             
-            // 4b. Fetch Fotmob matches (tomorrow) - ✅ NEW
-            console.log('[LeagueMapping] 🌐 Step 4b: Fetching Fotmob matches for TOMORROW (12hr filter)...');
+            // 4b. Fetch Fotmob matches (tomorrow) - ✅ COMPLETE DAY
+            console.log('[LeagueMapping] 🌐 Step 4b: Fetching Fotmob matches for TOMORROW (complete day)...');
             const fotmobLeaguesTomorrow = await this.fetchFotmobMatchesTomorrow(dateStr);
-            console.log(`[LeagueMapping] ✅ Step 4b complete: Found ${fotmobLeaguesTomorrow.length} Fotmob leagues (tomorrow, within 12hrs, non-finished matches only)`);
+            console.log(`[LeagueMapping] ✅ Step 4b complete: Found ${fotmobLeaguesTomorrow.length} Fotmob leagues (tomorrow, complete day, non-finished matches only)`);
+            
+            // 4c. Fetch Fotmob matches (day after tomorrow) - ✅ NEW
+            console.log('[LeagueMapping] 🌐 Step 4c: Fetching Fotmob matches for DAY AFTER TOMORROW (12hr filter)...');
+            const fotmobLeaguesDayAfter = await this.fetchFotmobMatchesDayAfterTomorrow(dateStr);
+            console.log(`[LeagueMapping] ✅ Step 4c complete: Found ${fotmobLeaguesDayAfter.length} Fotmob leagues (day after tomorrow, within 12hrs, non-finished matches only)`);
             
             // ✅ Save today's leagues separately before combining
             const fotmobLeaguesToday = [...fotmobLeagues];
             
-            // Combine today and tomorrow leagues
-            fotmobLeagues = [...fotmobLeagues, ...fotmobLeaguesTomorrow];
-            console.log(`[LeagueMapping] ✅ Step 4 complete: Total ${fotmobLeagues.length} Fotmob leagues (${fotmobLeaguesToday.length} today + ${fotmobLeaguesTomorrow.length} tomorrow)`);
+            // Combine today, tomorrow, and day after tomorrow leagues
+            fotmobLeagues = [...fotmobLeagues, ...fotmobLeaguesTomorrow, ...fotmobLeaguesDayAfter];
+            console.log(`[LeagueMapping] ✅ Step 4 complete: Total ${fotmobLeagues.length} Fotmob leagues (${fotmobLeaguesToday.length} today + ${fotmobLeaguesTomorrow.length} tomorrow + ${fotmobLeaguesDayAfter.length} day after)`);
             
             // ✅ NEW: Save combined filtered data for verification (what will be sent to Gemini/Unibet matching)
             try {
@@ -1875,15 +2018,17 @@ If no match found, return:
                     summary: {
                         todayLeaguesCount: fotmobLeaguesToday.length,
                         tomorrowLeaguesCount: fotmobLeaguesTomorrow.length,
+                        dayAfterLeaguesCount: fotmobLeaguesDayAfter.length,
                         totalCombinedLeagues: fotmobLeagues.length,
                         description: "This is the filtered data that will be used for matching with Unibet leagues and sent to Gemini"
                     },
                     todayLeagues: fotmobLeaguesToday,
                     tomorrowLeagues: fotmobLeaguesTomorrow,
+                    dayAfterLeagues: fotmobLeaguesDayAfter,
                     allCombinedLeagues: fotmobLeagues
                 }, null, 2));
                 console.log(`[LeagueMapping] 💾 Saved combined filtered data to: ${combinedFilePath}`);
-                console.log(`[LeagueMapping] 📊 Combined data breakdown: ${fotmobLeaguesToday.length} today + ${fotmobLeaguesTomorrow.length} tomorrow = ${fotmobLeagues.length} total`);
+                console.log(`[LeagueMapping] 📊 Combined data breakdown: ${fotmobLeaguesToday.length} today + ${fotmobLeaguesTomorrow.length} tomorrow + ${fotmobLeaguesDayAfter.length} day after = ${fotmobLeagues.length} total`);
             } catch (saveError) {
                 console.warn(`[LeagueMapping] ⚠️ Failed to save combined data:`, saveError.message);
             }
@@ -1982,9 +2127,9 @@ If no match found, return:
                         });
                         if (existingMappingInDB) {
                             console.log(`[LeagueMapping] ⚠️ Skipping ${unibetLeague.name} - Combination (Unibet ID: ${unibetIdStr}, Fotmob ID: ${fotmobId}) already exists in DB`);
-                            skippedCount++;
-                            continue;
-                        }
+                        skippedCount++;
+                        continue;
+                    }
                     } catch (dbError) {
                         console.error(`[LeagueMapping] ❌ Error checking DB for combination:`, dbError.message);
                         // Continue processing if DB check fails
