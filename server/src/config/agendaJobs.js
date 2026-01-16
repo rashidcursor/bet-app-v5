@@ -200,55 +200,55 @@ const scheduleFotmobCacheJob = async () => {
     }
   }
 
-  try {
-    // Schedule at 1:30 PM Pakistan Time (13:30 PKT)
-    // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
-    // NOTE: Agenda.js interprets cron in SERVER'S LOCAL TIMEZONE
-    // - On local dev (PKT): "30 13 * * *" = 1:30 PM PKT
-    // - On Render (UTC): "30 8 * * *" = 8:30 UTC = 1:30 PM PKT
-    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
-    const cronExpression = isUTC ? "30 8 * * *" : "30 13 * * *";
-    
-    console.log('[Agenda] ========================================');
-    console.log('[Agenda] Scheduling FotMob cache refresh job...');
-    console.log('[Agenda] Target Time: 13:30 PM (1:30 PM) PKT');
-    console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
-    console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
-    if (isUTC) {
-      console.log('[Agenda] Using UTC cron: "30 8 * * *" = 8:30 UTC = 1:30 PM PKT');
-    } else {
-      console.log('[Agenda] Using PKT cron: "30 13 * * *" = 1:30 PM PKT');
-    }
-    console.log('[Agenda] ========================================');
-    
-    // ✅ FIX: Add timeout to prevent hanging
-    const jobPromise = agenda.every(cronExpression, "refreshFotmobMultidayCache");
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout: agenda.every() took too long (10s)')), 10000)
-    );
-    const scheduledJob = await Promise.race([jobPromise, timeoutPromise]);
-    
-    if (scheduledJob) {
-      const nextRunPKT = scheduledJob.attrs.nextRunAt ? (() => {
-        const pktDate = new Date(scheduledJob.attrs.nextRunAt);
-        pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
-        return pktDate.toISOString().replace('Z', ' PKT');
-      })() : 'N/A';
-      console.log('[Agenda] ✅ FotMob cache refresh job scheduled successfully!');
-      console.log(`[Agenda] Job ID: ${scheduledJob.attrs._id}`);
-      console.log(`[Agenda] Next run (UTC): ${scheduledJob.attrs.nextRunAt}`);
-      console.log(`[Agenda] Next run (PKT): ${nextRunPKT}`);
-      console.log(`[Agenda] Repeat interval: ${scheduledJob.attrs.repeatInterval}`);
-      fotmobCacheJobScheduled = true;
-    } else {
-      console.error('[Agenda] ❌ Failed to schedule FotMob cache refresh job - no job returned');
-    }
-  } catch (error) {
-    console.error('[Agenda] ❌ Error scheduling FotMob cache refresh job:', error);
-    console.error('[Agenda] Error details:', error.stack);
-    // Don't throw - continue with other operations
-    console.warn('[Agenda] ⚠️ Continuing despite FotMob cache job scheduling failure...');
+    try {
+      // Schedule at 1:30 PM Pakistan Time (13:30 PKT)
+      // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
+      // NOTE: Agenda.js interprets cron in SERVER'S LOCAL TIMEZONE
+      // - On local dev (PKT): "30 13 * * *" = 1:30 PM PKT
+      // - On Render (UTC): "30 8 * * *" = 8:30 UTC = 1:30 PM PKT
+      const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
+      const cronExpression = isUTC ? "30 8 * * *" : "30 13 * * *";
+      
+      console.log('[Agenda] ========================================');
+      console.log('[Agenda] Scheduling FotMob cache refresh job...');
+      console.log('[Agenda] Target Time: 13:30 PM (1:30 PM) PKT');
+      console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
+      console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
+      if (isUTC) {
+        console.log('[Agenda] Using UTC cron: "30 8 * * *" = 8:30 UTC = 1:30 PM PKT');
+      } else {
+        console.log('[Agenda] Using PKT cron: "30 13 * * *" = 1:30 PM PKT');
+      }
+      console.log('[Agenda] ========================================');
+      
+      // ✅ FIX: Add timeout to prevent hanging
+      const jobPromise = agenda.every(cronExpression, "refreshFotmobMultidayCache");
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: agenda.every() took too long (10s)')), 10000)
+      );
+      const scheduledJob = await Promise.race([jobPromise, timeoutPromise]);
+      
+      if (scheduledJob) {
+        const nextRunPKT = scheduledJob.attrs.nextRunAt ? (() => {
+          const pktDate = new Date(scheduledJob.attrs.nextRunAt);
+          pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
+          return pktDate.toISOString().replace('Z', ' PKT');
+        })() : 'N/A';
+        console.log('[Agenda] ✅ FotMob cache refresh job scheduled successfully!');
+        console.log(`[Agenda] Job ID: ${scheduledJob.attrs._id}`);
+        console.log(`[Agenda] Next run (UTC): ${scheduledJob.attrs.nextRunAt}`);
+        console.log(`[Agenda] Next run (PKT): ${nextRunPKT}`);
+        console.log(`[Agenda] Repeat interval: ${scheduledJob.attrs.repeatInterval}`);
+    fotmobCacheJobScheduled = true;
+      } else {
+        console.error('[Agenda] ❌ Failed to schedule FotMob cache refresh job - no job returned');
+      }
+    } catch (error) {
+      console.error('[Agenda] ❌ Error scheduling FotMob cache refresh job:', error);
+      console.error('[Agenda] Error details:', error.stack);
+      // Don't throw - continue with other operations
+      console.warn('[Agenda] ⚠️ Continuing despite FotMob cache job scheduling failure...');
   }
 };
 
@@ -313,109 +313,109 @@ const scheduleLeagueMappingJob = async () => {
   
   try {
     // ✅ FIX: Schedule every 12 hours (at 00:01 and 12:01 Pakistan Time)
-    // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
-    // IMPORTANT: Agenda.js uses server's LOCAL timezone for cron
+      // Cron syntax: "minute hour dayOfMonth month dayOfWeek"
+      // IMPORTANT: Agenda.js uses server's LOCAL timezone for cron
     // - On local dev (PKT): "1 0,12 * * *" = 00:01 and 12:01 PKT
     // - On Render (UTC): "1 19,7 * * *" = 19:01 and 07:01 UTC = 00:01 and 12:01 PKT
-    // Since we want same time on both, we need to detect timezone
-    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
+      // Since we want same time on both, we need to detect timezone
+      const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const isUTC = serverTimezone === 'UTC' || process.env.TZ === 'UTC';
     // Schedule job every 12 hours: 00:01 and 12:01 PKT
     // UTC: 19:01 (previous day) and 07:01 = 00:01 and 12:01 PKT
     // PKT: 00:01 and 12:01 = 00:01 and 12:01 PKT
     const cronExpression = isUTC ? "1 19,7 * * *" : "1 0,12 * * *";
-    
-    console.log('[Agenda] ========================================');
-    console.log('[Agenda] Scheduling League Mapping auto-update job...');
+      
+      console.log('[Agenda] ========================================');
+      console.log('[Agenda] Scheduling League Mapping auto-update job...');
     console.log('[Agenda] Target Time: Every 12 hours (00:01 and 12:01 PKT)');
-    console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
-    console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
-    if (isUTC) {
+      console.log(`[Agenda] Server Timezone: ${serverTimezone} (isUTC: ${isUTC})`);
+      console.log(`[Agenda] Cron Expression: "${cronExpression}"`);
+      if (isUTC) {
       console.log('[Agenda] Using UTC cron: "1 19,7 * * *" = 19:01 and 07:01 UTC = 00:01 and 12:01 PKT');
-    } else {
+      } else {
       console.log('[Agenda] Using PKT cron: "1 0,12 * * *" = 00:01 and 12:01 PKT');
-    }
-    console.log('[Agenda] ========================================');
-    
-    console.log('[Agenda] About to call agenda.every() for updateLeagueMapping...');
-    
-    // ✅ FIX: Add timeout to prevent hanging
-    const jobPromise = agenda.every(cronExpression, "updateLeagueMapping");
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout: agenda.every() took too long (10s)')), 10000)
-    );
-    const scheduledJob = await Promise.race([jobPromise, timeoutPromise]);
-    
-    console.log('[Agenda] agenda.every() returned:', scheduledJob ? 'Job object' : 'null/undefined');
-    
-    if (scheduledJob) {
-      const nextRunUTC = scheduledJob.attrs.nextRunAt;
-      const nextRunPKT = nextRunUTC ? (() => {
-        const pktDate = new Date(nextRunUTC);
-        pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
-        return pktDate.toISOString().replace('Z', ' PKT');
-      })() : 'N/A';
-      const now = new Date();
-      const nowPKT = (() => {
-        const pktDate = new Date(now);
-        pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
-        return pktDate.toISOString().replace('Z', ' PKT');
-      })();
+      }
+      console.log('[Agenda] ========================================');
       
-      console.log('[Agenda] ✅ League Mapping auto-update job scheduled successfully!');
-      console.log(`[Agenda] Job ID: ${scheduledJob.attrs._id}`);
-      console.log(`[Agenda] Server Timezone: ${serverTimezone}`);
-      console.log(`[Agenda] Current time (UTC): ${now.toISOString()}`);
-      console.log(`[Agenda] Current time (PKT): ${nowPKT}`);
-      console.log(`[Agenda] Next run (UTC): ${nextRunUTC}`);
-      console.log(`[Agenda] Next run (PKT): ${nextRunPKT}`);
-      console.log(`[Agenda] Repeat interval: ${scheduledJob.attrs.repeatInterval}`);
-      console.log(`[Agenda] Job type: ${scheduledJob.attrs.type}`);
-      console.log(`[Agenda] Job data:`, JSON.stringify(scheduledJob.attrs.data || {}, null, 2));
+      console.log('[Agenda] About to call agenda.every() for updateLeagueMapping...');
       
-      // Verify job will actually run
-      if (nextRunUTC) {
-        const timeUntilRun = nextRunUTC.getTime() - now.getTime();
-        const minutesUntil = Math.floor(timeUntilRun / (1000 * 60));
-        const secondsUntil = Math.floor((timeUntilRun % (1000 * 60)) / 1000);
-        console.log(`[Agenda] ⏰ Time until next run: ${minutesUntil}m ${secondsUntil}s`);
+      // ✅ FIX: Add timeout to prevent hanging
+      const jobPromise = agenda.every(cronExpression, "updateLeagueMapping");
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: agenda.every() took too long (10s)')), 10000)
+      );
+      const scheduledJob = await Promise.race([jobPromise, timeoutPromise]);
+      
+      console.log('[Agenda] agenda.every() returned:', scheduledJob ? 'Job object' : 'null/undefined');
+      
+      if (scheduledJob) {
+        const nextRunUTC = scheduledJob.attrs.nextRunAt;
+        const nextRunPKT = nextRunUTC ? (() => {
+          const pktDate = new Date(nextRunUTC);
+          pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
+          return pktDate.toISOString().replace('Z', ' PKT');
+        })() : 'N/A';
+        const now = new Date();
+        const nowPKT = (() => {
+          const pktDate = new Date(now);
+          pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
+          return pktDate.toISOString().replace('Z', ' PKT');
+        })();
         
-        if (timeUntilRun < 0) {
-          console.warn(`[Agenda] ⚠️ WARNING: Next run time is in the past! Job may not execute until tomorrow.`);
-          console.warn(`[Agenda] ⚠️ Time difference: ${Math.abs(timeUntilRun / 1000)} seconds in the past`);
-        } else if (timeUntilRun < 60000) {
-          console.log(`[Agenda] ✅ Job will run in less than 1 minute!`);
+        console.log('[Agenda] ✅ League Mapping auto-update job scheduled successfully!');
+        console.log(`[Agenda] Job ID: ${scheduledJob.attrs._id}`);
+        console.log(`[Agenda] Server Timezone: ${serverTimezone}`);
+        console.log(`[Agenda] Current time (UTC): ${now.toISOString()}`);
+        console.log(`[Agenda] Current time (PKT): ${nowPKT}`);
+        console.log(`[Agenda] Next run (UTC): ${nextRunUTC}`);
+        console.log(`[Agenda] Next run (PKT): ${nextRunPKT}`);
+        console.log(`[Agenda] Repeat interval: ${scheduledJob.attrs.repeatInterval}`);
+        console.log(`[Agenda] Job type: ${scheduledJob.attrs.type}`);
+        console.log(`[Agenda] Job data:`, JSON.stringify(scheduledJob.attrs.data || {}, null, 2));
+        
+        // Verify job will actually run
+        if (nextRunUTC) {
+          const timeUntilRun = nextRunUTC.getTime() - now.getTime();
+          const minutesUntil = Math.floor(timeUntilRun / (1000 * 60));
+          const secondsUntil = Math.floor((timeUntilRun % (1000 * 60)) / 1000);
+          console.log(`[Agenda] ⏰ Time until next run: ${minutesUntil}m ${secondsUntil}s`);
+          
+          if (timeUntilRun < 0) {
+            console.warn(`[Agenda] ⚠️ WARNING: Next run time is in the past! Job may not execute until tomorrow.`);
+            console.warn(`[Agenda] ⚠️ Time difference: ${Math.abs(timeUntilRun / 1000)} seconds in the past`);
+          } else if (timeUntilRun < 60000) {
+            console.log(`[Agenda] ✅ Job will run in less than 1 minute!`);
+          }
         }
-      }
-      
-      // Verify job exists in database
-      try {
-        const verifyJob = await agenda.jobs({ name: 'updateLeagueMapping' });
-        console.log(`[Agenda] 🔍 Verification: Found ${verifyJob.length} updateLeagueMapping job(s) in database`);
-        if (verifyJob.length > 0) {
-          verifyJob.forEach((job, index) => {
-            const verifyNextRun = job.attrs.nextRunAt;
-            const verifyNextRunPKT = verifyNextRun ? (() => {
-              const pktDate = new Date(verifyNextRun);
-              pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
-              return pktDate.toISOString().replace('Z', ' PKT');
-            })() : 'N/A';
-            console.log(`[Agenda]   Job ${index + 1}: ID=${job.attrs._id}, Next run (PKT)=${verifyNextRunPKT}`);
-          });
+        
+        // Verify job exists in database
+        try {
+          const verifyJob = await agenda.jobs({ name: 'updateLeagueMapping' });
+          console.log(`[Agenda] 🔍 Verification: Found ${verifyJob.length} updateLeagueMapping job(s) in database`);
+          if (verifyJob.length > 0) {
+            verifyJob.forEach((job, index) => {
+              const verifyNextRun = job.attrs.nextRunAt;
+              const verifyNextRunPKT = verifyNextRun ? (() => {
+                const pktDate = new Date(verifyNextRun);
+                pktDate.setUTCHours(pktDate.getUTCHours() + 5); // Add 5 hours for PKT
+                return pktDate.toISOString().replace('Z', ' PKT');
+              })() : 'N/A';
+              console.log(`[Agenda]   Job ${index + 1}: ID=${job.attrs._id}, Next run (PKT)=${verifyNextRunPKT}`);
+            });
+          }
+        } catch (verifyError) {
+          console.warn(`[Agenda] ⚠️ Could not verify job in database:`, verifyError.message);
         }
-      } catch (verifyError) {
-        console.warn(`[Agenda] ⚠️ Could not verify job in database:`, verifyError.message);
+        
+        leagueMappingJobScheduled = true;
+      } else {
+        console.error('[Agenda] ❌ Failed to schedule League Mapping job - no job returned');
       }
-      
-      leagueMappingJobScheduled = true;
-    } else {
-      console.error('[Agenda] ❌ Failed to schedule League Mapping job - no job returned');
-    }
-  } catch (error) {
-    console.error('[Agenda] ❌ Error scheduling League Mapping job:', error);
-    console.error('[Agenda] Error details:', error.stack);
-    // Don't throw - continue with other operations
-    console.warn('[Agenda] ⚠️ Continuing despite League Mapping job scheduling failure...');
+    } catch (error) {
+      console.error('[Agenda] ❌ Error scheduling League Mapping job:', error);
+      console.error('[Agenda] Error details:', error.stack);
+      // Don't throw - continue with other operations
+      console.warn('[Agenda] ⚠️ Continuing despite League Mapping job scheduling failure...');
   }
 };
 

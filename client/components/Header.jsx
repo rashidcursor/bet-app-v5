@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -41,12 +42,14 @@ import {
 } from "@/lib/features/auth/authSlice";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import SecondaryNavigation from "@/components/SecondaryNavigation";
 
 const Header = () => {
   const { toggleMobileSidebar, isMobile } = useCustomSidebar();
   const dispatch = useDispatch();
   const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   // Redux selectors
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectUser);
@@ -222,6 +225,9 @@ const Header = () => {
           </div>
         </div>
       </div>
+
+      {/* Secondary Navigation - merged with header */}
+      {!pathname?.startsWith('/admin') && <SecondaryNavigation />}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

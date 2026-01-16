@@ -25,7 +25,7 @@ const SecondaryNavigation = () => {
     ];
 
     return (
-        <div className="bg-slate-800 text-white py-2 mt-1 lg:mt-0">
+        <div className="bg-slate-800 text-white py-2">
             {/* Unified Navigation View for all screen sizes */}
             <div className="px-4">
                 <div className="flex items-center justify-between">

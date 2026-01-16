@@ -939,15 +939,32 @@ class LeagueMappingAutoUpdate {
             const unibetCountry = unibetLeague.country || '';
             const fotmobCcode = fotmobLeague.ccode || '';
             
+            // ✅ FIX: Extract base league name from Unibet (remove group number) BEFORE normalizing
+            const unibetFullName = unibetLeague.englishName || unibetLeague.name || '';
+            // Extract base name and group number (e.g., "Primera RFEF 1" → base: "Primera RFEF", group: "1")
+            const unibetBaseNameMatch = unibetFullName.match(/^(.+?)\s+(\d+)$/);
+            const unibetBaseName = unibetBaseNameMatch ? unibetBaseNameMatch[1].trim() : unibetFullName.trim();
+            const unibetGroupNum = unibetBaseNameMatch ? unibetBaseNameMatch[2] : null;
+            
             // Use parentLeagueName if it's a group, otherwise use name
             const fotmobName = fotmobLeague.isGroup && fotmobLeague.parentLeagueName 
                 ? fotmobLeague.parentLeagueName 
                 : (fotmobLeague.name || fotmobLeague.parentLeagueName || '');
-            const unibetName = unibetLeague.englishName || unibetLeague.name || '';
             
-            // Normalize names for comparison
-            const fotmobNameNorm = normalizeTeamName(fotmobName);
-            const unibetNameNorm = normalizeTeamName(unibetName);
+            // Normalize base names for comparison
+            let fotmobNameNorm = normalizeTeamName(fotmobName);
+            let unibetNameNorm = normalizeTeamName(unibetBaseName);
+            
+            // ✅ NEW: Handle RFEF = Federacion variation BEFORE comparing
+            // Replace RFEF with Federacion and vice versa for comparison
+            const fotmobNameNormVariation = fotmobNameNorm.replace(/\bfederacion\b/g, 'rref');
+            const unibetNameNormVariation = unibetNameNorm.replace(/\brref\b/g, 'federacion');
+            
+            // Check if names match (with or without variation)
+            const exactNameMatch = fotmobNameNorm === unibetNameNorm;
+            const variationNameMatch = fotmobNameNorm === unibetNameNormVariation || 
+                                      fotmobNameNormVariation === unibetNameNorm;
+            const nameMatch = exactNameMatch || variationNameMatch;
             
             // ✅ ROOT CAUSE FIX: Check international status first
             const isInternational = !unibetCountry || 
@@ -957,27 +974,67 @@ class LeagueMappingAutoUpdate {
                                    !fotmobCcode;
             
             const countryMatch = this.compareCountries(unibetCountry, fotmobCcode);
-            const nameMatch = fotmobNameNorm === unibetNameNorm;
             
-            // Detailed logging for debugging
-            if (nameMatch || fotmobNameNorm.includes('africa') || unibetNameNorm.includes('africa') || 
+            // Detailed logging for debugging (include RFEF/Federacion cases)
+            if (nameMatch || unibetNameNorm.includes('rref') || fotmobNameNorm.includes('federacion') ||
+                fotmobNameNorm.includes('africa') || unibetNameNorm.includes('africa') || 
                 fotmobNameNorm.includes('professional') || unibetNameNorm.includes('professional') ||
                 fotmobNameNorm.includes('pro league') || unibetNameNorm.includes('pro league')) {
-                console.log(`[LeagueMapping] 🔍 Checking: "${fotmobName}" (FotMob) vs "${unibetName}" (Unibet)`);
-                console.log(`[LeagueMapping]   - Normalized: "${fotmobNameNorm}" vs "${unibetNameNorm}"`);
+                console.log(`[LeagueMapping] 🔍 Checking: "${fotmobName}" (FotMob) vs "${unibetBaseName}" (Unibet base)`);
+                console.log(`[LeagueMapping]   - Full Unibet name: "${unibetFullName}"`);
+                console.log(`[LeagueMapping]   - Normalized base: "${fotmobNameNorm}" vs "${unibetNameNorm}"`);
+                if (variationNameMatch && !exactNameMatch) {
+                    console.log(`[LeagueMapping]   - ✅ Variation match: RFEF ↔ Federacion`);
+                }
                 console.log(`[LeagueMapping]   - Country match: ${countryMatch} (Unibet: "${unibetCountry}", FotMob: "${fotmobCcode}")`);
                 console.log(`[LeagueMapping]   - Name match: ${nameMatch}`);
                 console.log(`[LeagueMapping]   - Is international: ${isInternational}`);
             }
             
-            // ✅ PRIORITY 1: For international leagues OR if names match exactly, accept it
+            // ✅ PRIORITY 1: For international leagues OR if names match (with variations), accept it
             if (nameMatch && (countryMatch || isInternational)) {
+                // ✅ NEW: For group leagues, check group number match
+                if (fotmobLeague.isGroup) {
+                    // Extract group number from Fotmob name (e.g., "Primera Federacion - Group 1" → "1")
+                    const fotmobGroupMatch = fotmobLeague.name.match(/Group\s+(\d+)/i);
+                    
+                    if (unibetGroupNum && fotmobGroupMatch) {
+                        const fotmobGroupNum = fotmobGroupMatch[1];
+                        
+                        // Only match if group numbers match
+                        if (unibetGroupNum !== fotmobGroupNum) {
+                            console.log(`[LeagueMapping] ⏭️ Skipping group - Unibet group ${unibetGroupNum} doesn't match Fotmob group ${fotmobGroupNum}`);
+                            continue; // Skip this group, try next one
+                        }
+                    } else if (unibetGroupNum && !fotmobGroupMatch) {
+                        // Unibet has group number but Fotmob group league doesn't have group in name (shouldn't happen)
+                        console.log(`[LeagueMapping] ⏭️ Skipping - Unibet has group number (${unibetGroupNum}) but Fotmob group league name format unexpected`);
+                        continue;
+                    } else if (!unibetGroupNum && fotmobGroupMatch) {
+                        // Unibet has no group number but Fotmob is a group league
+                        console.log(`[LeagueMapping] ⏭️ Skipping - Fotmob is group league but Unibet has no group number`);
+                        continue;
+                    }
+                } else if (unibetGroupNum) {
+                    // Fotmob is NOT a group league but Unibet has group number
+                    console.log(`[LeagueMapping] ⏭️ Skipping - Unibet has group number (${unibetGroupNum}) but Fotmob is not a group league`);
+                    continue;
+                }
+                
                 const fotmobId = String(fotmobLeague.primaryId || fotmobLeague.id);
                 console.log(`[LeagueMapping] ✅ Exact name match found: ${fotmobName} (Fotmob ID: ${fotmobId}, Country: ${fotmobCcode})`);
+                if (variationNameMatch && !exactNameMatch) {
+                    console.log(`[LeagueMapping]    → Matched with RFEF/Federacion variation: "${unibetBaseName}" ≈ "${fotmobName}"`);
+                }
+                if (unibetGroupNum) {
+                    console.log(`[LeagueMapping]    → Group number verified: ${unibetGroupNum}`);
+                }
                 return {
-                    id: fotmobLeague.primaryId || fotmobLeague.id,
+                    id: fotmobLeague.primaryId || fotmobLeague.id, // ✅ Always return primaryId
+                    groupId: fotmobLeague.isGroup ? fotmobLeague.id : null, // ✅ Return group ID if it's a group
                     name: fotmobName,
-                    exactMatch: true
+                    exactMatch: true,
+                    isGroup: fotmobLeague.isGroup || false
                 };
             }
         }
@@ -1071,14 +1128,16 @@ class LeagueMappingAutoUpdate {
                     
                     bestMatchScore = score;
                     bestMatch = {
-                        id: fotmobLeague.primaryId || fotmobLeague.id,
+                        id: fotmobLeague.primaryId || fotmobLeague.id, // ✅ Always use primaryId
+                        groupId: fotmobLeague.isGroup ? fotmobLeague.id : null, // ✅ Return group ID if it's a group
                         name: fotmobName,
                         exactMatch: false,
                         matchScore: score,
                         matchCount,
                         perfectMatches,
                         teamOnlyMatches,
-                        countryMatch
+                        countryMatch,
+                        isGroup: fotmobLeague.isGroup || false
                     };
                     
                     console.log(`[LeagueMapping]   📊 Found candidate: "${fotmobName}" (Score: ${score.toFixed(2)}, Perfect: ${perfectMatches}, Team-only: ${teamOnlyMatches}, Country: ${countryMatch ? '✅' : '❌'})`);
@@ -1091,9 +1150,11 @@ class LeagueMappingAutoUpdate {
         if (bestMatch) {
             console.log(`[LeagueMapping] ✅ Team+time match found: ${bestMatch.name} (Fotmob ID: ${bestMatch.id}, Score: ${bestMatch.matchScore.toFixed(2)}, Perfect matches: ${bestMatch.perfectMatches})`);
             return {
-                id: bestMatch.id,
+                id: bestMatch.id, // ✅ Always primaryId
+                groupId: bestMatch.groupId, // ✅ Group ID if it's a group
                 name: bestMatch.name,
-                exactMatch: false
+                exactMatch: false,
+                isGroup: bestMatch.isGroup || false
             };
         }
 
@@ -1186,16 +1247,20 @@ class LeagueMappingAutoUpdate {
                     });
                     
                     return {
-                    id: String(league.primaryId || league.id),
-                    name: (league.isGroup && league.parentLeagueName) 
-                        ? league.parentLeagueName 
-                        : (league.name || league.parentLeagueName || ''),
-                    country: league.ccode || '',
+                        id: String(league.primaryId || league.id), // ✅ Primary ID (for mapping)
+                        groupId: league.isGroup ? String(league.id) : null, // ✅ Group ID (only for group leagues)
+                        name: (league.isGroup && league.parentLeagueName) 
+                            ? league.parentLeagueName 
+                            : (league.name || league.parentLeagueName || ''),
+                        fullName: league.name || '', // ✅ Full name including group (e.g., "Segunda Federacion - Group 2")
+                        isGroup: league.isGroup || false, // ✅ Whether this is a group league
+                        groupName: league.groupName || null, // ✅ Group number/name (e.g., "1", "2")
+                        country: league.ccode || '',
                         matches: filteredMatches.map(m => ({
-                        homeTeam: m.home?.name || m.home?.longName || '',
-                        awayTeam: m.away?.name || m.away?.longName || '',
-                        startTime: m.status?.utcTime || m.time || ''
-                    }))
+                            homeTeam: m.home?.name || m.home?.longName || '',
+                            awayTeam: m.away?.name || m.away?.longName || '',
+                            startTime: m.status?.utcTime || m.time || ''
+                        }))
                     };
                 });
                 
@@ -1234,71 +1299,96 @@ class LeagueMappingAutoUpdate {
 
                 // Initialize Gemini
                 const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-
                 const prompt = `You are a football league matching expert. I need to find which FotMob league matches a given Unibet league using TWO PRIORITIES.
 
-**Unibet League:**
-- Name: "${unibetData.leagueName}"
-- Country: "${unibetData.country}"
-- All Matches (${unibetData.matches.length} total):
-${unibetData.matches.map((m, i) => `  ${i + 1}. ${m.homeTeam} vs ${m.awayTeam} (Time: ${m.startTime})`).join('\n')}
+                **Unibet League:**
+                - Name: "\${unibetData.leagueName}"
+                - Country: "\${unibetData.country}"
+                - All Matches (\${unibetData.matches.length} total):
+                \${unibetData.matches.map((m, i) => \`  \${i + 1}. \${m.homeTeam} vs \${m.awayTeam} (Time: \${m.startTime})\`).join('\\n')}
+                
+                **Available FotMob Leagues:**
+                \${fotmobData.map((league, idx) => \`
+                \${idx + 1}. League Name: "\${league.name}"
+                   - ID: \${league.id}
+                   - Primary League ID: \${league.primaryId || league.id}
+                   - Is Group League: \${league.isGroup || false}
+                   - Group Name: \${league.groupName || 'N/A'}
+                   - Country: "\${league.country}"
+                   - All Matches (\${league.matches.length} total):
+                \${league.matches.map((m, i) => \`     \${i + 1}. \${m.homeTeam} vs \${m.awayTeam} (Time: \${m.startTime})\`).join('\\n')}
+                \`).join('\\n')}
+                
+                **Task:**
+                Find the FotMob league that matches the Unibet league "\${unibetData.leagueName}" from "\${unibetData.country}".
+                
+                ---
+                
+                ## MATCHING PRIORITY (Follow in this exact order):
+                
+                ### PRIORITY 1: LEAGUE NAME MATCH (INCLUDING GROUP LEAGUES)
+                
+                - Normalize league names:
+                  - Remove ALL spaces, underscores, hyphens, and special characters
+                  - Convert to lowercase
+                - Countries MUST match (e.g., Spain = ESP, England = ENG)
+                - Country code mapping: Spain=ESP, England=ENG, France=FRA, Italy=ITA, Germany=GER, etc.
+                
+                **Group-aware rules:**
+                - If Unibet league name ENDS with a number (e.g. "Primera RFEF 2"):
+                  - Treat the number as a GROUP number
+                  - Extract base league name and group number
+                  - Match ONLY FotMob leagues where:
+                    - isGroup = true
+                    - groupName matches exactly
+                    - Base league names match after normalization
+                  - Different group numbers are DIFFERENT leagues and must NOT be merged
+                
+                - If Unibet league has NO group number:
+                  - Prefer FotMob parent league (isGroup = false)
+                  - Fallback to a group league only if parent does not exist
+                
+                - If normalized league names AND country match → RETURN MATCH
+                
+                ---
+                
+                ### PRIORITY 2: TEAM NAMES + EXACT MATCH TIME (Only if Priority 1 fails)
+                
+                - Search all FotMob leagues (including group leagues)
+                - Home team matches, away team matches (flexible)
+                - Match time must be EXACT
+                - At least ONE matching match → RETURN MATCH
+                
+                ---
+                
+                ## Important Rules:
+                - Always apply Priority 1 first
+                - Group leagues must match SAME group number
+                - Same primaryId does NOT mean same league
+                - Never merge Group 1 and Group 2
+                
+                ---
+                
+                ## Response Format (JSON only, no other text):
+                
+                If match found:
+                {
+                  "matched": true,
+                  "fotmobLeagueId": "12345",
+                  "fotmobPrimaryLeagueId": "8968",
+                  "fotmobLeagueName": "Primera Federacion - Group 2",
+                  "priority": "1",
+                  "reason": "League name matched with correct group and country"
+                }
+                
+                If no match found:
+                {
+                  "matched": false,
+                  "reason": "No league name or team+time match found"
+                }`;
+                
 
-**Available FotMob Leagues:**
-${fotmobData.map((league, idx) => `
-${idx + 1}. League Name: "${league.name}"
-   - ID: ${league.id}
-   - Country: "${league.country}"
-   - All Matches (${league.matches.length} total):
-${league.matches.map((m, i) => `     ${i + 1}. ${m.homeTeam} vs ${m.awayTeam} (Time: ${m.startTime})`).join('\n')}
-`).join('\n')}
-
-**Task:**
-Find the FotMob league that matches the Unibet league "${unibetData.leagueName}" from "${unibetData.country}".
-
-**MATCHING PRIORITY (Follow in this exact order):**
-
-**PRIORITY 1: EXACT LEAGUE NAME MATCH (Check this FIRST)**
-- Compare league names by NORMALIZING them:
-  - Remove ALL spaces, underscores, hyphens, and special characters
-  - Convert to lowercase
-  - Examples:
-    * "La Liga" → "laliga"
-    * "LaLiga" → "laliga"  
-    * "Premier_League" → "premierleague"
-    * "Premier League" → "premierleague"
-    * "Serie A" → "seriea"
-- Countries MUST match (e.g., "Spain" = "ESP", "England" = "ENG")
-- Country code mapping: Spain=ESP, England=ENG, France=FRA, Italy=ITA, Germany=GER, etc.
-- If normalized league names match AND countries match → THIS IS THE MATCH (return immediately)
-
-**PRIORITY 2: TEAM NAMES + EXACT MATCH TIME (Only if Priority 1 fails)**
-- If league names don't match after normalization, check match data:
-- For each Unibet match, find a FotMob match where:
-  1. Team names match (home team = home team, away team = away team)
-  2. Match time is EXACTLY the same (same date and time, not approximate)
-- If you find at least ONE match where both teams AND exact time match → THIS IS THE MATCH
-- Team name matching should be flexible (ignore case, small variations are OK)
-
-**Important Rules:**
-- ALWAYS try Priority 1 FIRST (league name match)
-- Only use Priority 2 if Priority 1 finds NO match
-- For Priority 1: "La Liga" (Unibet) = "LaLiga" (FotMob) = SAME (both normalize to "laliga")
-- For Priority 2: Analyze the data and find the best match based on the team names and time. Team names must match AND time must be EXACT
-
-**Response Format (JSON only, no other text):**
-{
-  "matched": true/false,
-  "fotmobLeagueId": "12345" (if matched),
-  "fotmobLeagueName": "La Liga" (if matched),
-  "priority": "1" or "2" (which priority method was used - 1 for name match, 2 for team+time match),
-  "reason": "Brief explanation of why this match was found (e.g., 'League name normalized match' or 'Team names and exact time matched')"
-}
-
-If no match found, return:
-{
-  "matched": false,
-  "reason": "Why no match was found (e.g., 'No league name match found and no matching teams with exact time')"
-}`;
+                                 
 
                 // ✅ NEW: Save Gemini request to temp file for debugging
                 try {
@@ -1361,19 +1451,50 @@ If no match found, return:
                 }
 
                 if (geminiResult.matched && geminiResult.fotmobLeagueId) {
-                    const matchedLeague = fotmobLeagues.find(l => 
+                    // ✅ Find by primaryId first, then by id
+                    let matchedLeague = fotmobLeagues.find(l => 
                         String(l.primaryId || l.id) === String(geminiResult.fotmobLeagueId)
                     );
+                    
+                    // If not found by primaryId, try by id (for non-group leagues)
+                    if (!matchedLeague) {
+                        matchedLeague = fotmobLeagues.find(l => 
+                            String(l.id) === String(geminiResult.fotmobLeagueId)
+                        );
+                    }
 
                     if (matchedLeague) {
-                        console.log(`[LeagueMapping] ✅ Gemini matched (${keyName}): "${geminiResult.fotmobLeagueName}" (ID: ${geminiResult.fotmobLeagueId})`);
+                        // ✅ NEW: For group leagues, verify group number matches
+                        if (matchedLeague.isGroup) {
+                            const unibetGroupMatch = (unibetLeague.englishName || unibetLeague.name).match(/\s+(\d+)$/);
+                            const fotmobGroupMatch = matchedLeague.name.match(/Group\s+(\d+)/i);
+                            
+                            if (unibetGroupMatch && fotmobGroupMatch) {
+                                const unibetGroupNum = unibetGroupMatch[1];
+                                const fotmobGroupNum = fotmobGroupMatch[1];
+                                
+                                if (unibetGroupNum !== fotmobGroupNum) {
+                                    console.log(`[LeagueMapping] ⚠️ Gemini matched wrong group - Unibet group ${unibetGroupNum} vs Fotmob group ${fotmobGroupNum}`);
+                                    return null; // Reject Gemini match if group numbers don't match
+                                }
+                            }
+                        }
+                        
+                        console.log(`[LeagueMapping] ✅ Gemini matched (${keyName}): "${geminiResult.fotmobLeagueName}" (Primary ID: ${geminiResult.fotmobLeagueId}, Group ID: ${geminiResult.fotmobGroupId || 'N/A'})`);
                         console.log(`[LeagueMapping]    Reason: ${geminiResult.reason || 'Team names and league name matched'}`);
                         
+                        // ✅ Use groupId from Gemini response if provided, otherwise extract from matchedLeague
+                        const groupId = geminiResult.fotmobGroupId 
+                            ? parseInt(geminiResult.fotmobGroupId) 
+                            : (matchedLeague.isGroup ? matchedLeague.id : null);
+                        
                         return {
-                            id: parseInt(geminiResult.fotmobLeagueId),
+                            id: parseInt(geminiResult.fotmobLeagueId), // ✅ Primary ID from Gemini
+                            groupId: groupId, // ✅ Group ID from response or extracted
                             name: geminiResult.fotmobLeagueName || matchedLeague.name,
                             exactMatch: false,
-                            geminiMatch: true
+                            geminiMatch: true,
+                            isGroup: matchedLeague.isGroup || false
                         };
                     } else {
                         console.log(`[LeagueMapping] ⚠️ Gemini returned ID ${geminiResult.fotmobLeagueId} but league not found in FotMob data`);
@@ -1508,6 +1629,7 @@ If no match found, return:
         try {
             const unibetId = parseInt(mapping.unibetId);
             const fotmobId = parseInt(mapping.fotmobId);
+            const fotmobGroupId = mapping.fotmobGroupId ? parseInt(mapping.fotmobGroupId) : undefined;
             const matchType = mapping.exactMatch ? 'Exact Match' : 'Different Name';
             
             // ✅ FIX: Only check unibetId (allow multiple unibetIds per fotmobId)
@@ -1524,16 +1646,18 @@ If no match found, return:
             const leagueMapping = new LeagueMapping({
                 unibetId: unibetId,
                 unibetName: mapping.unibetName,
-                fotmobId: fotmobId,
+                fotmobId: fotmobId, // ✅ Always primaryId
+                fotmobGroupId: fotmobGroupId, // ✅ Group ID (optional, only for group leagues)
                 fotmobName: mapping.fotmobName,
                 matchType: matchType,
                 country: mapping.country || '',
                 unibetUrl: mapping.unibetUrl || '',
-                fotmobUrl: mapping.fotmobUrl || `https://www.fotmob.com/leagues/${fotmobId}`
+                fotmobUrl: mapping.fotmobUrl || `https://www.fotmob.com/leagues/${fotmobId}` // ✅ Always use primaryId for URL
             });
             
             await leagueMapping.save();
-            console.log(`[LeagueMapping] ✅ Saved to DB: ${mapping.unibetName} (Unibet: ${unibetId}, Fotmob: ${fotmobId})`);
+            const groupInfo = fotmobGroupId ? `, Group ID: ${fotmobGroupId}` : '';
+            console.log(`[LeagueMapping] ✅ Saved to DB: ${mapping.unibetName} (Unibet: ${unibetId}, Fotmob: ${fotmobId}${groupInfo})`);
             return true;
         } catch (error) {
             // Handle duplicate key error (E11000)
@@ -2104,8 +2228,11 @@ If no match found, return:
                 }
 
                 if (fotmobLeague) {
-                    // ✅ FIX: Use primaryId instead of id (primaryId is the actual league ID, id might be group ID)
-                    const fotmobId = String(fotmobLeague.primaryId || fotmobLeague.id);
+                    // ✅ FIX: Always use primaryId for fotmobId (mapping stays same)
+                    // The matching functions return { id: primaryId, groupId: groupId, ... }
+                    const fotmobId = String(fotmobLeague.id); // ✅ This is already primaryId from matching functions
+                    // ✅ NEW: Save group ID separately if it's a group league
+                    const fotmobGroupId = fotmobLeague.groupId ? parseInt(fotmobLeague.groupId) : null;
                     const unibetIdStr = String(unibetLeague.id);
                     
                     // ✅ VALIDATION: Only save properly mapped leagues (must have valid Fotmob ID)
@@ -2152,12 +2279,13 @@ If no match found, return:
                     const mappingData = {
                         unibetId: unibetIdStr,
                         unibetName: unibetLeague.englishName || unibetLeague.name, // Use englishName
-                        fotmobId: fotmobId,
-                        fotmobName: fotmobLeague.name, // Already using parentLeagueName for groups
+                        fotmobId: fotmobId, // ✅ primaryId (8968)
+                        fotmobGroupId: fotmobGroupId, // ✅ group ID (901480 or 901481) or null
+                        fotmobName: fotmobLeague.isGroup ? fotmobLeague.name : (fotmobLeague.name || fotmobLeague.parentLeagueName || ''), // ✅ Full name for groups
                         exactMatch: fotmobLeague.exactMatch,
                         country: unibetLeague.country || '',
                         unibetUrl: constructedUrl, // ✅ Add Unibet URL
-                        fotmobUrl: `https://www.fotmob.com/leagues/${fotmobId}` // ✅ Add Fotmob URL
+                        fotmobUrl: `https://www.fotmob.com/leagues/${fotmobId}` // ✅ Always use primaryId for URL, never groupId
                     };
 
                     const success = await this.addMappingToCsv(mappingData);
@@ -2168,8 +2296,12 @@ If no match found, return:
                         
                         // ✅ NEW: Save to Database (only properly mapped leagues)
                         try {
-                            await this.saveMappingToDatabase(mappingData);
-                            console.log(`[LeagueMapping] ✅ Saved ${mappingData.unibetName} to database`);
+                            const saved = await this.saveMappingToDatabase(mappingData);
+                            if (saved) {
+                                console.log(`[LeagueMapping] ✅ Saved ${mappingData.unibetName} to database`);
+                            } else {
+                                console.log(`[LeagueMapping] ⚠️ ${mappingData.unibetName} already exists in database - skipped`);
+                            }
                         } catch (error) {
                             console.warn(`[LeagueMapping] ⚠️ Failed to save ${mappingData.unibetName} to database:`, error.message);
                             // Don't fail the whole job if DB save fails

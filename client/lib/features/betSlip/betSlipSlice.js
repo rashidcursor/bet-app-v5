@@ -221,11 +221,21 @@ const betSlipSlice = createSlice({
     removeBet: (state, action) => {
       state.bets = state.bets.filter((bet) => bet.id !== action.payload);
 
+      // ✅ FIX: Clear stake for removed bet
+      if (state.stake.singles[action.payload]) {
+        delete state.stake.singles[action.payload];
+      }
+
       // Update state based on remaining bets
       if (state.bets.length === 0) {
-        state.isOpen = false;
-        state.isExpanded = false;
-        // ✅ Clear odds change notification when last bet is removed
+        // ✅ FIX: Keep bet slip open when all bets are removed (e.g., due to suspension)
+        // Don't set isOpen = false here - let user manually close it
+        // Only clear stake data
+        state.stake.singles = {};
+        state.stake.combination = '';
+        state.stake.system = '';
+        
+        // Clear odds change notification when last bet is removed
         state.oddsChangeNotification = {
           message: '',
           timestamp: null,

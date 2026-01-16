@@ -13,9 +13,17 @@ const leagueMappingSchema = new mongoose.Schema({
     },
     fotmobId: {
         type: Number,
-        required: true,
-        index: true
+        required: true
+        // ✅ REMOVED: index: true - We create index manually with schema.index() to control uniqueness
         // ✅ REMOVED: unique: true - Allow multiple Unibet IDs to map to one Fotmob ID
+        // ✅ This stores primaryId (e.g., 8968 for Primera Federacion groups)
+    },
+    fotmobGroupId: {
+        type: Number,
+        required: false,
+        index: false
+        // ✅ Optional - Only for group leagues (e.g., 901480 for Group 1, 901481 for Group 2)
+        // ✅ Used to distinguish between different groups sharing the same primaryId
     },
     fotmobName: {
         type: String,
@@ -59,9 +67,10 @@ leagueMappingSchema.pre('save', function(next) {
 });
 
 // Compound index (non-unique) to support multiple unibetIds per fotmobId
-leagueMappingSchema.index({ unibetId: 1, fotmobId: 1 });
+leagueMappingSchema.index({ unibetId: 1, fotmobId: 1 }, { unique: false });
 // Index for querying by fotmobId (for finding all unibetIds mapped to a fotmobId)
-leagueMappingSchema.index({ fotmobId: 1 });
+// ✅ IMPORTANT: fotmobId is NON-UNIQUE to allow multiple Unibet leagues to map to same Fotmob league
+leagueMappingSchema.index({ fotmobId: 1 }, { unique: false });
 
 const LeagueMapping = mongoose.model('LeagueMapping', leagueMappingSchema);
 
