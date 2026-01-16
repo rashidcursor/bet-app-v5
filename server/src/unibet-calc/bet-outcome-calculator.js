@@ -6507,16 +6507,61 @@ class BetOutcomeCalculator {
                     
                     const firstGoalScorer = firstGoal.player?.name || firstGoal.nameStr || firstGoal.fullName || '';
                     const firstGoalMinute = getAbsoluteMinuteFromEvent(firstGoal);
+                    const firstGoalPlayerId = firstGoal.playerId || firstGoal.player?.id || firstGoal.shotmapEvent?.playerId;
                     
                     console.log(`   - First goal: ${firstGoalScorer} at minute ${firstGoalMinute}`);
+                    console.log(`   - First goal scorer player ID: ${firstGoalPlayerId}`);
+                    
+                    // ✅ NEW: Use findPlayerIdByName for better matching (includes Gemini fallback)
+                    // Extract player name from selection (could be in bet.participant, bet.playerName, or outcomeLabel)
+                    let participantName = bet.participant || bet.playerName || null;
+                    if (!participantName) {
+                        // If selection is not "no goal", it might be the player name
+                        const outLbl = String(bet.outcomeLabel || bet.outcomeEnglishLabel || '').trim();
+                        if (outLbl && !/^no\s*goal/i.test(outLbl)) {
+                            participantName = outLbl;
+                        }
+                    }
+                    
+                    let matchedPlayerId = null;
+                    let geminiNoMatch = false;
+                    
+                    if (participantName) {
+                        console.log(`   - Looking up player ID by name: "${participantName}"`);
+                        const result = await findPlayerIdByName(matchDetails, participantName);
+                        matchedPlayerId = result?.playerId || null;
+                        geminiNoMatch = result?.geminiNoMatch || false;
+                        console.log(`   - Found Player ID by name: ${matchedPlayerId}${geminiNoMatch ? ' (Gemini NO_MATCH)' : ''}`);
+                    }
                     
                     // Check if the selected player scored the first goal
-                    const scorerMatches = firstGoalScorer.toLowerCase().includes(selection) || 
-                                       selection.includes(firstGoalScorer.toLowerCase());
-                    
-                    won = scorerMatches;
-                    actualOutcome = won ? firstGoalScorer : firstGoalScorer;
-                    console.log(`   - First goal scorer match: ${scorerMatches} → ${actualOutcome}`);
+                    // Method 1: Compare player IDs (most reliable)
+                    if (matchedPlayerId && firstGoalPlayerId) {
+                        const idMatch = Number(matchedPlayerId) === Number(firstGoalPlayerId);
+                        if (idMatch) {
+                            won = true;
+                            actualOutcome = firstGoalScorer;
+                            console.log(`   - ✅ Player ID match: ${matchedPlayerId} === ${firstGoalPlayerId} → WON`);
+                        } else {
+                            won = false;
+                            actualOutcome = firstGoalScorer;
+                            console.log(`   - ❌ Player ID mismatch: ${matchedPlayerId} !== ${firstGoalPlayerId} → LOST`);
+                        }
+                    } else if (participantName) {
+                        // Method 2: Fallback to string matching if IDs not available
+                        const scorerMatches = firstGoalScorer.toLowerCase().includes(participantName.toLowerCase()) || 
+                                           participantName.toLowerCase().includes(firstGoalScorer.toLowerCase());
+                        won = scorerMatches;
+                        actualOutcome = firstGoalScorer;
+                        console.log(`   - First goal scorer match (string): ${scorerMatches} → ${actualOutcome}`);
+                    } else {
+                        // Method 3: Original string matching as last resort
+                        const scorerMatches = firstGoalScorer.toLowerCase().includes(selection) || 
+                                           selection.includes(firstGoalScorer.toLowerCase());
+                        won = scorerMatches;
+                        actualOutcome = firstGoalScorer;
+                        console.log(`   - First goal scorer match (fallback string): ${scorerMatches} → ${actualOutcome}`);
+                    }
                 }
             }
             

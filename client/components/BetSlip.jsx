@@ -410,6 +410,13 @@ const BetSlip = () => {
 
 
     const handlePlaceBet = async () => {
+        // ✅ NEW: Prevent bet placement if odds have changed
+        if (placeBetDisabled) {
+            console.log('⏸️ Bet placement blocked - odds have changed. Please accept changes first.');
+            toast.warning('Odds have changed. Please accept the changes before placing your bet.');
+            return;
+        }
+
         // Check if user is authenticated
         if (!isAuthenticated) {
             // Don't make API request, just return - the login dialog will be shown
