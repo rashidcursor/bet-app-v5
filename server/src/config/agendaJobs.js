@@ -653,7 +653,7 @@ agenda.define("processCancelledBets", async (job) => {
     };
     
     const bets = await Bet.find(query)
-      .sort({ createdAt: 1 })
+      .sort({ matchDate: 1 })
       .limit(50);
     
     console.log(`[Agenda] 📊 Found ${bets.length} cancelled bets with retries remaining`);

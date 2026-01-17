@@ -38,12 +38,12 @@ export class UnibetCalcController {
                 
                 console.log(`📊 [processAll] 🔍 Querying database for pending bets only...`);
                 console.log(`📊 [processAll]    - Query: ${JSON.stringify(query)}`);
-                console.log(`📊 [processAll]    - Sort: { createdAt: 1 }`);
+                console.log(`📊 [processAll]    - Sort: { matchDate: 1 }`);
                 console.log(`📊 [processAll]    - Limit: ${parseInt(limit)}`);
                 
                 const queryStartTime = Date.now();
                 bets = await Bet.find(query)
-                .sort({ createdAt: 1 })
+                .sort({ matchDate: 1 })
                 .limit(parseInt(limit));
                 const queryDuration = Date.now() - queryStartTime;
                 
@@ -64,7 +64,7 @@ export class UnibetCalcController {
                 const query = {};
                 console.log(`📊 [processAll] 🔍 Querying database for all bets...`);
                 bets = await Bet.find(query)
-                    .sort({ createdAt: 1 })
+                    .sort({ matchDate: 1 })
                     .limit(parseInt(limit));
                 console.log(`📊 [processAll]    - Found ${bets.length} bets`);
             }
@@ -660,7 +660,7 @@ export class UnibetCalcController {
                 status: 'pending',
                 combination: { $exists: true, $ne: [] }
             })
-            .sort({ createdAt: 1 })
+            .sort({ matchDate: 1 })
             .limit(parseInt(limit));
 
             if (pendingCombinationBets.length === 0) {
