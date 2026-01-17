@@ -557,7 +557,7 @@ agenda.define("refreshHomepageCache", async (job) => {
 });
 
 // Define automated bet processing job
-agenda.define("processPendingBets", async (job) => {
+agenda.define("processPendingBets", { concurrency: 5 }, async (job) => {
   try {
     const startTime = new Date();
     console.log(`\n[Agenda] ========================================`);
@@ -566,6 +566,7 @@ agenda.define("processPendingBets", async (job) => {
     console.log(`[Agenda] ⏰ Time: ${startTime.toISOString()}`);
     console.log(`[Agenda] 📋 Job ID: ${job.attrs._id}`);
     console.log(`[Agenda] 🔍 Checking for pending bets...`);
+    console.log(`[Agenda] 🔄 Concurrent batches enabled (max 5 concurrent instances)`);
     const unibetCalcController = new UnibetCalcController();
     
     // Create a mock response object to capture the JSON data
