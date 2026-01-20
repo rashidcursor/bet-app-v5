@@ -485,7 +485,7 @@ const MatchDetailPage = ({ matchId }) => {
         <div className="bg-slate-100 min-h-screen">
             {/* Main content - adjusts width when sidebar expands */}
             <div className="lg:mr-80 xl:mr-96">
-                <div className="lg:p-2 xl:p-4 pb-20 md:pb-2 xl:pb-4">
+                <div className="lg:p-2 xl:p-4 pb-20 md:pb-2 xl:pb-4 max-[390px]:pt-[100px] max-[390px]:pb-[100px]">
                     <MatchHeader matchData={displayMatchData} onScoreUpdate={(scoreData) => {
                     }} />
                     <BettingTabs 
