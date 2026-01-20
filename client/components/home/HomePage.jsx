@@ -129,28 +129,7 @@ const HomePage = () => {
 
     return (
         <div className="flex-1 bg-gray-100">
-            <style dangerouslySetInnerHTML={{__html: `
-                @media only screen 
-                  and (min-width: 375px) 
-                  and (max-width: 375px) 
-                  and (min-height: 812px) 
-                  and (max-height: 812px) {
-                  .iphone-13-mini-content-padding {
-                    padding-top: 50px !important;
-                    padding-bottom: 50px !important;
-                  }
-                }
-                @media only screen 
-                  and (device-width: 375px) 
-                  and (device-height: 812px) 
-                  and (-webkit-min-device-pixel-ratio: 3) {
-                  .iphone-13-mini-content-padding {
-                    padding-top: 50px !important;
-                    padding-bottom: 50px !important;
-                  }
-                }
-            `}} />
-            <div className="px-4 py-4 md:px-6 md:py-6 overflow-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6 iphone-13-mini-content-padding">
+            <div className="px-4 py-4 md:px-6 md:py-6 overflow-hidden pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-3 lg:pb-6 max-[390px]:pt-[50px] max-[390px]:pb-[50px]">
                 <div className="flex flex-col xl:flex-row gap-4 lg:gap-6">
                     {/* Main content area */}
                     <div className="flex-1 min-w-0">

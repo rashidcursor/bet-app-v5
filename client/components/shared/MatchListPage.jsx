@@ -175,30 +175,9 @@ const MatchListPage = ({ config }) => {
 
     return (
         <div className="bg-slate-100 min-h-screen relative">
-            <style dangerouslySetInnerHTML={{__html: `
-                @media only screen 
-                  and (min-width: 375px) 
-                  and (max-width: 375px) 
-                  and (min-height: 812px) 
-                  and (max-height: 812px) {
-                  .iphone-13-mini-content-padding {
-                    padding-top: 50px !important;
-                    padding-bottom: 50px !important;
-                  }
-                }
-                @media only screen 
-                  and (device-width: 375px) 
-                  and (device-height: 812px) 
-                  and (-webkit-min-device-pixel-ratio: 3) {
-                  .iphone-13-mini-content-padding {
-                    padding-top: 50px !important;
-                    padding-bottom: 50px !important;
-                  }
-                }
-            `}} />
             {/* Main content */}
             <div className="lg:mr-80 xl:mr-96">
-                <div className="px-4 py-4 sm:px-3 sm:py-3 md:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-4 iphone-13-mini-content-padding">
+                <div className="px-4 py-4 sm:px-3 sm:py-3 md:p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:pb-4 max-[390px]:pt-[50px] max-[390px]:pb-[50px]">
                     {/* Header */}
                     <div className="mb-4 bg-white p-3 w-full md:w-screen"> {/* Adjusted width for responsiveness */}
                         {/* Breadcrumb */}

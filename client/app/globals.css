@@ -491,55 +491,7 @@ body {
   }
 }
 
-/* iPhone 13 mini specific padding for content areas (HOME, IN-PLAY, UPCOMING, BET HISTORY tabs) */
-/* iPhone 13 mini: 375px × 812px (logical pixels) */
-
-/* Standard media query - works on all browsers including Safari */
-@media only screen 
-  and (min-width: 375px) 
-  and (max-width: 375px) 
-  and (min-height: 812px) 
-  and (max-height: 812px) {
-  
-  .iphone-13-mini-content-padding {
-    padding-top: 50px !important; /* 50px from top */
-    padding-bottom: 50px !important; /* 50px from bottom */
-  }
-}
-
-/* Safari iOS specific - using device-width for better compatibility */
-@media only screen 
-  and (device-width: 375px) 
-  and (device-height: 812px) 
-  and (-webkit-min-device-pixel-ratio: 3) {
-  
-  .iphone-13-mini-content-padding {
-    padding-top: 50px !important; /* 50px from top */
-    padding-bottom: 50px !important; /* 50px from bottom */
-  }
-}
-
-/* Safari iOS alternative - using viewport width/height */
-@media only screen 
-  and (width: 375px) 
-  and (height: 812px) 
-  and (-webkit-min-device-pixel-ratio: 3) {
-  
-  .iphone-13-mini-content-padding {
-    padding-top: 50px !important; /* 50px from top */
-    padding-bottom: 50px !important; /* 50px from bottom */
-  }
-}
-
-/* Safari iOS - using orientation portrait for iPhone 13 mini */
-@media only screen 
-  and (device-width: 375px) 
-  and (device-height: 812px) 
-  and (orientation: portrait)
-  and (-webkit-min-device-pixel-ratio: 3) {
-  
-  .iphone-13-mini-content-padding {
-    padding-top: 50px !important; /* 50px from top */
-    padding-bottom: 50px !important; /* 50px from bottom */
-  }
-}
+/* NOTE: iPhone 13 mini-specific content padding is now handled with Tailwind
+   utility classes (max-[390px]:pt-[50px] / max-[390px]:pb-[50px]) directly in
+   the React components (HomePage, MatchListPage, BettingHistoryPage).
+   No device-specific CSS media query is needed here anymore. */
