@@ -31,13 +31,37 @@ export class UnibetCalcController {
             if (onlyPending) {
                 // Remove time-based filtering - we will check match status from Unibet API and FotMob instead
                 // This allows us to process bets based on actual match status, not estimated time
-                // ✅ FIX: Only process pending bets (cancelled bets are handled by processCancelledBets job)
-                const query = { 
-                    status: 'pending'
+                // ✅ FIX: Process pending bets AND combination bets with any pending leg
+                // For single bets: status must be 'pending'
+                // For combination bets: status is 'pending' OR any leg has status 'pending'
+                const query = {
+                    $or: [
+                        // Single bets: status is pending
+                        { 
+                            status: 'pending',
+                            combination: { $exists: false } // No combination array = single bet
+                        },
+                        // Combination bets: status is pending
+                        { 
+                            status: 'pending',
+                            combination: { $exists: true, $ne: [] }
+                        },
+                        // Combination bets: any leg has status 'pending' (even if overall status is won/lost)
+                        {
+                            combination: { 
+                                $exists: true, 
+                                $ne: [],
+                                $elemMatch: { status: 'pending' }
+                            }
+                        }
+                    ]
                 };
                 
-                console.log(`📊 [processAll] 🔍 Querying database for pending bets only...`);
-                console.log(`📊 [processAll]    - Query: ${JSON.stringify(query)}`);
+                console.log(`📊 [processAll] 🔍 Querying database for pending bets and combination bets with pending legs...`);
+                console.log(`📊 [processAll]    - Query includes:`);
+                console.log(`📊 [processAll]      1. Single bets with status='pending'`);
+                console.log(`📊 [processAll]      2. Combination bets with status='pending'`);
+                console.log(`📊 [processAll]      3. Combination bets with any leg status='pending' (even if overall status is won/lost)`);
                 console.log(`📊 [processAll]    - Sort: { matchDate: 1 }`);
                 console.log(`📊 [processAll]    - Limit: ${parseInt(limit)}`);
                 
@@ -48,7 +72,7 @@ export class UnibetCalcController {
                 const queryDuration = Date.now() - queryStartTime;
                 
                 console.log(`📊 [processAll] ✅ Database query completed in ${queryDuration}ms`);
-                console.log(`📊 [processAll]    - Found ${bets.length} pending bets`);
+                console.log(`📊 [processAll]    - Found ${bets.length} bets (pending single bets + combination bets with pending legs)`);
                 
                 if (bets.length > 0) {
                     console.log(`📊 [processAll] 📋 Bet IDs found:`);
@@ -56,7 +80,23 @@ export class UnibetCalcController {
                         const betType = bet.combination && bet.combination.length > 0 
                             ? `Combination (${bet.combination.length} legs)` 
                             : 'Single';
-                        console.log(`📊 [processAll]    ${index + 1}. Bet ID: ${bet._id} | Type: ${betType} | Match ID: ${bet.matchId || 'N/A'}`);
+                        
+                        if (bet.combination && bet.combination.length > 0) {
+                            // Check for pending legs
+                            const pendingLegs = bet.combination.filter(leg => leg.status === 'pending');
+                            const pendingLegsCount = pendingLegs.length;
+                            
+                            if (pendingLegsCount > 0) {
+                                console.log(`📊 [processAll]    ${index + 1}. Bet ID: ${bet._id} | Type: ${betType} | Overall Status: ${bet.status} | ⚠️ ${pendingLegsCount} pending leg(s)`);
+                                pendingLegs.forEach((leg, legIdx) => {
+                                    console.log(`📊 [processAll]         - Pending Leg ${legIdx + 1}: Match ${leg.matchId} | ${leg.betOption} @ ${leg.odds}`);
+                                });
+                            } else {
+                                console.log(`📊 [processAll]    ${index + 1}. Bet ID: ${bet._id} | Type: ${betType} | Status: ${bet.status}`);
+                            }
+                        } else {
+                            console.log(`📊 [processAll]    ${index + 1}. Bet ID: ${bet._id} | Type: ${betType} | Match ID: ${bet.matchId || 'N/A'} | Status: ${bet.status}`);
+                        }
                     });
                 }
             } else {
