@@ -919,6 +919,21 @@ export class UnibetCalcController {
                 pendingLegs: updatedBet.result.pendingLegs
             });
             
+            // ✅ CRITICAL FIX: Check if any leg is still pending - cannot finalize bet status if any leg is pending
+            const hasPendingLegs = updatedBet.combination.some(leg => leg.status === 'pending');
+            if (hasPendingLegs) {
+                console.log(`⏳ [processCombinationBetInternal] ⚠️ CRITICAL: Cannot finalize combination bet - ${updatedBet.result.pendingLegs} leg(s) still pending`);
+                console.log(`⏳ [processCombinationBetInternal]    - Pending legs:`, updatedBet.combination
+                    .map((leg, idx) => leg.status === 'pending' ? `Leg ${idx + 1} (${leg.betOption})` : null)
+                    .filter(Boolean)
+                );
+                // Force status to pending if any leg is pending
+                updatedBet.status = 'pending';
+                updatedBet.result.status = 'pending';
+                updatedBet.payout = 0; // No payout until all legs are finalized
+                console.log(`⏳ [processCombinationBetInternal]    - Forced bet status to 'pending' until all legs are finalized`);
+            }
+            
             // Update bet in database with main fields first
             // ✅ FIX: Explicitly set result.reason and all result fields to ensure they're saved
             const mainReasonToSave = updatedBet.result.reason || 'No reason provided';
