@@ -284,97 +284,16 @@ const BetSlip = () => {
         }
     }, [lastError, dispatch]);
 
-    // ✅ FIX: Don't return null when bets are empty - show empty state instead
-    // This keeps bet slip open even when all bets are removed (e.g., due to suspension)
-    if (bets.length === 0) {
-        // Only render empty state if bet slip is open
-        if (!betSlip.isOpen) {
-        return null;
+    // Auto-close bet slip when all bets are removed
+    useEffect(() => {
+        if (bets.length === 0 && betSlip.isOpen) {
+            dispatch(closeBetSlip());
         }
+    }, [bets.length, betSlip.isOpen, dispatch]);
 
-        // Show empty bet slip instead of closing it
-        return (
-            <div className="fixed bottom-0 left-0 right-0 z-50 sm:left-auto sm:right-5 sm:w-auto w-full">
-                <style jsx>{`
-                    .betslip-container {
-                        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                        transform-origin: bottom right;
-                        will-change: max-height, opacity;
-                    }
-                    
-                    .scale-98 {
-                        transform: scale(0.98);
-                    }
-                    @media (max-width: 640px) {
-                        .betslip-container {
-                            width: 100vw !important;
-                            max-width: 100vw !important;
-                            min-width: 100vw !important;
-                            border-radius: 0 !important;
-                            right: 0 !important;
-                            left: 0 !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            transform-origin: bottom center !important;
-                            box-sizing: border-box !important;
-                        }
-                        .scale-98 {
-                            transform: scale(1) !important;
-                        }
-                    }
-                `}</style>
-                <div
-                    className={`betslip-container transition-all duration-500 ease-in-out bg-gray-900 text-white shadow-2xl w-full sm:w-96 max-w-none sm:max-w-96 m-0 p-0 ${
-                        isExpanded
-                            ? 'max-h-[200px] opacity-100 scale-100'
-                            : 'max-h-[60px] opacity-95 scale-98 overflow-hidden'
-                    }`}
-                >
-                    {!isExpanded ? (
-                        <div
-                            onClick={handleToggle}
-                            className="cursor-pointer hover:bg-gray-800 transition-all duration-300 p-3 w-full"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                    <div className="bg-gray-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                        0
-                                    </div>
-                                    <span className="text-sm text-gray-400">Bet slip empty</span>
-                                </div>
-                                <ChevronUp className="h-4 w-4 text-gray-400" />
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <div className="bg-gray-800 px-3 py-2">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-white font-semibold text-sm">Bet Slip</h3>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => dispatch(collapseBetSlip())}
-                                            className="text-white hover:text-gray-300 transition-all duration-200 cursor-pointer hover:scale-110"
-                                        >
-                                            <ChevronDown className="h-4 w-4 transition-transform duration-200" />
-                                        </button>
-                                        <button
-                                            onClick={() => dispatch(closeBetSlip())}
-                                            className="text-white hover:text-gray-300 transition-all duration-200 cursor-pointer hover:scale-110 hover:rotate-90"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="px-3 py-6 text-center">
-                                <p className="text-gray-400 text-sm">Your bet slip is empty</p>
-                                <p className="text-gray-500 text-xs mt-1">Add bets to continue</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
+    // If bet slip is closed, render nothing
+    if (!betSlip.isOpen) {
+        return null;
     }
 
     const handleToggle = () => {
