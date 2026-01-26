@@ -14479,9 +14479,9 @@
               "ongoing": true,
               "scoreStr": "1 - 1",
               "liveTime": {
-                "short": "58‎’‎",
+                "short": "74‎’‎",
                 "shortKey": "",
-                "long": "57:01",
+                "long": "73:42",
                 "longKey": "",
                 "maxTime": 90,
                 "addedTime": 0
@@ -14520,9 +14520,9 @@
               "ongoing": true,
               "scoreStr": "0 - 0",
               "liveTime": {
-                "short": "18‎’‎",
+                "short": "35‎’‎",
                 "shortKey": "",
-                "long": "17:58",
+                "long": "34:39",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -14816,7 +14816,7 @@
             "time": "26.01.2026 16:00",
             "home": {
               "id": 206560,
-              "score": 0,
+              "score": 1,
               "name": "HNK Gorica",
               "longName": "HNK Gorica"
             },
@@ -14839,11 +14839,11 @@
               "started": true,
               "cancelled": false,
               "ongoing": true,
-              "scoreStr": "0 - 0",
+              "scoreStr": "1 - 0",
               "liveTime": {
-                "short": "16‎’‎",
+                "short": "33‎’‎",
                 "shortKey": "",
-                "long": "15:51",
+                "long": "32:32",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -15827,9 +15827,9 @@
               "ongoing": true,
               "scoreStr": "0 - 1",
               "liveTime": {
-                "short": "12‎’‎",
+                "short": "29‎’‎",
                 "shortKey": "",
-                "long": "11:24",
+                "long": "28:05",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -16683,17 +16683,27 @@
               "longName": "Damac FC"
             },
             "eliminatedTeamId": null,
-            "statusId": 1,
+            "statusId": 2,
             "tournamentStage": "18",
             "status": {
               "utcTime": "2026-01-26T15:20:00.000Z",
               "halfs": {
-                "firstHalfStarted": "26.01.2026 16:20:00"
+                "firstHalfStarted": "26.01.2026 16:23:13"
               },
               "periodLength": 45,
-              "started": false,
+              "finished": false,
+              "started": true,
               "cancelled": false,
-              "finished": false
+              "ongoing": true,
+              "scoreStr": "0 - 0",
+              "liveTime": {
+                "short": "12‎’‎",
+                "shortKey": "",
+                "long": "11:50",
+                "longKey": "",
+                "maxTime": 45,
+                "addedTime": 0
+              }
             },
             "timeTS": 1769440800000
           },
@@ -16885,7 +16895,7 @@
               "longName": "Amanat Baghdad"
             },
             "eliminatedTeamId": null,
-            "statusId": 2,
+            "statusId": 10,
             "tournamentStage": "15",
             "status": {
               "utcTime": "2026-01-26T14:30:00.000Z",
@@ -16899,10 +16909,10 @@
               "ongoing": true,
               "scoreStr": "1 - 0",
               "liveTime": {
-                "short": "45",
-                "shortKey": "",
-                "long": "45:00",
-                "longKey": "",
+                "short": "HT",
+                "shortKey": "halftime_short",
+                "long": "Half-Time",
+                "longKey": "pause_match",
                 "maxTime": 45,
                 "addedTime": 0
               }
@@ -17147,9 +17157,9 @@
               "ongoing": true,
               "scoreStr": "2 - 0",
               "liveTime": {
-                "short": "17‎’‎",
+                "short": "34‎’‎",
                 "shortKey": "",
-                "long": "16:32",
+                "long": "33:13",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -17272,9 +17282,9 @@
               "ongoing": true,
               "scoreStr": "1 - 1",
               "liveTime": {
-                "short": "61‎’‎",
+                "short": "78‎’‎",
                 "shortKey": "",
-                "long": "60:57",
+                "long": "77:38",
                 "longKey": "",
                 "maxTime": 90,
                 "addedTime": 0
@@ -17594,9 +17604,9 @@
               "ongoing": true,
               "scoreStr": "1 - 0",
               "liveTime": {
-                "short": "90",
+                "short": "108‎’‎",
                 "shortKey": "",
-                "long": "90:00",
+                "long": "107:22",
                 "longKey": "",
                 "maxTime": 90,
                 "addedTime": 0
@@ -17621,17 +17631,27 @@
               "longName": "Qatar SC"
             },
             "eliminatedTeamId": null,
-            "statusId": 1,
+            "statusId": 2,
             "tournamentStage": "Play-offs",
             "status": {
               "utcTime": "2026-01-26T15:30:00.000Z",
               "halfs": {
-                "firstHalfStarted": "26.01.2026 16:30:00"
+                "firstHalfStarted": "26.01.2026 16:30:33"
               },
               "periodLength": 45,
-              "started": false,
+              "finished": false,
+              "started": true,
               "cancelled": false,
-              "finished": false
+              "ongoing": true,
+              "scoreStr": "0 - 0",
+              "liveTime": {
+                "short": "5‎’‎",
+                "shortKey": "",
+                "long": "4:30",
+                "longKey": "",
+                "maxTime": 45,
+                "addedTime": 0
+              }
             },
             "timeTS": 1769441400000
           },
@@ -17652,17 +17672,27 @@
               "longName": "Al Mesaimeer"
             },
             "eliminatedTeamId": null,
-            "statusId": 1,
+            "statusId": 2,
             "tournamentStage": "Play-offs",
             "status": {
               "utcTime": "2026-01-26T15:30:00.000Z",
               "halfs": {
-                "firstHalfStarted": "26.01.2026 16:30:00"
+                "firstHalfStarted": "26.01.2026 16:32:19"
               },
               "periodLength": 45,
-              "started": false,
+              "finished": false,
+              "started": true,
               "cancelled": false,
-              "finished": false
+              "ongoing": true,
+              "scoreStr": "0 - 0",
+              "liveTime": {
+                "short": "3‎’‎",
+                "shortKey": "",
+                "long": "2:44",
+                "longKey": "",
+                "maxTime": 45,
+                "addedTime": 0
+              }
             },
             "timeTS": 1769441400000
           }
@@ -17790,9 +17820,9 @@
               "ongoing": true,
               "scoreStr": "1 - 0",
               "liveTime": {
-                "short": "22‎’‎",
+                "short": "39‎’‎",
                 "shortKey": "",
-                "long": "21:39",
+                "long": "38:20",
                 "longKey": "",
                 "maxTime": 45,
                 "addedTime": 0
@@ -19780,37 +19810,6 @@
             "timeTS": 1769515200000
           },
           {
-            "id": 5153779,
-            "leagueId": 905798,
-            "time": "27.01.2026 13:00",
-            "home": {
-              "id": 101660,
-              "score": 0,
-              "name": "Al Talaba",
-              "longName": "Al Talaba"
-            },
-            "away": {
-              "id": 165214,
-              "score": 0,
-              "name": "Diyala",
-              "longName": "Diyala"
-            },
-            "eliminatedTeamId": null,
-            "statusId": 1,
-            "tournamentStage": "15",
-            "status": {
-              "utcTime": "2026-01-27T12:00:00.000Z",
-              "halfs": {
-                "firstHalfStarted": "27.01.2026 13:00:00"
-              },
-              "periodLength": 45,
-              "started": false,
-              "cancelled": false,
-              "finished": false
-            },
-            "timeTS": 1769515200000
-          },
-          {
             "id": 5153780,
             "leagueId": 905798,
             "time": "27.01.2026 15:30",
@@ -19871,6 +19870,37 @@
               "finished": false
             },
             "timeTS": 1769524200000
+          },
+          {
+            "id": 5153779,
+            "leagueId": 905798,
+            "time": "27.01.2026 17:30",
+            "home": {
+              "id": 101660,
+              "score": 0,
+              "name": "Al Talaba",
+              "longName": "Al Talaba"
+            },
+            "away": {
+              "id": 165214,
+              "score": 0,
+              "name": "Diyala",
+              "longName": "Diyala"
+            },
+            "eliminatedTeamId": null,
+            "statusId": 1,
+            "tournamentStage": "15",
+            "status": {
+              "utcTime": "2026-01-27T16:30:00.000Z",
+              "halfs": {
+                "firstHalfStarted": "27.01.2026 17:30:00"
+              },
+              "periodLength": 45,
+              "started": false,
+              "cancelled": false,
+              "finished": false
+            },
+            "timeTS": 1769531400000
           }
         ],
         "parentLeagueId": 524,

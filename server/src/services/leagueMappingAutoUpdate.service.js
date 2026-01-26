@@ -1302,25 +1302,25 @@ class LeagueMappingAutoUpdate {
                 const prompt = `You are a football league matching expert. I need to find which FotMob league matches a given Unibet league using TWO PRIORITIES.
 
                 **Unibet League:**
-                - Name: "\${unibetData.leagueName}"
-                - Country: "\${unibetData.country}"
-                - All Matches (\${unibetData.matches.length} total):
-                \${unibetData.matches.map((m, i) => \`  \${i + 1}. \${m.homeTeam} vs \${m.awayTeam} (Time: \${m.startTime})\`).join('\\n')}
+                - Name: "${unibetData.leagueName}"
+                - Country: "${unibetData.country}"
+                - All Matches (${unibetData.matches.length} total):
+                ${unibetData.matches.map((m, i) => `  ${i + 1}. ${m.homeTeam} vs ${m.awayTeam} (Time: ${m.startTime})`).join('\n')}
                 
                 **Available FotMob Leagues:**
-                \${fotmobData.map((league, idx) => \`
-                \${idx + 1}. League Name: "\${league.name}"
-                   - ID: \${league.id}
-                   - Primary League ID: \${league.primaryId || league.id}
-                   - Is Group League: \${league.isGroup || false}
-                   - Group Name: \${league.groupName || 'N/A'}
-                   - Country: "\${league.country}"
-                   - All Matches (\${league.matches.length} total):
-                \${league.matches.map((m, i) => \`     \${i + 1}. \${m.homeTeam} vs \${m.awayTeam} (Time: \${m.startTime})\`).join('\\n')}
-                \`).join('\\n')}
+                ${fotmobData.map((league, idx) => `
+                ${idx + 1}. League Name: "${league.name}"
+                   - ID: ${league.id}
+                   - Primary League ID: ${league.primaryId || league.id}
+                   - Is Group League: ${league.isGroup || false}
+                   - Group Name: ${league.groupName || 'N/A'}
+                   - Country: "${league.country}"
+                   - All Matches (${league.matches.length} total):
+                ${league.matches.map((m, i) => `     ${i + 1}. ${m.homeTeam} vs ${m.awayTeam} (Time: ${m.startTime})`).join('\n')}
+                `).join('\n')}
                 
                 **Task:**
-                Find the FotMob league that matches the Unibet league "\${unibetData.leagueName}" from "\${unibetData.country}".
+                Find the FotMob league that matches the Unibet league "${unibetData.leagueName}" from "${unibetData.country}".
                 
                 ---
                 
