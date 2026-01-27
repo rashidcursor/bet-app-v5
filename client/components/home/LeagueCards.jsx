@@ -16,6 +16,7 @@ import { useLiveOdds } from '@/hooks/useLiveOdds';
 import { getFotmobLogoByUnibetId } from '@/lib/leagueUtils';
 import LiveMatchTimer from '@/components/shared/LiveMatchTimer';
 import { useLiveOddsSync } from '@/hooks/useLiveOddsSync';
+import { shouldShowMatch, markMatchAsFinished, cleanupExpiredFinishedMatches } from '@/lib/utils/finishedMatchesManager';
 
 // Match Item Component
 const MatchItem = ({ match, isInPlay, createBetHandler, buttonsReady, getOddButtonClass, isOddClickable, hideOdds = false }) => {
@@ -479,6 +480,16 @@ const LeagueCard = ({ league, isInPlay = false, viewAllText = null, hideOdds = f
     const isConnected = useSelector(selectIsConnected);
 
     // For live matches, delay button activation to prevent premature clicking
+    // Clean up expired finished matches periodically
+    useEffect(() => {
+        cleanupExpiredFinishedMatches();
+        const cleanupInterval = setInterval(() => {
+            cleanupExpiredFinishedMatches();
+        }, 60000); // Clean up every minute
+        
+        return () => clearInterval(cleanupInterval);
+    }, []);
+
     useEffect(() => {
         if (isInPlay) {
             const timer = setTimeout(() => {
@@ -645,8 +656,31 @@ const LeagueCards = ({
                         return null;
                     }
                     
+                    // Filter matches based on finished status BEFORE transformation
+                    const validMatches = leagueData.matches.filter(apiMatch => {
+                        // Only filter in-play matches
+                        if (!isInPlay) {
+                            return true; // Show all matches for non-in-play sections
+                        }
+                        
+                        // Check if match should be shown based on Unibet API status
+                        // This replaces the old 90-minute filter logic
+                        const shouldShow = shouldShowMatch(apiMatch);
+                        
+                        if (!shouldShow) {
+                            return false;
+                        }
+                        
+                        // If match is finished, mark it in localStorage
+                        if (apiMatch.state === 'FINISHED') {
+                            markMatchAsFinished(apiMatch.id, apiMatch);
+                        }
+                        
+                        return true;
+                    });
+                    
                     // Transform matches to match the expected format
-                    const transformedMatches = leagueData.matches.map(match => {
+                    const transformedMatches = validMatches.map(match => {
     
     
                     // Handle both formats: Unibet API (homeName/awayName) and old format (name with ' vs ')
@@ -864,53 +898,11 @@ const LeagueCards = ({
                         groupId: match.groupId,
                         leagueName: match.leagueName,
                         // Add source identifier
-                        source: 'LeagueCards'
+                        source: 'LeagueCards',
+                        state: match.state // Preserve state for reference
                     };
-                    
                 }).filter(match => {
                     if (match === null) return false; // Filter out null matches
-                    
-                    // For In-Play matches, filter out matches above 90 minutes with all odds disabled
-                    if (isInPlay) {
-                        // Check multiple possible time sources
-                        let currentMinute = 0;
-                        
-                        if (match.kambiLiveData?.matchClock?.minute) {
-                            currentMinute = match.kambiLiveData.matchClock.minute;
-                        } else if (match.timing?.minute) {
-                            currentMinute = match.timing.minute;
-                        } else if (match.liveData?.minute) {
-                            currentMinute = match.liveData.minute;
-                        }
-                        
-                        
-                        // If match is above 90 minutes, check if all odds are disabled
-                        if (currentMinute > 90) {
-                            // Check if all odds are disabled (null, undefined, NaN, 'NaN', or suspended)
-                            const isOddDisabled = (odd) => {
-                                const value = odd?.value;
-                                return !value || 
-                                       value === null || 
-                                       value === undefined || 
-                                       value === 'NaN' || 
-                                       isNaN(value) || 
-                                       odd?.suspended;
-                            };
-                            
-                            const homeDisabled = isOddDisabled(match.odds['1']);
-                            const drawDisabled = isOddDisabled(match.odds['X']);
-                            const awayDisabled = isOddDisabled(match.odds['2']);
-                            
-                            const allOddsDisabled = homeDisabled && drawDisabled && awayDisabled;
-                            
-                            
-                            // Filter out if all odds are disabled
-                            if (allOddsDisabled) {
-                                return false;
-                            }
-                        }
-                    }
-                    
                     return true;
                 });
     

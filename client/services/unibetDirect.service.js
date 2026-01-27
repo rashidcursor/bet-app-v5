@@ -82,7 +82,8 @@ class UnibetDirectService {
     } catch (error) {
       console.error(`❌ [NEXT PROXY] Error fetching bet offers:`, error);
       
-      // Handle 404 (match finished/not found)
+      // Handle 404 (match finished/not found) - Secondary check for finished matches
+      // Primary check is event.state === 'FINISHED' from live matches API
       if (error.response?.status === 404 || error.response?.data?.status === 404) {
         return {
           success: false,

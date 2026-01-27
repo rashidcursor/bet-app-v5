@@ -8,6 +8,7 @@ import TopPicksSkeleton from '../Skeletons/TopPicksSkeleton';
 import { selectLiveMatchesRaw, selectLiveMatchesLoading, selectLiveMatchesWarning, selectLiveMatchesCacheAge, silentUpdateLiveMatches, fetchBetOffersForLiveMatches, selectMatchBetOffers } from '@/lib/features/matches/liveMatchesSlice';
 import { getFotmobLogoByUnibetId } from '@/lib/leagueUtils';
 import { useLiveOddsSync } from '@/hooks/useLiveOddsSync';
+import { shouldShowMatch, markMatchAsFinished, cleanupExpiredFinishedMatches } from '@/lib/utils/finishedMatchesManager';
 
 // Component that handles odds sync for a single match - defined outside to prevent remounting
 const LiveMatchWithSync = ({ match }) => {
@@ -236,52 +237,43 @@ const LiveMatches = () => {
         };
     }, [dispatch]);
 
+    // Clean up expired finished matches periodically
+    useEffect(() => {
+        cleanupExpiredFinishedMatches();
+        const cleanupInterval = setInterval(() => {
+            cleanupExpiredFinishedMatches();
+        }, 60000); // Clean up every minute
+        
+        return () => clearInterval(cleanupInterval);
+    }, []);
 
     // Show skeleton while loading
     if (loading) {
         return <TopPicksSkeleton />;
     }
-    
+
     // Transform API data to MatchCard format - show all live matches regardless of odds
     // Use betoffers from Redux state (exactly like match details page)
     const transformedMatches = liveMatchesData
-        .map(match => {
-            const betOffers = matchBetOffers[match.id];
-            return transformLiveMatchData(match, betOffers);
-        })
-        .filter(match => {
-            // Filter out matches above 90 minutes with all odds disabled
-            if (match.kambiLiveData?.matchClock) {
-                const currentMinute = match.kambiLiveData.matchClock.minute || 0;
-                
-                // If match is above 90 minutes, check if all odds are disabled
-                if (currentMinute > 90) {
-                    // Check if all odds are disabled (null, undefined, NaN, 'NaN', or suspended)
-                    const isOddDisabled = (odd) => {
-                        const value = odd?.value;
-                        return !value || 
-                               value === null || 
-                               value === undefined || 
-                               value === 'NaN' || 
-                               isNaN(value) || 
-                               odd?.suspended;
-                    };
-                    
-                    const homeDisabled = isOddDisabled(match.odds['1']);
-                    const drawDisabled = isOddDisabled(match.odds['X']);
-                    const awayDisabled = isOddDisabled(match.odds['2']);
-                    
-                    const allOddsDisabled = homeDisabled && drawDisabled && awayDisabled;
-                    
-                    
-                    // Filter out if all odds are disabled
-                    if (allOddsDisabled) {
-                        return false;
-                    }
-                }
+        .filter(apiMatch => {
+            // Check if match should be shown based on Unibet API status
+            // This replaces the old 90-minute filter logic
+            const shouldShow = shouldShowMatch(apiMatch);
+            
+            if (!shouldShow) {
+                return false;
+            }
+            
+            // If match is finished, mark it in localStorage
+            if (apiMatch.state === 'FINISHED') {
+                markMatchAsFinished(apiMatch.id, apiMatch);
             }
             
             return true;
+        })
+        .map(match => {
+            const betOffers = matchBetOffers[match.id];
+            return transformLiveMatchData(match, betOffers);
         });
 
     if (transformedMatches.length === 0) {

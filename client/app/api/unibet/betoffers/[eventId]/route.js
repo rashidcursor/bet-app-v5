@@ -351,15 +351,17 @@ export async function GET(request, { params }) {
       totalDuration: `${directFetchDuration}ms`
     });
     
-    // Handle 404 (match finished/not found)
+    // Handle 404 (match finished/not found) - Secondary check for finished matches
+    // Primary check is event.state === 'FINISHED' from live matches API
     if (response.status === 404) {
-      console.log(`📋 [RESULT] [${eventId}] Match not found (404) - Returning error`);
+      console.log(`📋 [RESULT] [${eventId}] Match not found (404) - Match likely finished`);
       return NextResponse.json({
         success: false,
         eventId,
         error: 'Match not found',
         message: 'Match may be finished or no longer available',
         status: 404,
+        isFinished: true, // Flag to indicate match is finished (404 = finished, secondary check)
         timestamp: new Date().toISOString()
       });
     }

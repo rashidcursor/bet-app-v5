@@ -641,7 +641,7 @@ const Sidebar = () => {
                                         </button>
                                     )}
                                 </div>
-                                <TabsContent value="by-country">
+                                <TabsContent value="by-country" className="pb-16">
                                     <div className="mb-2 text-xs text-gray-300">
                                         Total leagues in plan: <span className="font-bold text-white">{popularLeagues?.length || 0}</span>
                                     </div>

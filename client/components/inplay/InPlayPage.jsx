@@ -7,6 +7,7 @@ import { fetchLiveMatches, silentUpdateLiveMatches, selectLiveMatchesGrouped, se
 import MatchListPage from '@/components/shared/MatchListPage';
 import LiveTimer from '@/components/home/LiveTimer';
 import { getFotmobLogoByUnibetId } from '@/lib/leagueUtils';
+import { shouldShowMatch, markMatchAsFinished, cleanupExpiredFinishedMatches } from '@/lib/utils/finishedMatchesManager';
 
 const InPlayPage = () => {
     const liveMatchesRaw = useSelector(selectLiveMatchesGrouped);
@@ -90,6 +91,16 @@ const InPlayPage = () => {
         };
     }, [dispatch]);
 
+    // Clean up expired finished matches periodically
+    useEffect(() => {
+        cleanupExpiredFinishedMatches();
+        const cleanupInterval = setInterval(() => {
+            cleanupExpiredFinishedMatches();
+        }, 60000); // Clean up every minute
+        
+        return () => clearInterval(cleanupInterval);
+    }, []);
+
     // Transform Unibet API data to match MatchListPage expected format
     const displayMatches = useMemo(() => {
         if (!Array.isArray(liveMatchesRaw)) {
@@ -101,6 +112,24 @@ const InPlayPage = () => {
             const firstMatch = leagueData.matches?.[0];
             const groupId = firstMatch?.groupId;
             
+            // Filter matches based on finished status BEFORE transformation
+            const validMatches = (leagueData.matches || []).filter(apiMatch => {
+                // Check if match should be shown based on Unibet API status
+                // This replaces the old 90-minute filter logic
+                const shouldShow = shouldShowMatch(apiMatch);
+                
+                if (!shouldShow) {
+                    return false;
+                }
+                
+                // If match is finished, mark it in localStorage
+                if (apiMatch.state === 'FINISHED') {
+                    markMatchAsFinished(apiMatch.id, apiMatch);
+                }
+                
+                return true;
+            });
+            
             return {
                 id: leagueData.league || Math.random().toString(36).substr(2, 9),
                 name: leagueData.league || 'Unknown League',
@@ -110,7 +139,7 @@ const InPlayPage = () => {
                     imageUrl: getFotmobLogoByUnibetId(groupId) || null,
                 },
                 icon: "⚽",
-            matches: (leagueData.matches || []).map(match => {
+            matches: validMatches.map(match => {
                 // Extract team names from Unibet API format
                 const team1 = match.homeName || match.team1 || 'Home Team';
                 const team2 = match.awayName || match.team2 || 'Away Team';
@@ -208,43 +237,9 @@ const InPlayPage = () => {
                     },
                     groupId: match.groupId, // Add groupId for league mapping
                     leagueName: leagueData.league, // Add league name
-                    source: 'InPlayPage' // Add source identifier
+                    source: 'InPlayPage', // Add source identifier
+                    state: match.state // Preserve state for reference
                 };
-            }).filter(match => {
-                // Filter out matches above 90 minutes with all odds disabled
-                if (match.kambiLiveData?.matchClock) {
-                    const currentMinute = match.kambiLiveData.matchClock.minute || 0;
-                    
-                    // If match is above 90 minutes, check if all odds are disabled
-                    if (currentMinute > 90) {
-                        // Check if all odds are disabled (null, undefined, NaN, 'NaN', or suspended)
-                        const isOddDisabled = (odd) => {
-                            const value = odd?.value;
-                            return !value || 
-                                   value === null || 
-                                   value === undefined || 
-                                   value === 'NaN' || 
-                                   isNaN(value) || 
-                                   odd?.suspended;
-                        };
-                        
-                        const homeDisabled = isOddDisabled(match.odds.home);
-                        const drawDisabled = isOddDisabled(match.odds.draw);
-                        const awayDisabled = isOddDisabled(match.odds.away);
-                        
-                        const allOddsDisabled = homeDisabled && drawDisabled && awayDisabled;
-                        
-                        console.log(`🔍 InPlayPage - Match ${match.team1} vs ${match.team2}: minute=${currentMinute}, allOddsDisabled=${allOddsDisabled}`);
-                        
-                        // Filter out if all odds are disabled
-                        if (allOddsDisabled) {
-                            console.log(`🚫 InPlayPage - Filtering out match ${match.team1} vs ${match.team2} - Above 90min (${currentMinute}min) with all odds disabled`);
-                            return false;
-                        }
-                    }
-                }
-                
-                return true;
             }),
             matchCount: leagueData.matches?.length || 0,
             };
