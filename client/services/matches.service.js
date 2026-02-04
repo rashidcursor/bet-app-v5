@@ -103,10 +103,10 @@ class MatchesService {
         console.log(`✅ [DIRECT] Successfully fetched bet offers for event: ${eventId} (source: ${data.source})`);
         return data;
       } else {
-        // Handle 404 case (match finished)
+        // Handle 404 case (match finished). Return full data when silent so slice can clear match.
         if (opts.silent) {
           console.warn(`⚠️ [DIRECT] Match not found (404) for event ${eventId}`);
-          return null;
+          return { ...data, eventId: data.eventId ?? eventId };
         }
         throw new Error(data.message || 'Match not found or finished');
       }

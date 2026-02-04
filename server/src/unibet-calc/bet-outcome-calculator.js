@@ -414,30 +414,69 @@ class BetOutcomeCalculator {
             const dateFormatted = pktFormatter.format(date); // Returns "YYYY-MM-DD" in PKT
             const dateStr = dateFormatted.replace(/-/g, ''); // "YYYYMMDD" format
 
+            // When UTC date ≠ PKT date (e.g. 03.02 19:00 UTC = 04.02 00:00 PKT), or PKT time is 12 AM–1 AM: check BOTH dates
+            const pktHour = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Karachi', hour: 'numeric', hour12: false }).format(date), 10);
+            const isMidnightCrossover = (utcDateStr !== dateStr) || (pktHour >= 0 && pktHour < 1);
+
             console.log(`\n🔍 FOTMOB CACHE LOOKUP:`);
             console.log(`   - UTC Date: ${utcDateFormatted} (${utcDateStr})`);
             console.log(`   - PKT Date: ${dateFormatted} (${dateStr}) - Using for cache lookup`);
+            if (isMidnightCrossover) {
+                console.log(`   - Midnight crossover (UTC≠PKT or PKT 12 AM–1 AM): will check BOTH UTC and PKT dates`);
+            }
 
-            // Try specific daily cache first
-            const cacheFile = path.join(__dirname, '../storage/fotmob', `fotmob_matches_${dateStr}_${dateFormatted}.json`);
-            console.log(`   - Checking daily cache: ${path.basename(cacheFile)}`);
+            // Try daily cache: PKT date first; when midnight crossover, also try UTC date and merge both
+            const pktCacheFile = path.join(__dirname, '../storage/fotmob', `fotmob_matches_${dateStr}_${dateFormatted}.json`);
+            const utcCacheFile = path.join(__dirname, '../storage/fotmob', `fotmob_matches_${utcDateStr}_${utcDateFormatted}.json`);
+            console.log(`   - Checking daily cache: ${path.basename(pktCacheFile)}`);
 
-            if (fs.existsSync(cacheFile)) {
-                console.log(`✅ DAILY CACHE FOUND: Loading ${path.basename(cacheFile)}`);
-                const data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-                // Handle Fotmob API format change - leagues might be returned as array directly
-                if (Array.isArray(data)) {
-                    console.log(`   - Leagues in daily cache: ${data.length} (array format)`);
-                    return { leagues: data };
-                } else if (data.leagues) {
-                    console.log(`   - Leagues in daily cache: ${data.leagues.length} (object format)`);
-                    return data;
-                } else {
+            const parseDailyCache = (filePath) => {
+                const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                return Array.isArray(raw) ? raw : (raw.leagues || null);
+            };
+
+            if (isMidnightCrossover) {
+                // Midnight crossover: load BOTH PKT and UTC daily caches and merge leagues
+                const pktExists = fs.existsSync(pktCacheFile);
+                const utcExists = fs.existsSync(utcCacheFile);
+                if (pktExists) console.log(`✅ Daily cache (PKT): ${path.basename(pktCacheFile)}`);
+                if (utcExists) console.log(`   - Checking daily cache (UTC date): ${path.basename(utcCacheFile)}`);
+                if (!pktExists && utcExists) console.log(`✅ DAILY CACHE FOUND (UTC): Loading ${path.basename(utcCacheFile)}`);
+
+                if (pktExists || utcExists) {
+                    const pktLeagues = pktExists ? parseDailyCache(pktCacheFile) : [];
+                    const utcLeagues = utcExists ? parseDailyCache(utcCacheFile) : [];
+                    const leaguesList = Array.isArray(pktLeagues) ? pktLeagues : (pktLeagues ? [pktLeagues] : []);
+                    const utcList = Array.isArray(utcLeagues) ? utcLeagues : (utcLeagues ? [utcLeagues] : []);
+                    const leagueMap = new Map();
+                    [...leaguesList, ...utcList].forEach(league => {
+                        if (!league || league.id == null) return;
+                        if (leagueMap.has(league.id)) {
+                            const existing = leagueMap.get(league.id);
+                            existing.matches = [...(existing.matches || []), ...(league.matches || [])];
+                        } else {
+                            leagueMap.set(league.id, { ...league });
+                        }
+                    });
+                    const merged = Array.from(leagueMap.values());
+                    console.log(`   - Merged daily caches (PKT+UTC): ${merged.length} leagues`);
+                    return { leagues: merged };
+                }
+                if (!pktExists) console.log(`❌ Daily cache not found: ${path.basename(pktCacheFile)}`);
+            } else {
+                if (fs.existsSync(pktCacheFile)) {
+                    console.log(`✅ DAILY CACHE FOUND: Loading ${path.basename(pktCacheFile)}`);
+                    const data = JSON.parse(fs.readFileSync(pktCacheFile, 'utf8'));
+                    if (Array.isArray(data)) {
+                        return { leagues: data };
+                    }
+                    if (data.leagues) {
+                        return data;
+                    }
                     console.log(`❌ Unexpected cached data format`);
                     return null;
                 }
-            } else {
-                console.log(`❌ Daily cache not found: ${path.basename(cacheFile)}`);
+                console.log(`❌ Daily cache not found: ${path.basename(pktCacheFile)}`);
             }
 
             // Try multi-day cache
@@ -529,7 +568,7 @@ class BetOutcomeCalculator {
                     // ✅ FIX: Use PKT date for filtering (dateFormatted is already PKT date)
                     filterDate = dateFormatted;
                 }
-                console.log(`   - Filtering matches for date: ${filterDate} ${useTestDate ? '(TEST MODE)' : ''} (PKT timezone)`);
+                console.log(`   - Filtering matches for date: ${filterDate} ${useTestDate ? '(TEST MODE)' : ''} (PKT timezone)${isMidnightCrossover ? ` + UTC date ${utcDateFormatted} (midnight crossover)` : ''}`);
                 
                 let matchesForDate = 0;
                 
@@ -573,17 +612,19 @@ class BetOutcomeCalculator {
                         }
                         
                         // ✅ FIX: Convert match UTC date to PKT date string for comparison
-                        // Use Intl.DateTimeFormat to get PKT date string (YYYY-MM-DD format)
                         const pktFormatter = new Intl.DateTimeFormat('en-CA', {
                             timeZone: 'Asia/Karachi',
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit'
                         });
-                        const matchDateStr = pktFormatter.format(matchDate); // Returns "YYYY-MM-DD" in PKT
+                        const matchDateStr = pktFormatter.format(matchDate); // "YYYY-MM-DD" in PKT
+                        const matchUtcDateStr = matchDate.toISOString().slice(0, 10); // "YYYY-MM-DD" in UTC
                         
-                        // Check exact date first (both in PKT timezone)
-                        if (matchDateStr === filterDate) {
+                        // Exact date: PKT match, or (midnight crossover) UTC date match
+                        const matchesFilterDate = (matchDateStr === filterDate) ||
+                            (isMidnightCrossover && matchUtcDateStr === utcDateFormatted);
+                        if (matchesFilterDate) {
                             exactDateMatches.push(match);
                         } else {
                             // Only check 25-hour window if no exact date matches found

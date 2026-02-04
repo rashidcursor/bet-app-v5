@@ -65,9 +65,8 @@ class UnibetDirectService {
       
       console.log(`🔍 [NEXT PROXY] Fetching bet offers via Next.js API proxy for event: ${eventId}`);
       
-      // Use Next.js API route as proxy (handles CORS)
-      const url = `${NEXT_API_BETOFFERS}/${eventId}`;
-      // ✅ Use betoffers client with higher timeout (15s) to allow for proxy rotation and retries
+      // Use Next.js API route as proxy (handles CORS). Cache-bust so we don't get stale 200 after PC sleep.
+      const url = `${NEXT_API_BETOFFERS}/${eventId}?_=${Date.now()}`;
       const response = await unibetBetOffersClient.get(url);
       
       console.log(`✅ [NEXT PROXY] Successfully fetched bet offers for event: ${eventId}`);

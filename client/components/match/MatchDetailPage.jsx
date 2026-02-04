@@ -80,6 +80,18 @@ const MatchDetailPage = ({ matchId }) => {
         }
     }, [matchId, matchData, dispatch, useNewAPI]);
 
+    // Refetch immediately when tab becomes visible (e.g. after PC sleep) so finished matches don't show stale bet offers
+    useEffect(() => {
+        if (!matchId || !useNewAPI) return;
+        const handleVisibilityChange = () => {
+            if (typeof document !== 'undefined' && !document.hidden) {
+                dispatch(silentUpdateMatchByIdV2(matchId));
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [matchId, dispatch, useNewAPI]);
+
     // Client-side polling to refresh odds every 1s (uses silent update)
     useEffect(() => {
         if (!matchId || !useNewAPI) return;

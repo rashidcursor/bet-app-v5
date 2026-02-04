@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "@/config/axios";
 import matchesService from "../../../services/matches.service";
+import { markMatchAsFinished } from "@/lib/utils/finishedMatchesManager";
 
 // ===== EXISTING ASYNC THUNKS (keeping for backward compatibility) =====
 
@@ -200,7 +201,7 @@ export const silentUpdateMatchByIdV2 = createAsyncThunk(
     try {
       const data = await matchesService.getBetOffersV2(eventId, { noCache: true, silent: true });
       
-      // If silent update returns null (due to error), don't update state
+      // If silent update returns null (e.g. network error), don't update state
       if (!data) {
         return rejectWithValue("Silent update failed - no data returned");
       }
@@ -214,9 +215,15 @@ export const silentUpdateMatchByIdV2 = createAsyncThunk(
           timestamp: data.timestamp,
           source: data.source || 'unibet-api'
         };
-      } else {
-        throw new Error(data.message || 'Failed to fetch match data');
       }
+      // 404 / match finished: clear match so UI stops showing bet offers
+      if (data.status === 404 || data.isFinished === true) {
+        if (typeof markMatchAsFinished === 'function') {
+          markMatchAsFinished(String(eventId), null);
+        }
+        return { eventId, clear: true };
+      }
+      throw new Error(data.message || 'Failed to fetch match data');
     } catch (error) {
       return rejectWithValue(error.message || "Failed to fetch match data");
     }
@@ -518,6 +525,10 @@ const matchesSlice = createSlice({
       // Silent update reducers for V2
       .addCase(silentUpdateMatchByIdV2.fulfilled, (state, action) => {
         if (!action.payload) return;
+        if (action.payload.clear === true && action.payload.eventId) {
+          delete state.matchDetailsV2[action.payload.eventId];
+          return;
+        }
         const { eventId, matchData, betOffers, marketsSuspended, timestamp, source } = action.payload;
         state.matchDetailsV2[eventId] = {
           matchData,
