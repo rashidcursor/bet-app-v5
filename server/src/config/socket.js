@@ -22,10 +22,14 @@ export const initializeSocket = (server) => {
           // ✅ NEW VERCEL DEPLOYMENT V3
           "https://bet-app-v3.vercel.app",
           "https://bet-app-v3.vercel.app/",
+          // ✅ NEW VERCEL DEPLOYMENT V4
+          "https://bet-app-v4.vercel.app",
+          "https://bet-app-v4.vercel.app/",
           // ✅ WILDCARD FOR ALL VERCEL DEPLOYMENTS
           /^https:\/\/bet-app-v1.*\.vercel\.app$/,
           /^https:\/\/bet-app-v2.*\.vercel\.app$/,
           /^https:\/\/bet-app-v3.*\.vercel\.app$/,
+          /^https:\/\/bet-app-v4.*\.vercel\.app$/,
           /^https:\/\/betting.*\.vercel\.app$/,
         ];
         
