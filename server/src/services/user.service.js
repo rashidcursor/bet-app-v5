@@ -185,14 +185,8 @@ class UserService {
         );
       }
 
-      // Only check isActive for non-admin requests
-      if (!isAdmin && !user.isActive) {
-        throw new CustomError(
-          "User Data: User account is not active",
-          401,
-          "UNAUTHORIZED"
-        );
-      }
+      // isActive is for admin visibility only (e.g. who plays vs who doesn't). It does NOT block
+      // login or app access. Only explicit admin action (e.g. delete/block) should prevent access.
 
       return user;
     } catch (error) {
