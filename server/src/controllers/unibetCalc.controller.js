@@ -16,7 +16,7 @@ export class UnibetCalcController {
     // Process all pending bets (batch processing) - includes both single and combination bets
     processAll = async (req, res) => {
         try {
-            const { limit = 200, onlyPending = true } = req.body;
+            const { limit = 100, onlyPending = true } = req.body;
             
             console.log(`\n📊 [processAll] ========================================`);
             console.log(`📊 [processAll] STARTING BATCH BET PROCESSING`);
@@ -149,64 +149,46 @@ export class UnibetCalcController {
 
             const results = [];
 
-            // Process each bet with improved error isolation
-            for (let i = 0; i < bets.length; i++) {
-                const bet = bets[i];
-                const betNumber = i + 1;
-                
+            // ✅ Split bets into 3 batches and process in parallel (JavaScript Promise.all) – order remains matchDate ascending
+            const BATCH_COUNT = 3;
+            const batchSize = Math.ceil(bets.length / BATCH_COUNT);
+            const batches = [];
+            for (let b = 0; b < BATCH_COUNT; b++) {
+                batches.push(bets.slice(b * batchSize, (b + 1) * batchSize));
+            }
+            console.log(`📊 [processAll] Running ${bets.length} bets in ${BATCH_COUNT} parallel batches (sizes: ${batches.map(ba => ba.length).join(', ')})`);
+            batches.forEach((batch, idx) => {
+                if (batch.length > 0) {
+                    console.log(`📊 [processAll]   Batch ${idx + 1}: ${batch.length} bets (indices ${idx * batchSize}-${idx * batchSize + batch.length - 1})`);
+                }
+            });
+
+            const processOneBet = async (bet, betNumber, total) => {
+                const batchStats = {
+                    single: { processed: 0, won: 0, lost: 0, canceled: 0 },
+                    combination: { processed: 0, won: 0, lost: 0, canceled: 0 },
+                    failed: 0,
+                    errors: []
+                };
+                let result = { status: 'error', payout: 0, reason: '', debugInfo: {} };
                 try {
-                    console.log(`\n🔄 [processAll] ========================================`);
-                    console.log(`🔄 [processAll] Processing bet ${betNumber}/${bets.length}`);
-                    console.log(`🔄 [processAll] ========================================`);
-                    console.log(`🔄 [processAll] Bet ID: ${bet._id}`);
-                    console.log(`🔄 [processAll] Bet Type: ${bet.combination && bet.combination.length > 0 ? 'Combination' : 'Single'}`);
+                    console.log(`\n🔄 [processAll] [Bet ${betNumber}/${total}] Bet ID: ${bet._id}`);
                     if (bet.combination && bet.combination.length > 0) {
-                        console.log(`🔄 [processAll]    - Legs: ${bet.combination.length}`);
-                        bet.combination.forEach((leg, legIndex) => {
-                            console.log(`🔄 [processAll]       Leg ${legIndex + 1}: Match ${leg.matchId} | ${leg.betOption} @ ${leg.odds} | Status: ${leg.status || 'pending'}`);
-                        });
-                    } else {
-                        console.log(`🔄 [processAll]    - Match ID: ${bet.matchId}`);
-                        console.log(`🔄 [processAll]    - Bet Option: ${bet.betOption}`);
-                        console.log(`🔄 [processAll]    - Odds: ${bet.odds}`);
-                    }
-                    console.log(`🔄 [processAll]    - Stake: ${bet.stake}`);
-                    console.log(`🔄 [processAll]    - Current Status: ${bet.status}`);
-                    console.log(`🔄 [processAll]    - Created At: ${bet.createdAt}`);
-                    console.log(`🔄 [processAll]    - Match Date: ${bet.matchDate}`);
-                    console.log(`🔄 [processAll]    - Bet Outcome Check Time: ${bet.betOutcomeCheckTime}`);
-                    
-                    let result;
-                    const processStartTime = Date.now();
-                    
-                    // Check if it's a combination bet
-                    if (bet.combination && bet.combination.length > 0) {
-                        console.log(`🔄 [processAll] → Routing to processCombinationBetInternal...`);
+                        console.log(`🔄 [processAll] → processCombinationBetInternal...`);
                         result = await this.processCombinationBetInternal(bet);
-                        stats.combination.processed++;
-                        if (result.status === 'won') stats.combination.won++;
-                        else if (result.status === 'lost') stats.combination.lost++;
-                        else if (result.status === 'canceled' || result.status === 'cancelled') stats.combination.canceled++;
+                        batchStats.combination.processed++;
+                        if (result.status === 'won') batchStats.combination.won++;
+                        else if (result.status === 'lost') batchStats.combination.lost++;
+                        else if (result.status === 'canceled' || result.status === 'cancelled') batchStats.combination.canceled++;
                     } else {
-                        console.log(`🔄 [processAll] → Routing to processSingleBet...`);
+                        console.log(`🔄 [processAll] → processSingleBet...`);
                         result = await this.processSingleBet(bet);
-                        stats.single.processed++;
-                        if (result.status === 'won') stats.single.won++;
-                        else if (result.status === 'lost') stats.single.lost++;
-                        else if (result.status === 'canceled' || result.status === 'cancelled') stats.single.canceled++;
+                        batchStats.single.processed++;
+                        if (result.status === 'won') batchStats.single.won++;
+                        else if (result.status === 'lost') batchStats.single.lost++;
+                        else if (result.status === 'canceled' || result.status === 'cancelled') batchStats.single.canceled++;
                     }
-                    
-                    const processDuration = Date.now() - processStartTime;
-                    
-                    console.log(`✅ [processAll] Bet ${betNumber} processed in ${processDuration}ms`);
-                    console.log(`✅ [processAll]    - Final Status: ${result.status}`);
-                    console.log(`✅ [processAll]    - Payout: ${result.payout}`);
-                    console.log(`✅ [processAll]    - Reason: ${result.reason || 'No reason provided'}`);
-                    if (result.debugInfo && Object.keys(result.debugInfo).length > 0) {
-                        console.log(`✅ [processAll]    - Debug Info: ${JSON.stringify(result.debugInfo, null, 2)}`);
-                    }
-                    
-                    // ✅ NEW: If bet became cancelled, decrement maxRetryCount
+                    console.log(`✅ [processAll] Bet ${betNumber} done: ${result.status}`);
                     if (result.status === 'cancelled' || result.status === 'canceled') {
                         try {
                             const updatedBet = await Bet.findById(bet._id);
@@ -215,42 +197,75 @@ export class UnibetCalcController {
                                     $inc: { maxRetryCount: -1 },
                                     $set: { retryCount: updatedBet.maxRetryCount - 1 }
                                 });
-                                console.log(`✅ [processAll]    - Decremented maxRetryCount: ${updatedBet.maxRetryCount} → ${updatedBet.maxRetryCount - 1}`);
                             }
                         } catch (retryError) {
                             console.warn(`⚠️ [processAll] Failed to update retry count: ${retryError.message}`);
                         }
                     }
-                    
-                    results.push(result);
-                    
-                    // ✅ NEW: Add 10 second delay before processing next bet (except for last bet)
-                    if (i < bets.length - 1) {
-                        console.log(`⏳ [processAll] Waiting 10 seconds before processing next bet...`);
-                        await new Promise(resolve => setTimeout(resolve, 10 * 1000)); // 10 second delay
-                    }
-                    
+                    return { result, batchStats };
                 } catch (error) {
-                    console.error(`\n❌ [processAll] ========================================`);
-                    console.error(`❌ [processAll] ERROR processing bet ${betNumber}/${bets.length}`);
-                    console.error(`❌ [processAll] ========================================`);
-                    console.error(`❌ [processAll] Bet ID: ${bet._id}`);
-                    console.error(`❌ [processAll] Error Message: ${error.message}`);
-                    console.error(`❌ [processAll] Error Stack: ${error.stack}`);
-                    console.error(`❌ [processAll] ========================================`);
-                    
-                    stats.failed++;
-                    stats.errors.push({
+                    console.error(`❌ [processAll] Bet ${betNumber} failed: ${error.message}`);
+                    batchStats.failed++;
+                    batchStats.errors.push({
                         betId: bet._id,
                         betType: bet.combination && bet.combination.length > 0 ? 'combination' : 'single',
                         error: error.message,
                         timestamp: new Date().toISOString()
                     });
-                    
-                    // Continue processing other bets even if one fails
-                    console.log(`⚠️ [processAll] Continuing with next bet despite error...`);
+                    return { result: { status: 'error', reason: error.message }, batchStats };
                 }
-            }
+            };
+
+            const processBatch = async (batch, batchIndex) => {
+                const batchResults = [];
+                const baseIndex = batchIndex * batchSize;
+                const batchStats = {
+                    single: { processed: 0, won: 0, lost: 0, canceled: 0 },
+                    combination: { processed: 0, won: 0, lost: 0, canceled: 0 },
+                    failed: 0,
+                    errors: []
+                };
+                for (let j = 0; j < batch.length; j++) {
+                    const bet = batch[j];
+                    const betNumber = baseIndex + j + 1;
+                    const { result, batchStats: oneStats } = await processOneBet(bet, betNumber, bets.length);
+                    batchResults.push(result);
+                    batchStats.single.processed += oneStats.single.processed;
+                    batchStats.single.won += oneStats.single.won;
+                    batchStats.single.lost += oneStats.single.lost;
+                    batchStats.single.canceled += oneStats.single.canceled;
+                    batchStats.combination.processed += oneStats.combination.processed;
+                    batchStats.combination.won += oneStats.combination.won;
+                    batchStats.combination.lost += oneStats.combination.lost;
+                    batchStats.combination.canceled += oneStats.combination.canceled;
+                    batchStats.failed += oneStats.failed;
+                    batchStats.errors.push(...oneStats.errors);
+                    if (j < batch.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2 * 1000)); // 2 sec between bets within batch
+                    }
+                }
+                return { results: batchResults, batchStats };
+            };
+
+            const allBatchOutputs = await Promise.all(
+                batches.map((batch, idx) => (batch.length > 0 ? processBatch(batch, idx) : Promise.resolve({ results: [], batchStats: null })))
+            );
+
+            allBatchOutputs.forEach((out) => {
+                out.results.forEach((r) => results.push(r));
+                if (out.batchStats) {
+                    stats.single.processed += out.batchStats.single.processed;
+                    stats.single.won += out.batchStats.single.won;
+                    stats.single.lost += out.batchStats.single.lost;
+                    stats.single.canceled += out.batchStats.single.canceled;
+                    stats.combination.processed += out.batchStats.combination.processed;
+                    stats.combination.won += out.batchStats.combination.won;
+                    stats.combination.lost += out.batchStats.combination.lost;
+                    stats.combination.canceled += out.batchStats.combination.canceled;
+                    stats.failed += out.batchStats.failed;
+                    stats.errors.push(...out.batchStats.errors);
+                }
+            });
 
             console.log(`\n📊 [processAll] ========================================`);
             console.log(`📊 [processAll] BATCH PROCESSING COMPLETED`);
