@@ -16,7 +16,7 @@ export class UnibetCalcController {
     // Process all pending bets (batch processing) - includes both single and combination bets
     processAll = async (req, res) => {
         try {
-            const { limit = 100, onlyPending = true } = req.body;
+            const { limit = 200, onlyPending = true } = req.body;
             
             console.log(`\n📊 [processAll] ========================================`);
             console.log(`📊 [processAll] STARTING BATCH BET PROCESSING`);
@@ -241,7 +241,7 @@ export class UnibetCalcController {
                     batchStats.failed += oneStats.failed;
                     batchStats.errors.push(...oneStats.errors);
                     if (j < batch.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 2 * 1000)); // 2 sec between bets within batch
+                        await new Promise(resolve => setTimeout(resolve, 5 * 1000)); // 5 sec between bets within batch
                     }
                 }
                 return { results: batchResults, batchStats };

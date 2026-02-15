@@ -628,11 +628,11 @@ agenda.define("processPendingBets", { concurrency: 5 }, async (job) => {
       }
     };
     
-    console.log(`[Agenda] 🔄 Calling processAll with limit: 100, onlyPending: true`);
+    console.log(`[Agenda] 🔄 Calling processAll with limit: 50, onlyPending: true`);
     
-    // Process pending bets (finished matches only) – 100 bets per run in 3 parallel batches
+    // Process pending bets (finished matches only)
     const result = await unibetCalcController.processAll({
-      body: { limit: 100, onlyPending: true }
+      body: { limit: 50, onlyPending: true }
     }, mockRes);
     
     const endTime = new Date();

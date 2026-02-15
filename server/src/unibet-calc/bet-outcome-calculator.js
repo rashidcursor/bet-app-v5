@@ -9018,18 +9018,22 @@ class BetOutcomeCalculator {
             console.log(`   - Status: ${matchResult.match.status?.finished ? 'Finished' : 'Not finished'}`);
             console.log(`   - Similarity score: ${matchResult.score.toFixed(3)}`);
 
-            // Step 4: Check if match is finished before making API call
+            // Step 4: Check if match is finished before making API call (skip this when using multi-day cache – cache can be stale)
             console.log(`\n🔍 STEP 4: Checking match finished status...`);
-            
+            const isFromMultiDayCache = fotmobData.source === 'multi-day-cache-filtered' || fotmobData.source === 'test-cache-fotmob-11';
+            if (isFromMultiDayCache) {
+                console.log(`📋 Using multi-day cache (source: ${fotmobData.source}) – not trusting cached status; will fetch match details to get current status.`);
+            }
+
             const matchStatusFinished = matchResult.match.status?.finished === true;
             const matchStatusReason = matchResult.match.status?.reason?.short?.toLowerCase() || '';
             const isMatchFinishedFromStatus = matchStatusFinished || 
                 matchStatusReason.includes('ft') || 
                 matchStatusReason.includes('full') || 
                 matchStatusReason.includes('finished');
-            
-            // If match not finished from FotMob, return pending - next cycle will check again
-            if (!isMatchFinishedFromStatus) {
+
+            // If match not finished from FotMob cache, return pending – unless data is from multi-day cache (stale), then always fetch match details
+            if (!isFromMultiDayCache && !isMatchFinishedFromStatus) {
                 console.log(`⏳ Match not finished yet from FotMob - skipping detailed API call (will retry next cycle)`);
                 return {
                     success: true,
@@ -9038,8 +9042,11 @@ class BetOutcomeCalculator {
                     reason: 'Match not finished - will check again next cycle'
                 };
             }
-            
-            console.log(`✅ Match finished confirmed from FotMob status - proceeding with detailed API call`);
+            if (isFromMultiDayCache) {
+                console.log(`✅ Proceeding to fetch match details (multi-day cache used – status from API will be used).`);
+            } else {
+                console.log(`✅ Match finished confirmed from FotMob status - proceeding with detailed API call`);
+            }
             
             // Fetch detailed match information; cancel only after 20 failed attempts (match is already finished)
             const MAX_FETCH_DETAILS_RETRIES = 20;
