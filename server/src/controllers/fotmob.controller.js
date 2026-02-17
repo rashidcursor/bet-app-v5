@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Fotmob from '@max-xoo/fotmob';
 import axios from '../config/axios-proxy.js';
+import { getFotmobCookieFromDb } from '../utils/fotmobCookie.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -95,12 +96,13 @@ export class FotmobController {
             const ccode3 = 'PAK';
             const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
             
-            // Get x-mas token (required for authentication)
+            const fotmobCookie = await getFotmobCookieFromDb();
+            if (fotmobCookie) console.log(`✅ Using FotMob cookie from DB`);
             let xmasToken = null;
             try {
-                const xmasResponse = await axios.get('http://46.101.91.154:6006/');
-                xmasToken = xmasResponse.data['x-mas'];
-                console.log(`✅ Got x-mas token`);
+                const xmasResponse = await axios.get('http://46.101.91.154:6006/', { timeout: 5000 });
+                xmasToken = xmasResponse.data?.['x-mas'];
+                if (xmasToken) console.log(`✅ Got x-mas token`);
             } catch (xmasError) {
                 console.warn(`⚠️ Could not get x-mas token, trying without it...`);
             }
@@ -110,10 +112,8 @@ export class FotmobController {
                 'Accept': 'application/json',
                 'Referer': 'https://www.fotmob.com/'
             };
-            
-            if (xmasToken) {
-                headers['x-mas'] = xmasToken;
-            }
+            if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+            if (xmasToken) headers['x-mas'] = xmasToken;
             
             console.log(`📡 Calling FotMob API: ${apiUrl}`);
             const response = await axios.get(apiUrl, { headers });
@@ -252,12 +252,13 @@ export class FotmobController {
                     const ccode3 = 'PAK';
                     const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
                     
-                    // Get x-mas token (required for authentication)
+                    const fotmobCookie = await getFotmobCookieFromDb();
+                    if (fotmobCookie) console.log(`✅ Using FotMob cookie from DB`);
                     let xmasToken = null;
                     try {
-                        const xmasResponse = await axios.get('http://46.101.91.154:6006/');
-                        xmasToken = xmasResponse.data['x-mas'];
-                        console.log(`✅ Got x-mas token`);
+                        const xmasResponse = await axios.get('http://46.101.91.154:6006/', { timeout: 5000 });
+                        xmasToken = xmasResponse.data?.['x-mas'];
+                        if (xmasToken) console.log(`✅ Got x-mas token`);
                     } catch (xmasError) {
                         console.warn(`⚠️ Could not get x-mas token, trying without it...`);
                     }
@@ -267,10 +268,8 @@ export class FotmobController {
                         'Accept': 'application/json',
                         'Referer': 'https://www.fotmob.com/'
                     };
-                    
-                    if (xmasToken) {
-                        headers['x-mas'] = xmasToken;
-                    }
+                    if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+                    if (xmasToken) headers['x-mas'] = xmasToken;
                     
                     const response = await axios.get(apiUrl, { headers });
                     const apiData = response.data;

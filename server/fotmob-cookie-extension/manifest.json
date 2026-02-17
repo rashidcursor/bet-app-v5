@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "FotMob Cookie to DB",
+  "version": "1.0",
+  "description": "Reads turnstile_verified from FotMob and sends to local receiver server (DB).",
+  "permissions": ["cookies"],
+  "host_permissions": [
+    "https://www.fotmob.com/*",
+    "http://localhost:4001/*",
+    "http://127.0.0.1:4001/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:4001 http://127.0.0.1:4001"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Sync FotMob cookie to DB"
+  }
+}

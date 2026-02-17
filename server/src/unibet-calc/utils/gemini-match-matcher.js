@@ -71,23 +71,24 @@ export async function findMatchWithGemini(betHomeName, betAwayName, betDate, lea
             // Initialize Gemini with current API key
             const ai = new GoogleGenAI({ apiKey: geminiApiKey });
             
-            // Create prompt - Simple and direct
-            const prompt = `Bet information:
-- Home team: "${betHomeName}"
-- Away team: "${betAwayName}"
-- Match date: ${betDate.toISOString()}
+            // Prompt: to-the-point – team names often mismatch; verify from the list whether this match is included or not
+            const prompt = `Team names are often mismatching (abbreviations, different spellings, languages). Verify from the response list below.
+
+BET TEAMS (we need to find this match in the list):
+- Home: "${betHomeName}"
+- Away: "${betAwayName}"
+- Date: ${betDate.toISOString()}
 - League: ${leagueName}
 
-Available matches from Fotmob (same league, similar date):
+FOTMOB MATCHES (response list – each line has Match ID and teams):
 
 ${matchesList}
 
-Task: Find the match that corresponds to "${betHomeName}" vs "${betAwayName}".
-Team names might be written differently (abbreviations, different languages, alternative names, etc.), but it's the same match.
+Task: Check if a match with these two teams (${betHomeName} vs ${betAwayName}) is included in the list above. Ignore name spelling/abbreviation differences.
+- If yes: return ONLY that match's ID number (e.g. 4824837).
+- If no match in the list corresponds to these teams: return ONLY "NO_MATCH".
 
-Return ONLY the match ID number if you find a match, or "NO_MATCH" if not found.
-
-Example response: 1234567`;
+Reply with nothing else – just the match ID number or NO_MATCH.`;
 
             console.log(`   📤 Sending request to Gemini Flash 2.5 (${keyName})...`);
             // Use new API: ai.models.generateContent

@@ -8,6 +8,7 @@ import { GoogleGenAI } from '@google/genai';
 // import { downloadLeagueMappingClean } from '../utils/cloudinaryCsvLoader.js';
 import { normalizeTeamName, calculateNameSimilarity } from '../unibet-calc/utils/fotmob-helpers.js';
 import { waitForRateLimit } from '../utils/geminiRateLimiter.js';
+import { getFotmobCookieFromDb } from '../utils/fotmobCookie.js';
 import LeagueMapping from '../models/LeagueMapping.js';
 import FailedLeagueMappingAttempt from '../models/FailedLeagueMappingAttempt.js';
 
@@ -360,7 +361,8 @@ class LeagueMappingAutoUpdate {
             const ccode3 = 'PAK';
             const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
 
-            // Get x-mas token (required for authentication)
+            const fotmobCookie = await getFotmobCookieFromDb();
+            if (fotmobCookie) console.log(`[LeagueMapping] ✅ Using FotMob cookie from DB`);
             let xmasToken = null;
             try {
                 console.log(`[LeagueMapping] 🔑 Attempting to fetch x-mas token...`);
@@ -369,11 +371,8 @@ class LeagueMappingAutoUpdate {
                     new Promise((_, reject) => setTimeout(() => reject(new Error('x-mas token fetch timeout')), 8000))
                 ]);
                 xmasToken = xmasResponse.data?.['x-mas'];
-                if (xmasToken) {
-                    console.log(`[LeagueMapping] ✅ Got x-mas token`);
-                } else {
-                    console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
-                }
+                if (xmasToken) console.log(`[LeagueMapping] ✅ Got x-mas token`);
+                else console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
             } catch (xmasError) {
                 console.warn(`[LeagueMapping] ⚠️ Could not get x-mas token (${xmasError.message}), trying without it...`);
             }
@@ -383,10 +382,8 @@ class LeagueMappingAutoUpdate {
                 'Accept': 'application/json',
                 'Referer': 'https://www.fotmob.com/'
             };
-
-            if (xmasToken) {
-                headers['x-mas'] = xmasToken;
-            }
+            if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+            if (xmasToken) headers['x-mas'] = xmasToken;
 
             const response = await axios.get(apiUrl, { headers, timeout: 30000 });
             const data = response.data;
@@ -519,7 +516,8 @@ class LeagueMappingAutoUpdate {
             const ccode3 = 'PAK';
             const apiUrl = `https://www.fotmob.com/api/data/matches?date=${tomorrowDateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
 
-            // Get x-mas token (required for authentication)
+            const fotmobCookie = await getFotmobCookieFromDb();
+            if (fotmobCookie) console.log(`[LeagueMapping] ✅ Using FotMob cookie from DB (tomorrow)`);
             let xmasToken = null;
             try {
                 console.log(`[LeagueMapping] 🔑 Attempting to fetch x-mas token for tomorrow...`);
@@ -528,11 +526,8 @@ class LeagueMappingAutoUpdate {
                     new Promise((_, reject) => setTimeout(() => reject(new Error('x-mas token fetch timeout')), 8000))
                 ]);
                 xmasToken = xmasResponse.data?.['x-mas'];
-                if (xmasToken) {
-                    console.log(`[LeagueMapping] ✅ Got x-mas token for tomorrow`);
-                } else {
-                    console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
-                }
+                if (xmasToken) console.log(`[LeagueMapping] ✅ Got x-mas token for tomorrow`);
+                else console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
             } catch (xmasError) {
                 console.warn(`[LeagueMapping] ⚠️ Could not get x-mas token (${xmasError.message}), trying without it...`);
             }
@@ -542,10 +537,8 @@ class LeagueMappingAutoUpdate {
                 'Accept': 'application/json',
                 'Referer': 'https://www.fotmob.com/'
             };
-
-            if (xmasToken) {
-                headers['x-mas'] = xmasToken;
-            }
+            if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+            if (xmasToken) headers['x-mas'] = xmasToken;
 
             const response = await axios.get(apiUrl, { headers, timeout: 30000 });
             const data = response.data;
@@ -662,7 +655,8 @@ class LeagueMappingAutoUpdate {
             const ccode3 = 'PAK';
             const apiUrl = `https://www.fotmob.com/api/data/matches?date=${dayAfterDateStr}&timezone=${encodeURIComponent(timezone)}&ccode3=${ccode3}`;
 
-            // Get x-mas token (required for authentication)
+            const fotmobCookie = await getFotmobCookieFromDb();
+            if (fotmobCookie) console.log(`[LeagueMapping] ✅ Using FotMob cookie from DB (day after)`);
             let xmasToken = null;
             try {
                 console.log(`[LeagueMapping] 🔑 Attempting to fetch x-mas token for day after tomorrow...`);
@@ -671,11 +665,8 @@ class LeagueMappingAutoUpdate {
                     new Promise((_, reject) => setTimeout(() => reject(new Error('x-mas token fetch timeout')), 8000))
                 ]);
                 xmasToken = xmasResponse.data?.['x-mas'];
-                if (xmasToken) {
-                    console.log(`[LeagueMapping] ✅ Got x-mas token for day after tomorrow`);
-                } else {
-                    console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
-                }
+                if (xmasToken) console.log(`[LeagueMapping] ✅ Got x-mas token for day after tomorrow`);
+                else console.warn(`[LeagueMapping] ⚠️ x-mas token response missing token`);
             } catch (xmasError) {
                 console.warn(`[LeagueMapping] ⚠️ Could not get x-mas token (${xmasError.message}), trying without it...`);
             }
@@ -685,10 +676,8 @@ class LeagueMappingAutoUpdate {
                 'Accept': 'application/json',
                 'Referer': 'https://www.fotmob.com/'
             };
-
-            if (xmasToken) {
-                headers['x-mas'] = xmasToken;
-            }
+            if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+            if (xmasToken) headers['x-mas'] = xmasToken;
 
             const response = await axios.get(apiUrl, { headers, timeout: 30000 });
             const data = response.data;

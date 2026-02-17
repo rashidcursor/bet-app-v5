@@ -5,6 +5,7 @@ import { UnibetCalcController } from "../controllers/unibetCalc.controller.js";
 import { FotmobController } from "../controllers/fotmob.controller.js";
 import LeagueMappingAutoUpdate from "../services/leagueMappingAutoUpdate.service.js";
 import Bet from "../models/Bet.js"; // ✅ NEW: Import Bet model for cancelled bets job
+import { clearFotmobCookieCache } from "../utils/fotmobCookie.js";
 
 // Get LiveFixtures service instance
 const getLiveFixturesService = () => {
@@ -703,6 +704,10 @@ agenda.define("processCancelledBets", async (job) => {
       console.log(`[Agenda] ✅ No cancelled bets to process`);
       return;
     }
+    
+    // Force fresh FotMob cookie read from DB for this job run (avoids stale/expired cache)
+    clearFotmobCookieCache();
+    console.log(`[Agenda] 🍪 Cleared FotMob cookie cache – will use latest from DB for this run`);
     
     let processed = 0;
     let stillCancelled = 0;

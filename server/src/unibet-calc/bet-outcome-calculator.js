@@ -42,6 +42,7 @@ import {
 import { normalizeBet } from './utils/market-normalizer.js';
 import { identifyMarket, MarketCodes } from './utils/market-registry.js';
 import User from '../models/User.js';
+import { getFotmobCookieFromDb, clearFotmobCookieCache } from '../utils/fotmobCookie.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -721,12 +722,13 @@ class BetOutcomeCalculator {
                 
                 console.log(`📡 Calling FotMob API for daily matches: ${dateStr} (PKT) - Original UTC date: ${utcDateFormatted}`);
                 
-                // Get x-mas token (required for authentication)
+                const fotmobCookie = await getFotmobCookieFromDb();
+                if (fotmobCookie) console.log(`✅ Using FotMob cookie from DB`);
                 let xmasToken = null;
                 try {
-                    const xmasResponse = await axios.get('http://46.101.91.154:6006/');
-                    xmasToken = xmasResponse.data['x-mas'];
-                    console.log(`✅ Got x-mas token`);
+                    const xmasResponse = await axios.get('http://46.101.91.154:6006/', { timeout: 5000 });
+                    xmasToken = xmasResponse.data?.['x-mas'];
+                    if (xmasToken) console.log(`✅ Got x-mas token`);
                 } catch (xmasError) {
                     console.warn(`⚠️ Could not get x-mas token, trying without it...`);
                 }
@@ -736,12 +738,11 @@ class BetOutcomeCalculator {
                     'Accept': 'application/json',
                     'Referer': 'https://www.fotmob.com/'
                 };
-                
-                if (xmasToken) {
-                    headers['x-mas'] = xmasToken;
-                }
+                if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+                if (xmasToken) headers['x-mas'] = xmasToken;
                 
                 console.log(`🐛 [BREAKPOINT] Making HTTP request to FotMob API...`);
+                console.log(`   📤 FotMob request headers: Cookie=${!!headers['Cookie']}, x-mas=${!!headers['x-mas']}`);
                 const response = await axios.get(apiUrl, { headers });
                 const freshData = response.data;
                 
@@ -1133,13 +1134,18 @@ class BetOutcomeCalculator {
             
             if (isGroupLeague) {
                 console.log(`🔍 GROUP LEAGUE DETECTED: ${fotmobLeague.name} (id=${fotmobLeague.id})`);
+                // Always add matches from the exact league we found (so we have at least these for matching/Gemini)
+                if (fotmobLeague.matches && fotmobLeague.matches.length > 0) {
+                    allMatchesToSearch.push(...fotmobLeague.matches);
+                    console.log(`   ✅ Added ${fotmobLeague.matches.length} matches from exact group: ${fotmobLeague.name}`);
+                }
                 console.log(`🔍 Searching all similar groups to ensure comprehensive match coverage...`);
                 
-                // For group leagues, search all similar groups (A, B, C, D, etc.)
+                // For group leagues, also search similar groups (A, B, C, D, etc.) – skip exact league to avoid duplicates
                 const similarLeagues = fotmobData.leagues.filter(league => {
+                    if (league.id === fotmobLeague.id) return false;
                     const leagueName = league.name.toLowerCase();
                     const fotmobName = leagueMapping.fotmobName.toLowerCase();
-                    
                     return leagueName.includes(fotmobName) || fotmobName.includes(leagueName);
                 });
                 
@@ -1151,7 +1157,7 @@ class BetOutcomeCalculator {
                     }
                 });
                 
-                matchingResult.debugInfo.searchSteps.push(`✅ Group league: searching ${similarLeagues.length} groups with ${allMatchesToSearch.length} total matches`);
+                matchingResult.debugInfo.searchSteps.push(`✅ Group league: searching 1 exact + ${similarLeagues.length} similar groups with ${allMatchesToSearch.length} total matches`);
             } else {
                 console.log(`✅ COMPLETE LEAGUE DETECTED: ${fotmobLeague.name} (id=${fotmobLeague.id})`);
                 
@@ -1270,9 +1276,9 @@ class BetOutcomeCalculator {
         if (!bestMatch || bestScore < MINIMUM_SIMILARITY) {
             console.log(`   ❌ FAILED: ${bestMatch ? 'Score too low' : 'No match found'}`);
             
-            // ✅ NEW: Try Gemini AI fallback if we have matches but score is too low
-            if (allMatchesToSearch.length > 0 && bestMatch) {
-                console.log(`   🤖 Attempting Gemini AI fallback for match finding...`);
+            // ✅ Try Gemini AI fallback whenever we have matches (even when similarity was 0 – team names may be mismatching)
+            if (allMatchesToSearch.length > 0) {
+                console.log(`   🤖 Attempting Gemini AI fallback for match finding (team names may be mismatching)...`);
                 try {
                     const { findMatchWithGemini } = await import('./utils/gemini-match-matcher.js');
                     const geminiMatch = await findMatchWithGemini(
@@ -1322,14 +1328,17 @@ class BetOutcomeCalculator {
             // Use direct API call instead of Fotmob library
             const apiUrl = `https://www.fotmob.com/api/data/matchDetails?matchId=${matchId}`;
             
-            // Get x-mas token (required for authentication)
+            // Cookie from DB (extension + receiver) – required for FotMob to avoid 403
+            const fotmobCookie = await getFotmobCookieFromDb();
+            if (fotmobCookie) {
+                console.log(`✅ Using FotMob cookie from DB`);
+            }
+            // Optional: x-mas token from external service (often unavailable)
             let xmasToken = null;
             try {
-                const xmasResponse = await axios.get('http://46.101.91.154:6006/');
+                const xmasResponse = await axios.get('http://46.101.91.154:6006/', { timeout: 5000 });
                 xmasToken = xmasResponse.data?.['x-mas'];
-                if (xmasToken) {
-                    console.log(`✅ Got x-mas token`);
-                }
+                if (xmasToken) console.log(`✅ Got x-mas token`);
             } catch (xmasError) {
                 console.warn(`⚠️ Could not get x-mas token, trying without it...`);
             }
@@ -1340,12 +1349,11 @@ class BetOutcomeCalculator {
                 'Referer': 'https://www.fotmob.com/',
                 'Accept-Encoding': 'gzip, deflate, br'
             };
-            
-            if (xmasToken) {
-                headers['x-mas'] = xmasToken;
-            }
+            if (fotmobCookie) headers['Cookie'] = fotmobCookie;
+            if (xmasToken) headers['x-mas'] = xmasToken;
             
             console.log(`🔍 Calling direct FotMob API: ${apiUrl}`);
+            console.log(`   📤 Request headers: Cookie=${!!headers['Cookie']}, x-mas=${!!headers['x-mas']}`);
             const response = await axios.get(apiUrl, { headers, timeout: 30000 });
             const matchDetails = response.data;
             
@@ -1419,6 +1427,12 @@ class BetOutcomeCalculator {
             
         } catch (error) {
             console.error(`❌ Error fetching match details for ID ${matchId}:`, error.message);
+            
+            // On 403, clear cookie cache so next request re-reads from DB (re-sync via extension)
+            if (error.response?.status === 403) {
+                clearFotmobCookieCache();
+                console.warn(`   ⚠️ FotMob 403 – cleared cookie cache; next request will re-read from DB. Re-sync cookie via extension if needed.`);
+            }
             
             // Log more details about the error
             if (error.response) {

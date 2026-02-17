@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# FotMob cookie script – persistent Chrome profile (cookies/cache)
+server/storage/fotmob/playwright-user-data
