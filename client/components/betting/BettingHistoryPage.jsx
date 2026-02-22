@@ -83,23 +83,43 @@ const BettingHistoryPage = ({ userId }) => {
     return name;
   };
 
-  // Helper function to format selection with player name for player markets
+  // Complete market name from unibetMeta (includes line for 3-way line markets: 1-0, 2-0, 3-0)
+  const getMarketDisplayName = (bet) => {
+    const fromMeta = bet?.unibetMeta?.marketName || bet?.unibetMeta?.criterionLabel || bet?.unibetMeta?.criterionEnglishLabel;
+    if (fromMeta) return fromMeta;
+    return bet?.betDetails?.market_description || bet?.betDetails?.market_name || '-';
+  };
+
+  // Helper: detect 3-way line market (Corners 3-Way Line, etc.) so we show full market/line
+  const is3WayLineMarket = (marketStr) => {
+    if (!marketStr || typeof marketStr !== 'string') return false;
+    const t = marketStr.toLowerCase();
+    return t.includes('3-way line') || t.includes('3 way line') || t.includes('three way line');
+  };
+
+  // Helper function to format selection with player name for player markets, and full market for 3-way line
   const formatSelection = (bet) => {
-    // Check if this is a player market (has player name in betDetails or unibetMeta)
+    const marketDisplayName = getMarketDisplayName(bet);
+    const marketDescription = (marketDisplayName || '').toLowerCase();
     const playerName = bet.betDetails?.name || bet.unibetMeta?.participant;
-    const marketDescription = (bet.betDetails?.market_description || bet.betDetails?.market_name || bet.unibetMeta?.marketName || '').toLowerCase();
     const isPlayerMarket = marketDescription.includes('player') || marketDescription.includes('shots on target') || marketDescription.includes('shots');
-    
+
+    // 3-way line: show complete market name (includes line 1-0, 2-0, 3-0) + outcome so 1-0 vs 2-0 are distinguishable
+    if (is3WayLineMarket(marketDisplayName)) {
+      const outcome = bet.unibetMeta?.outcomeEnglishLabel || bet.selection || '-';
+      return `${formatMarketNameForDisplay(marketDisplayName)} — ${outcome}`;
+    }
+
     // For market_id === "37" (handicap markets), use existing format
     if (bet.betDetails?.market_id === "37") {
       return `${bet.betDetails?.label} ${bet.betDetails?.total} / ${bet.betDetails?.name}`;
     }
-    
+
     // For player markets, include player name with selection
     if (isPlayerMarket && playerName && bet.selection) {
       return `${bet.selection} - ${playerName}`;
     }
-    
+
     // Default: just return selection
     return bet.selection || "-";
   };
@@ -275,8 +295,8 @@ const BettingHistoryPage = ({ userId }) => {
                         </div>
                       </TableCell>
                       <TableCell className="max-w-32">
-                        <div className="truncate" title={leg.unibetMeta?.marketName || leg.betDetails?.market_description || leg.betDetails?.market_name}>
-                          {formatMarketNameForDisplay(leg.unibetMeta?.marketName || leg.betDetails?.market_description || leg.betDetails?.market_name || "-")}
+                        <div className="truncate" title={getMarketDisplayName(leg)}>
+                          {formatMarketNameForDisplay(getMarketDisplayName(leg))}
                         </div>
                       </TableCell>
                       <TableCell className="max-w-32">
@@ -425,7 +445,7 @@ const BettingHistoryPage = ({ userId }) => {
             <div className="flex justify-between">
               <span className="text-gray-500">Market:</span>
               <span className="text-gray-900">
-                {isCombo ? "Multiple Markets" : formatMarketNameForDisplay(bet.unibetMeta?.marketName || bet.betDetails?.market_description || bet.betDetails?.market_name || "-")}
+                {isCombo ? "Multiple Markets" : formatMarketNameForDisplay(getMarketDisplayName(bet))}
               </span>
             </div>
             <div className="flex justify-between">
@@ -549,7 +569,7 @@ const BettingHistoryPage = ({ userId }) => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Market:</span>
-                    <span className="text-gray-900 truncate ml-2">{formatMarketNameForDisplay(leg.unibetMeta?.marketName || leg.betDetails?.market_description || leg.betDetails?.market_name || "-")}</span>
+                    <span className="text-gray-900 truncate ml-2">{formatMarketNameForDisplay(getMarketDisplayName(leg))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Selection:</span>
@@ -861,10 +881,7 @@ const BettingHistoryPage = ({ userId }) => {
                               </TableCell>
                               <TableCell className="max-w-48">
                                 {(() => {
-                                  const rawMarketTitle = item.unibetMeta?.marketName
-                                    || item.betDetails?.market_description
-                                    || item.betDetails?.market_name
-                                    || "-";
+                                  const rawMarketTitle = getMarketDisplayName(item);
                                   const singleMarketTitle = formatMarketNameForDisplay(rawMarketTitle);
                                   return (
                                     <div
