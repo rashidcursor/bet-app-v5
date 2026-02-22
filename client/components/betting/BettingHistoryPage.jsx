@@ -97,6 +97,16 @@ const BettingHistoryPage = ({ userId }) => {
     return t.includes('3-way line') || t.includes('3 way line') || t.includes('three way line');
   };
 
+  // Build "Starts 1-0" / "Starts 2-0" / "Starts 0-1" from handicap (same logic as betting UI)
+  const getStartsLabelFromHandicap = (bet) => {
+    const line = bet?.unibetMeta?.handicapLine ?? (bet?.betDetails?.handicap != null ? Number(bet.betDetails.handicap) : null);
+    if (line == null || (typeof line !== 'number' && isNaN(Number(line)))) return null;
+    const handicapNum = Number(line);
+    const homeGoals = handicapNum > 0 ? Math.abs(handicapNum) : 0;
+    const awayGoals = handicapNum < 0 ? Math.abs(handicapNum) : 0;
+    return `Starts ${homeGoals}-${awayGoals}`;
+  };
+
   // Helper function to format selection with player name for player markets, and full market for 3-way line
   const formatSelection = (bet) => {
     const marketDisplayName = getMarketDisplayName(bet);
@@ -104,9 +114,11 @@ const BettingHistoryPage = ({ userId }) => {
     const playerName = bet.betDetails?.name || bet.unibetMeta?.participant;
     const isPlayerMarket = marketDescription.includes('player') || marketDescription.includes('shots on target') || marketDescription.includes('shots');
 
-    // 3-way line: show complete market name (includes line 1-0, 2-0, 3-0) + outcome so 1-0 vs 2-0 are distinguishable
+    // 3-way line: show "Starts 1-0" / "Starts 2-0" / "Starts 0-1" + outcome (same as betting UI)
     if (is3WayLineMarket(marketDisplayName)) {
+      const startsLabel = getStartsLabelFromHandicap(bet);
       const outcome = bet.unibetMeta?.outcomeEnglishLabel || bet.selection || '-';
+      if (startsLabel) return `${startsLabel} — ${outcome}`;
       return `${formatMarketNameForDisplay(marketDisplayName)} — ${outcome}`;
     }
 
