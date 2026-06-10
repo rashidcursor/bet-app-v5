@@ -2,6 +2,7 @@
 // Automatically rotates through a list of proxies on errors to change IP addresses
 
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import axios from 'axios';
 
 /**
  * Get proxy list - hardcoded in codebase (no env dependency)
@@ -292,6 +293,63 @@ class ProxyRotator {
     // All proxies failed
     console.error(`❌ [ProxyRotator] All ${attempts} proxy attempts failed`);
     throw lastError || new Error('All proxy attempts failed');
+  }
+
+  /**
+   * Fetch a URL via rotating proxy — each call uses the next proxy (round-robin).
+   * Retries with a different proxy only on network/server errors, not on 404/410.
+   */
+  async fetchUrl(url, options = {}) {
+    const {
+      headers = {},
+      timeout = 5000,
+      maxRetries = 10,
+      nonRetryableStatuses = [404, 410],
+      label = '',
+    } = options;
+
+    try {
+      return await this.executeWithRotation(
+        async (httpsAgent, proxy) => {
+          const response = await axios.get(url, {
+            headers,
+            httpsAgent,
+            httpAgent: httpsAgent,
+            timeout,
+            validateStatus: () => true,
+          });
+
+          if (response.status === 200) {
+            return {
+              status: 200,
+              data: response.data,
+              proxy: `${proxy.host}:${proxy.port}`,
+            };
+          }
+
+          if (nonRetryableStatuses.includes(response.status)) {
+            console.log(`📋 [ProxyRotator]${label ? ` [${label}]` : ''} API returned ${response.status} via ${proxy.host}:${proxy.port} (no retry)`);
+            return {
+              status: response.status,
+              data: response.data ?? null,
+              proxy: `${proxy.host}:${proxy.port}`,
+            };
+          }
+
+          throw new Error(`Request returned ${response.status}`);
+        },
+        {
+          maxRetries,
+          retryDelay: 500,
+          onRetry: (attempt, max, proxy, error) => {
+            console.warn(`⚠️ [ProxyRotator]${label ? ` [${label}]` : ''} ${proxy.host}:${proxy.port} failed (${attempt}/${max}): ${error.message}`);
+          },
+        }
+      );
+    } catch (error) {
+      console.error(`❌ [ProxyRotator]${label ? ` [${label}]` : ''} All proxy attempts failed: ${error.message}`);
+      return { status: 0, data: null, proxy: null, error: error.message };
+    }
   }
 
   /**

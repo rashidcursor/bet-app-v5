@@ -1,7 +1,6 @@
 // Next.js API Route - Proxy for Unibet Bet Offers API (handles CORS)
 // Node.js runtime required for proxy support
 import { NextResponse } from 'next/server';
-import axios from 'axios';
 import proxyRotator from '@/lib/utils/proxyRotator.js';
 
 const UNIBET_BETOFFERS_API = 'https://oc-offering-api.kambicdn.com/offering/v2018/ubau/betoffer/event';
@@ -144,37 +143,33 @@ function isMatchSuspendedBetoffers(matchId) {
   return true;
 }
 
-// ✅ Helper function to fetch live data for a specific match from Kambi API
+// ✅ Helper function to fetch live data for a specific match from Kambi API (via proxy)
 async function fetchLiveDataForMatch(matchId) {
   try {
     const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-    
-    const response = await fetch(url, {
+    const result = await proxyRotator.fetchUrl(url, {
       headers: KAMBI_LIVE_HEADERS,
-      signal: AbortSignal.timeout(5000)
+      timeout: 5000,
+      label: `kambi-live-${matchId}`,
     });
-    
-    if (!response.ok) {
+
+    if (result.status !== 200 || !result.data?.liveEvents) {
       return null;
     }
-    
-    const data = await response.json();
-    
-    if (data && data.liveEvents) {
-      const liveEvent = data.liveEvents.find(
-        event => event.event && event.event.id.toString() === matchId.toString()
-      );
-      
-      if (liveEvent && liveEvent.liveData) {
-        return {
-          eventId: liveEvent.liveData.eventId,
-          matchClock: liveEvent.liveData.matchClock,
-          score: liveEvent.liveData.score,
-          statistics: liveEvent.liveData.statistics
-        };
-      }
+
+    const liveEvent = result.data.liveEvents.find(
+      event => event.event && event.event.id.toString() === matchId.toString()
+    );
+
+    if (liveEvent?.liveData) {
+      return {
+        eventId: liveEvent.liveData.eventId,
+        matchClock: liveEvent.liveData.matchClock,
+        score: liveEvent.liveData.score,
+        statistics: liveEvent.liveData.statistics,
+      };
     }
-    
+
     return null;
   } catch (error) {
     console.warn(`⚠️ [NEXT BETOFFERS] Failed to fetch live data for match ${matchId}:`, error.message);
@@ -221,68 +216,50 @@ function applySuspensionToBetoffers(betoffersData, shouldSuspend) {
   return betoffersData;
 }
 
-// Function to fetch bet offers through proxy with automatic rotation
+// Fetch bet offers via proxy (always — no direct connection)
 async function fetchBetOffersViaProxy(eventId) {
-  const startTime = Date.now();
   const url = `${UNIBET_BETOFFERS_API}/${eventId}.json?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-  
-  console.log(`🔄 [PROXY] [${eventId}] Starting proxy fetch with rotation...`);
+  console.log(`🔄 [PROXY] [${eventId}] Fetching bet offers via proxy rotation...`);
+
+  return proxyRotator.fetchUrl(url, {
+    headers: UNIBET_BETOFFERS_HEADERS,
+    timeout: 5000,
+    label: eventId,
+  });
+}
+
+async function buildBetoffersResponse(eventId, data) {
+  let betoffersData = data;
+  let shouldSuspend = false;
 
   try {
-    return await proxyRotator.executeWithRotation(
-      async (httpsAgent, proxy) => {
-        console.log(`🔄 [PROXY] [${eventId}] Attempting via ${proxy.host}:${proxy.port}...`);
-        
-        const response = await axios.get(url, {
-          headers: UNIBET_BETOFFERS_HEADERS,
-          httpsAgent: httpsAgent,
-          httpAgent: httpsAgent,
-          timeout: 5000, // 5 seconds for proxy
-          validateStatus: () => true // Don't throw on non-200
-        });
-        
-        const duration = Date.now() - startTime;
-        
-        if (response.status === 200 && response.data) {
-          const dataSize = JSON.stringify(response.data).length;
-          console.log(`✅ [PROXY] [${eventId}] SUCCESS via ${proxy.host}:${proxy.port} - Status: 200, Data size: ${dataSize} bytes, Duration: ${duration}ms`);
-          return response.data;
-        }
-        
-        throw new Error(`Proxy request returned ${response.status}`);
-      },
-      {
-        maxRetries: 10, // Try up to 10 different proxies (we have 147 total)
-        retryDelay: 500, // 500ms between retries (faster rotation)
-        onRetry: (attempt, maxRetries, proxy, error) => {
-          console.warn(`⚠️ [PROXY] [${eventId}] Proxy ${proxy.host}:${proxy.port} failed (${attempt}/${maxRetries}): ${error.message}, rotating...`);
-        }
-      }
-    );
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ [PROXY] [${eventId}] All proxy attempts failed after ${duration}ms:`, {
-      message: error.message,
-      code: error.code,
-      name: error.name,
-    });
-    return null;
+    const liveData = await fetchLiveDataForMatch(eventId);
+    if (liveData) {
+      hasStatsChangedBetoffers(eventId, liveData);
+      shouldSuspend = isMatchSuspendedBetoffers(eventId);
+      betoffersData = applySuspensionToBetoffers(betoffersData, shouldSuspend);
+    } else {
+      betoffersData = applySuspensionToBetoffers(betoffersData, false);
+    }
+  } catch (suspensionError) {
+    console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for match ${eventId}:`, suspensionError.message);
+    betoffersData = applySuspensionToBetoffers(betoffersData, false);
   }
+
+  return { betoffersData, shouldSuspend };
 }
 
 export async function GET(request, { params }) {
   try {
-    // ✅ FIX: Await params in Next.js 15+ (params is now a Promise)
     const { eventId } = await params;
-    
+
     if (!eventId) {
       return NextResponse.json(
         { success: false, error: 'Event ID is required' },
         { status: 400 }
       );
     }
-    
-    // ✅ FIX: Validate that eventId is numeric (Unibet API requires numeric IDs)
+
     const isNumeric = /^\d+$/.test(eventId);
     if (!isNumeric) {
       console.warn(`⚠️ [NEXT API] Invalid eventId format: "${eventId}" (expected numeric ID)`);
@@ -292,69 +269,16 @@ export async function GET(request, { params }) {
           error: 'Invalid event ID format',
           message: `Event ID must be numeric. Received: "${eventId}". This appears to be a slug instead of an event ID.`,
           eventId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         { status: 400 }
       );
     }
-    
-    const url = `${UNIBET_BETOFFERS_API}/${eventId}.json?lang=en_AU&market=AU`;
-    
-    console.log(`🔍 [DIRECT] [${eventId}] Starting direct fetch request...`);
-    
-    // Retry logic for network errors (ENOTFOUND, etc.)
-    let response;
-    let lastError;
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
-    const directFetchStartTime = Date.now();
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🔍 [DIRECT] [${eventId}] Attempt ${attempt}/${maxRetries} - Fetching...`);
-        const attemptStartTime = Date.now();
-        
-        response = await fetch(url, {
-          headers: UNIBET_BETOFFERS_HEADERS,
-          signal: AbortSignal.timeout(2500) // 2.5 seconds timeout - balanced for real-time updates
-        });
-        
-        const attemptDuration = Date.now() - attemptStartTime;
-        console.log(`✅ [DIRECT] [${eventId}] Attempt ${attempt} SUCCESS - Status: ${response.status}, Duration: ${attemptDuration}ms`);
-        break; // Success, exit retry loop
-      } catch (error) {
-        lastError = error;
-        if (attempt < maxRetries && (error.code === 'ENOTFOUND' || error.message?.includes('fetch failed'))) {
-          console.warn(`⚠️ [DIRECT] [${eventId}] Attempt ${attempt}/${maxRetries} FAILED - Network error, retrying in ${retryDelay * attempt}ms...`, {
-            error: error.message,
-            code: error.code
-          });
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt)); // Exponential backoff
-        } else {
-          console.error(`❌ [DIRECT] [${eventId}] Attempt ${attempt} FAILED - Non-retryable error:`, error.message);
-          throw error; // Re-throw if not retryable or max retries reached
-        }
-      }
-    }
-    
-    const directFetchDuration = Date.now() - directFetchStartTime;
-    
-    if (!response) {
-      console.error(`❌ [DIRECT] [${eventId}] All attempts failed after ${directFetchDuration}ms`);
-      throw lastError || new Error('Failed to fetch after retries');
-    }
-    
-    console.log(`📊 [DIRECT] [${eventId}] Final response:`, {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      totalDuration: `${directFetchDuration}ms`
-    });
-    
-    // Handle 404 (match finished/not found) - Secondary check for finished matches
-    // Primary check is event.state === 'FINISHED' from live matches API
-    if (response.status === 404) {
-      console.log(`📋 [RESULT] [${eventId}] Match not found (404) - Match likely finished`);
+
+    const result = await fetchBetOffersViaProxy(eventId);
+
+    if (result.status === 404) {
+      console.log(`📋 [PROXY] [${eventId}] Match not found (404) via ${result.proxy}`);
       return NextResponse.json(
         {
           success: false,
@@ -362,215 +286,69 @@ export async function GET(request, { params }) {
           error: 'Match not found',
           message: 'Match may be finished or no longer available',
           status: 404,
-          isFinished: true, // Flag to indicate match is finished (404 = finished, secondary check)
-          timestamp: new Date().toISOString()
+          isFinished: true,
+          timestamp: new Date().toISOString(),
         },
         { status: 404 }
       );
     }
-    
-    // ✅ Special handling for 410 (Gone) - try proxy as fallback
-    if (response.status === 410) {
-      console.warn(`⚠️ [410 HANDLER] [${eventId}] Direct fetch returned 410 - Starting proxy fallback...`);
-      
-      // Try proxy fallback
-      const proxyData = await fetchBetOffersViaProxy(eventId);
-      
-      console.log(`🔍 [410 HANDLER] [${eventId}] Proxy result check:`, {
-        hasData: !!proxyData,
-        isNull: proxyData === null,
-        isUndefined: proxyData === undefined,
-        type: typeof proxyData
-      });
-      
-      if (proxyData) {
-        // ✅ Check if match should be suspended even with proxy data
-        let betoffersData = proxyData;
-        let shouldSuspend = false;
-        
-        try {
-          const liveData = await fetchLiveDataForMatch(eventId);
-          if (liveData) {
-            // ✅ FIX: Check if stats changed (this updates suspendedUntil)
-            hasStatsChangedBetoffers(eventId, liveData);
-            // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
-            shouldSuspend = isMatchSuspendedBetoffers(eventId);
-            
-            if (shouldSuspend) {
-              console.log(`⏸️ [NEXT BETOFFERS] Match ${eventId}: Suspending proxy markets due to stats change`);
-              betoffersData = applySuspensionToBetoffers(betoffersData, true);
-            } else {
-              // ✅ FIX: Even if stats didn't change, preserve Unibet suspensions
-              betoffersData = applySuspensionToBetoffers(betoffersData, false);
-            }
-          } else {
-            // ✅ FIX: Even without live data, preserve Unibet suspensions
-            betoffersData = applySuspensionToBetoffers(betoffersData, false);
-          }
-        } catch (suspensionError) {
-          console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for proxy match ${eventId}:`, suspensionError.message);
-          // ✅ FIX: Even on error, preserve Unibet suspensions
-          betoffersData = applySuspensionToBetoffers(betoffersData, false);
-        }
-        
-        console.log(`✅ [410 HANDLER] [${eventId}] PROXY FALLBACK SUCCESS - Returning data from proxy (suspended: ${shouldSuspend})`);
-        return NextResponse.json({
-          success: true,
+
+    if (result.status === 410) {
+      console.warn(`⚠️ [PROXY] [${eventId}] API returned 410 via ${result.proxy}`);
+      return NextResponse.json(
+        {
+          success: false,
           eventId,
-          data: betoffersData,
+          error: 'API unavailable',
+          message: 'Kambi API returned 410',
+          status: 410,
           timestamp: new Date().toISOString(),
-          source: 'unibet-proxy-nodejs-fallback',
-          marketsSuspended: shouldSuspend
-        }, {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate'
-          }
-        });
-      }
-      
-      // If proxy also failed, return error
-      console.error(`❌ [410 HANDLER] [${eventId}] PROXY FALLBACK FAILED - Both direct and proxy failed, returning 410 error`);
-      return NextResponse.json({
-        success: false,
+        },
+        { status: 410 }
+      );
+    }
+
+    if (result.status !== 200 || !result.data) {
+      console.error(`❌ [PROXY] [${eventId}] Failed via proxy: status=${result.status}, error=${result.error}`);
+      return NextResponse.json(
+        {
+          success: false,
+          eventId,
+          error: result.error || 'Failed to fetch bet offers via proxy',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 502 }
+      );
+    }
+
+    console.log(`✅ [PROXY] [${eventId}] SUCCESS via ${result.proxy}`);
+
+    const { betoffersData, shouldSuspend } = await buildBetoffersResponse(eventId, result.data);
+
+    return NextResponse.json(
+      {
+        success: true,
         eventId,
-        error: 'API unavailable',
-        message: 'Kambi API returned 410 and proxy fallback also failed',
-        status: 410,
-        timestamp: new Date().toISOString()
-      }, { status: 410 });
-    }
-    
-    if (!response.ok) {
-      console.error(`❌ [RESULT] [${eventId}] Response not OK - Status: ${response.status}, Throwing error`);
-      throw new Error(`Unibet API returned ${response.status}`);
-    }
-    
-    console.log(`📥 [RESULT] [${eventId}] Direct fetch SUCCESS (Status: ${response.status}) - Parsing JSON...`);
-    const data = await response.json();
-    
-    // ✅ Check if match should be suspended due to stats change
-    let betoffersData = data;
-    let shouldSuspend = false;
-    
-    try {
-      // Fetch live data for this match to check stats
-      const liveData = await fetchLiveDataForMatch(eventId);
-      
-      if (liveData) {
-        // ✅ FIX: Check if stats changed (this updates suspendedUntil)
-        hasStatsChangedBetoffers(eventId, liveData);
-        // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
-        shouldSuspend = isMatchSuspendedBetoffers(eventId);
-        
-        if (shouldSuspend) {
-          console.log(`⏸️ [NEXT BETOFFERS] Match ${eventId}: Suspending all markets due to stats change`);
-          // Apply suspension to all outcomes
-          const beforeCount = betoffersData?.betOffers?.reduce((sum, bo) => sum + (bo.outcomes?.length || 0), 0) || 0;
-          betoffersData = applySuspensionToBetoffers(betoffersData, true);
-          const afterCount = betoffersData?.betOffers?.reduce((sum, bo) => sum + (bo.outcomes?.filter(o => o.status === 'SUSPENDED').length || 0), 0) || 0;
-          console.log(`   ✅ Suspended ${afterCount} outcomes out of ${beforeCount} total outcomes`);
-        } else {
-          // ✅ FIX: Even if stats didn't change, check if Unibet suspended any markets
-          // This ensures Unibet suspensions are preserved
-          betoffersData = applySuspensionToBetoffers(betoffersData, false);
-        }
-      } else {
-        // ✅ FIX: Even without live data, preserve Unibet suspensions
-        betoffersData = applySuspensionToBetoffers(betoffersData, false);
+        data: betoffersData,
+        timestamp: new Date().toISOString(),
+        source: 'unibet-proxy-nodejs',
+        proxyUsed: result.proxy,
+        marketsSuspended: shouldSuspend,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
       }
-    } catch (suspensionError) {
-      // Don't fail the request if suspension check fails
-      console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for match ${eventId}:`, suspensionError.message);
-      // ✅ FIX: Even on error, preserve Unibet suspensions
-      betoffersData = applySuspensionToBetoffers(betoffersData, false);
-    }
-    
-    console.log(`✅ [RESULT] [${eventId}] DIRECT FETCH SUCCESS - Returning data (source: direct, suspended: ${shouldSuspend})`);
-    
-    // Return with streaming-friendly response
-    return NextResponse.json({
-      success: true,
-      eventId,
-      data: betoffersData,
-      timestamp: new Date().toISOString(),
-      source: 'unibet-proxy-nodejs',
-      marketsSuspended: shouldSuspend
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate'
-      }
-    });
+    );
   } catch (error) {
     const { eventId } = await params;
-    console.error(`❌ [ERROR HANDLER] [${eventId}] Exception caught:`, {
-      message: error.message,
-      code: error.code,
-      name: error.name,
-      stack: error.stack?.split('\n')[0] // First line of stack only
-    });
-    
-    // ✅ ALWAYS try proxy on ANY error (not just specific errors)
-    console.warn(`⚠️ [ERROR HANDLER] [${eventId}] Direct fetch failed (${error.message}), trying PROXY fallback with rotation...`);
-    
-    try {
-      const proxyData = await fetchBetOffersViaProxy(eventId);
-      
-      if (proxyData) {
-        // ✅ Check if match should be suspended even with proxy data
-        let betoffersData = proxyData;
-        let shouldSuspend = false;
-        
-        try {
-          const liveData = await fetchLiveDataForMatch(eventId);
-          if (liveData) {
-            // ✅ FIX: Check if stats changed (this updates suspendedUntil)
-            hasStatsChangedBetoffers(eventId, liveData);
-            // ✅ FIX: ALWAYS check if still suspended (even if stats didn't change this call)
-            shouldSuspend = isMatchSuspendedBetoffers(eventId);
-            
-            if (shouldSuspend) {
-              console.log(`⏸️ [NEXT BETOFFERS] Match ${eventId}: Suspending error-handler proxy markets due to stats change`);
-              betoffersData = applySuspensionToBetoffers(betoffersData, true);
-            } else {
-              // ✅ FIX: Even if stats didn't change, preserve Unibet suspensions
-              betoffersData = applySuspensionToBetoffers(betoffersData, false);
-            }
-          } else {
-            // ✅ FIX: Even without live data, preserve Unibet suspensions
-            betoffersData = applySuspensionToBetoffers(betoffersData, false);
-          }
-        } catch (suspensionError) {
-          console.warn(`⚠️ [NEXT BETOFFERS] Error checking suspension for error-handler proxy match ${eventId}:`, suspensionError.message);
-          // ✅ FIX: Even on error, preserve Unibet suspensions
-          betoffersData = applySuspensionToBetoffers(betoffersData, false);
-        }
-        
-        console.log(`✅ [ERROR HANDLER] [${eventId}] PROXY FALLBACK SUCCESS after error - Returning data from proxy (suspended: ${shouldSuspend})`);
-        return NextResponse.json({
-          success: true,
-          eventId,
-          data: betoffersData,
-          timestamp: new Date().toISOString(),
-          source: 'unibet-proxy-nodejs-fallback',
-          marketsSuspended: shouldSuspend
-        }, {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate'
-          }
-        });
-      } else {
-        console.error(`❌ [ERROR HANDLER] [${eventId}] PROXY FALLBACK FAILED - All proxy attempts failed`);
-      }
-    } catch (proxyError) {
-      console.error(`❌ [ERROR HANDLER] [${eventId}] Proxy fallback error: ${proxyError.message}`);
-    }
-    
-    console.error(`❌ [ERROR HANDLER] [${eventId}] Returning 500 error to client`);
+    console.error(`❌ [PROXY] [${eventId}] Exception:`, error.message);
     return NextResponse.json(
       {
         success: false,
         error: error.message || 'Failed to fetch bet offers',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
