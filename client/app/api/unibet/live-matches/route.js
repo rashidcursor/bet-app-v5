@@ -198,38 +198,38 @@ function extractFootballMatches(data) {
   };
 }
 
-// Fetch Unibet live matches via proxy (always — no direct connection)
-async function fetchUnibetLiveMatchesViaProxy() {
+// Direct first; proxy queue fallback when Unibet URL fails
+async function fetchUnibetLiveMatches() {
   const url = `${UNIBET_LIVE_MATCHES_API}?includeParticipants=true&useCombined=true&ncid=${Date.now()}`;
-  console.log(`🔄 [NEXT API] Fetching Unibet live matches via PROXY rotation...`);
 
-  const result = await proxyRotator.fetchUrl(url, {
+  const result = await proxyRotator.fetchDirectOrProxy(url, {
     headers: UNIBET_LIVE_MATCHES_HEADERS,
     timeout: 5000,
     label: 'unibet-live-matches',
   });
 
   if (result.status === 200 && result.data) {
-    console.log(`✅ [NEXT API] Unibet live matches via ${result.proxy}`);
+    const via = result.source === 'direct' ? 'direct' : result.proxy;
+    console.log(`✅ [NEXT API] Unibet live matches via ${via}`);
     return result.data;
   }
 
   throw new Error(result.error || `Unibet API returned ${result.status}`);
 }
 
-// Fetch Kambi live data via proxy (always — no direct connection)
-async function fetchKambiLiveDataViaProxy() {
+// Direct first; proxy queue fallback when Kambi URL fails
+async function fetchKambiLiveDataFromApi() {
   const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-  console.log(`🔄 [NEXT API] Fetching Kambi data via PROXY rotation...`);
 
-  const result = await proxyRotator.fetchUrl(url, {
+  const result = await proxyRotator.fetchDirectOrProxy(url, {
     headers: KAMBI_LIVE_HEADERS,
     timeout: 5000,
     label: 'kambi-live',
   });
 
   if (result.status === 200 && result.data?.liveEvents) {
-    console.log(`✅ [NEXT API] Kambi data via ${result.proxy}:`, {
+    const via = result.source === 'direct' ? 'direct' : result.proxy;
+    console.log(`✅ [NEXT API] Kambi data via ${via}:`, {
       totalEvents: result.data.liveEvents?.length || 0,
     });
     return result.data;
@@ -238,7 +238,7 @@ async function fetchKambiLiveDataViaProxy() {
   return null;
 }
 
-// Fetch live data from Kambi API via proxy only
+// Fetch live data from Kambi API (direct first, proxy fallback)
 async function fetchKambiLiveData() {
   try {
     const now = Date.now();
@@ -262,7 +262,7 @@ async function fetchKambiLiveData() {
 
     kambiCache.isFetching = true;
 
-    const data = await fetchKambiLiveDataViaProxy();
+    const data = await fetchKambiLiveDataFromApi();
 
     if (data?.liveEvents) {
       kambiCache.data = data;
@@ -510,9 +510,9 @@ export async function GET(request) {
     // Mark as refreshing
     cache.isRefreshing = true;
     
-    console.log(`🔍 [NEXT API] Fetching Unibet live matches via proxy...`);
+    console.log(`🔍 [NEXT API] Fetching Unibet live matches (direct first, proxy fallback)...`);
 
-    const data = await fetchUnibetLiveMatchesViaProxy();
+    const data = await fetchUnibetLiveMatches();
 
     console.log(`✅ [NEXT API] Successfully fetched Unibet API response`);
     

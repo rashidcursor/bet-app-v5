@@ -1,40 +1,27 @@
-// Proxy Rotation Utility
-// Automatically rotates through a list of proxies on errors to change IP addresses
+// Proxy Rotation Utility — fallback only; used proxy moves to end of queue
 
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import axios from 'axios';
 
-/**
- * Get proxy list - hardcoded in codebase (no env dependency)
- * Format: IP:PORT:USERNAME:PASSWORD
- * 
- * After testing, this list will be updated with only working proxies
- */
 function getProxyList() {
-  // bidrhyuk — 10 verified working proxies (2026-06-10)
-  // Round-robin: each request uses next proxy; full cycle every 10 requests
+  // bqmtydsx — 10 verified working proxies (2026-06-11)
   const proxyList = [
-    '38.154.203.95:5863:bidrhyuk:wrqv84faw7ut',
-    '198.105.121.200:6462:bidrhyuk:wrqv84faw7ut',
-    '64.137.96.74:6641:bidrhyuk:wrqv84faw7ut',
-    '209.127.138.10:5784:bidrhyuk:wrqv84faw7ut',
-    '38.154.185.97:6370:bidrhyuk:wrqv84faw7ut',
-    '84.247.60.125:6095:bidrhyuk:wrqv84faw7ut',
-    '142.111.67.146:5611:bidrhyuk:wrqv84faw7ut',
-    '191.96.254.138:6185:bidrhyuk:wrqv84faw7ut',
-    '31.58.9.4:6077:bidrhyuk:wrqv84faw7ut',
-    '104.239.107.47:5699:bidrhyuk:wrqv84faw7ut',
+    '38.154.203.95:5863:bqmtydsx:8rlr4ioc4s26',
+    '198.105.121.200:6462:bqmtydsx:8rlr4ioc4s26',
+    '64.137.96.74:6641:bqmtydsx:8rlr4ioc4s26',
+    '209.127.138.10:5784:bqmtydsx:8rlr4ioc4s26',
+    '38.154.185.97:6370:bqmtydsx:8rlr4ioc4s26',
+    '84.247.60.125:6095:bqmtydsx:8rlr4ioc4s26',
+    '142.111.67.146:5611:bqmtydsx:8rlr4ioc4s26',
+    '191.96.254.138:6185:bqmtydsx:8rlr4ioc4s26',
+    '31.58.9.4:6077:bqmtydsx:8rlr4ioc4s26',
+    '104.239.107.47:5699:bqmtydsx:8rlr4ioc4s26',
   ];
 
-  console.log(`📋 [ProxyRotator] Using ${proxyList.length} proxies (round-robin cycle)`);
-  
+  console.log(`📋 [ProxyRotator] ${proxyList.length} proxies in fallback queue`);
   return proxyList;
 }
 
-/**
- * Parse a proxy string into components
- * Format: IP:PORT:USERNAME:PASSWORD
- */
 function parseProxy(proxyString) {
   const parts = proxyString.split(':');
   if (parts.length !== 4) {
@@ -46,65 +33,49 @@ function parseProxy(proxyString) {
     username: parts[2],
     password: parts[3],
     url: `http://${parts[2]}:${parts[3]}@${parts[0]}:${parts[1]}`,
-    string: proxyString
+    string: proxyString,
   };
 }
 
-/**
- * Proxy Rotator Class
- * Manages proxy rotation and automatic failover
- */
 class ProxyRotator {
   constructor() {
     this.proxies = getProxyList().map(parseProxy);
-    this.currentIndex = 0;
-    this.failedProxies = new Set(); // Track failed proxies temporarily
-    this.proxyStats = new Map(); // Track success/failure stats per proxy
-    this.maxRetriesPerProxy = 2; // Max retries before marking as failed
-    this.failedProxyTimeout = 5 * 60 * 1000; // 5 minutes before retrying failed proxy
+    this.failedProxies = new Set();
+    this.proxyStats = new Map();
+    this.failedProxyTimeout = 5 * 60 * 1000;
   }
 
-  /**
-   * Get the next available proxy (round-robin with failure tracking)
-   */
+  /** First available proxy at front of queue (skip temporarily failed) */
   getNextProxy() {
-    const startIndex = this.currentIndex;
-    let attempts = 0;
-    const maxAttempts = this.proxies.length;
+    for (let i = 0; i < this.proxies.length; i++) {
+      const proxy = this.proxies[i];
 
-    while (attempts < maxAttempts) {
-      const proxy = this.proxies[this.currentIndex];
-      this.currentIndex = (this.currentIndex + 1) % this.proxies.length;
-
-      // Check if proxy is temporarily failed
       if (this.failedProxies.has(proxy.string)) {
         const failedTime = this.proxyStats.get(proxy.string)?.lastFailed || 0;
-        const timeSinceFailure = Date.now() - failedTime;
-        
-        if (timeSinceFailure < this.failedProxyTimeout) {
-          // Still in timeout, skip this proxy
-          attempts++;
+        if (Date.now() - failedTime < this.failedProxyTimeout) {
           continue;
-        } else {
-          // Timeout expired, retry this proxy
-          this.failedProxies.delete(proxy.string);
-          console.log(`🔄 [ProxyRotator] Retrying previously failed proxy: ${proxy.host}:${proxy.port}`);
         }
+        this.failedProxies.delete(proxy.string);
+        console.log(`🔄 [ProxyRotator] Retrying previously failed proxy: ${proxy.host}:${proxy.port}`);
       }
 
       return proxy;
     }
 
-    // All proxies are failed, reset and try again
     console.warn(`⚠️ [ProxyRotator] All proxies failed, resetting and trying again...`);
     this.failedProxies.clear();
-    this.currentIndex = 0;
     return this.proxies[0];
   }
 
-  /**
-   * Mark a proxy as failed
-   */
+  /** After successful use, move proxy to end of queue */
+  rotateToBack(proxyString) {
+    const idx = this.proxies.findIndex((p) => p.string === proxyString);
+    if (idx === -1) return;
+    const [proxy] = this.proxies.splice(idx, 1);
+    this.proxies.push(proxy);
+    console.log(`🔁 [ProxyRotator] Moved to queue end: ${proxy.host}:${proxy.port}`);
+  }
+
   markProxyFailed(proxyString) {
     this.failedProxies.add(proxyString);
     const stats = this.proxyStats.get(proxyString) || { failures: 0, successes: 0, lastFailed: 0 };
@@ -114,39 +85,25 @@ class ProxyRotator {
     console.warn(`❌ [ProxyRotator] Marked proxy as failed: ${proxyString.split(':')[0]}:${proxyString.split(':')[1]} (Failures: ${stats.failures})`);
   }
 
-  /**
-   * Mark a proxy as successful
-   */
   markProxySuccess(proxyString) {
     const stats = this.proxyStats.get(proxyString) || { failures: 0, successes: 0, lastFailed: 0 };
     stats.successes++;
     this.proxyStats.set(proxyString, stats);
-    
-    // Remove from failed list if it was there
     if (this.failedProxies.has(proxyString)) {
       this.failedProxies.delete(proxyString);
-      console.log(`✅ [ProxyRotator] Proxy recovered: ${proxyString.split(':')[0]}:${proxyString.split(':')[1]}`);
     }
+    this.rotateToBack(proxyString);
   }
 
-  /**
-   * Create an HttpsProxyAgent for a proxy
-   */
   createProxyAgent(proxy) {
     return new HttpsProxyAgent(proxy.url);
   }
 
-  /**
-   * Execute a function with automatic proxy rotation on errors
-   * @param {Function} fn - Function that takes a proxy agent and returns a promise
-   * @param {Object} options - Options for retry behavior
-   * @returns {Promise} - Result of the function
-   */
   async executeWithRotation(fn, options = {}) {
     const {
-      maxRetries = this.proxies.length, // Try all proxies before giving up
-      retryDelay = 1000, // 1 second delay between retries
-      onRetry = null, // Callback on each retry
+      maxRetries = this.proxies.length,
+      retryDelay = 500,
+      onRetry = null,
     } = options;
 
     let lastError = null;
@@ -159,40 +116,34 @@ class ProxyRotator {
       try {
         const agent = this.createProxyAgent(proxy);
         console.log(`🔄 [ProxyRotator] Attempt ${attempts}/${maxRetries} using proxy: ${proxy.host}:${proxy.port}`);
-        
+
         const result = await fn(agent, proxy);
-        
-        // Success!
+
         this.markProxySuccess(proxy.string);
         console.log(`✅ [ProxyRotator] Success with proxy: ${proxy.host}:${proxy.port}`);
         return result;
       } catch (error) {
         lastError = error;
         this.markProxyFailed(proxy.string);
-        
+
         const errorMsg = error.message || String(error);
         console.error(`❌ [ProxyRotator] Proxy ${proxy.host}:${proxy.port} failed: ${errorMsg}`);
-        
+
         if (onRetry) {
           onRetry(attempts, maxRetries, proxy, error);
         }
 
-        // Wait before trying next proxy (except on last attempt)
         if (attempts < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
         }
       }
     }
 
-    // All proxies failed
     console.error(`❌ [ProxyRotator] All ${attempts} proxy attempts failed`);
     throw lastError || new Error('All proxy attempts failed');
   }
 
-  /**
-   * Fetch a URL via rotating proxy — each call uses the next proxy (round-robin).
-   * Retries with a different proxy only on network/server errors, not on 404/410.
-   */
+  /** Proxy-only fetch (fallback path) */
   async fetchUrl(url, options = {}) {
     const {
       headers = {},
@@ -218,6 +169,7 @@ class ProxyRotator {
               status: 200,
               data: response.data,
               proxy: `${proxy.host}:${proxy.port}`,
+              source: 'proxy',
             };
           }
 
@@ -227,6 +179,7 @@ class ProxyRotator {
               status: response.status,
               data: response.data ?? null,
               proxy: `${proxy.host}:${proxy.port}`,
+              source: 'proxy',
             };
           }
 
@@ -242,24 +195,63 @@ class ProxyRotator {
       );
     } catch (error) {
       console.error(`❌ [ProxyRotator]${label ? ` [${label}]` : ''} All proxy attempts failed: ${error.message}`);
-      return { status: 0, data: null, proxy: null, error: error.message };
+      return { status: 0, data: null, proxy: null, source: 'proxy', error: error.message };
     }
   }
 
   /**
-   * Get statistics about proxy usage
+   * Direct first; proxy queue fallback only when direct fails.
    */
+  async fetchDirectOrProxy(url, options = {}) {
+    const {
+      headers = {},
+      timeout = 5000,
+      nonRetryableStatuses = [404, 410],
+      label = '',
+    } = options;
+
+    try {
+      console.log(`🔍 [DIRECT]${label ? ` [${label}]` : ''} Trying direct connection...`);
+      const response = await axios.get(url, {
+        headers,
+        timeout,
+        validateStatus: () => true,
+      });
+
+      if (response.status === 200) {
+        console.log(`✅ [DIRECT]${label ? ` [${label}]` : ''} Success`);
+        return {
+          status: 200,
+          data: response.data,
+          proxy: null,
+          source: 'direct',
+        };
+      }
+
+      if (nonRetryableStatuses.includes(response.status)) {
+        console.log(`📋 [DIRECT]${label ? ` [${label}]` : ''} API returned ${response.status}`);
+        return {
+          status: response.status,
+          data: response.data ?? null,
+          proxy: null,
+          source: 'direct',
+        };
+      }
+
+      console.warn(`⚠️ [DIRECT]${label ? ` [${label}]` : ''} Returned ${response.status}, trying proxy fallback...`);
+    } catch (error) {
+      console.warn(`⚠️ [DIRECT]${label ? ` [${label}]` : ''} Failed (${error.message}), trying proxy fallback...`);
+    }
+
+    return this.fetchUrl(url, { headers, timeout, nonRetryableStatuses, label });
+  }
+
   getStats() {
-    const total = this.proxies.length;
-    const failed = this.failedProxies.size;
-    const available = total - failed;
-    
     return {
-      total,
-      available,
-      failed,
-      currentIndex: this.currentIndex,
-      proxyDetails: this.proxies.map(proxy => {
+      total: this.proxies.length,
+      queue: this.proxies.map((p) => `${p.host}:${p.port}`),
+      failed: this.failedProxies.size,
+      proxyDetails: this.proxies.map((proxy) => {
         const stats = this.proxyStats.get(proxy.string) || { failures: 0, successes: 0 };
         return {
           proxy: `${proxy.host}:${proxy.port}`,
@@ -271,19 +263,12 @@ class ProxyRotator {
     };
   }
 
-  /**
-   * Reset all failed proxies (force retry)
-   */
   reset() {
     this.failedProxies.clear();
-    this.currentIndex = 0;
     console.log(`🔄 [ProxyRotator] Reset - all proxies available again`);
   }
 }
 
-// Export singleton instance
 const proxyRotator = new ProxyRotator();
 export default proxyRotator;
-
-// Export class for custom instances
 export { ProxyRotator };

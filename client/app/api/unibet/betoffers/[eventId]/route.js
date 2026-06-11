@@ -147,7 +147,7 @@ function isMatchSuspendedBetoffers(matchId) {
 async function fetchLiveDataForMatch(matchId) {
   try {
     const url = `${KAMBI_LIVE_API_URL}?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-    const result = await proxyRotator.fetchUrl(url, {
+    const result = await proxyRotator.fetchDirectOrProxy(url, {
       headers: KAMBI_LIVE_HEADERS,
       timeout: 5000,
       label: `kambi-live-${matchId}`,
@@ -216,12 +216,12 @@ function applySuspensionToBetoffers(betoffersData, shouldSuspend) {
   return betoffersData;
 }
 
-// Fetch bet offers via proxy (always — no direct connection)
-async function fetchBetOffersViaProxy(eventId) {
+// Direct first; proxy queue fallback when bet offers URL fails
+async function fetchBetOffers(eventId) {
   const url = `${UNIBET_BETOFFERS_API}/${eventId}.json?lang=en_AU&market=AU&client_id=2&channel_id=1&ncid=${Date.now()}`;
-  console.log(`🔄 [PROXY] [${eventId}] Fetching bet offers via proxy rotation...`);
+  console.log(`🔍 [${eventId}] Fetching bet offers (direct first, proxy fallback)...`);
 
-  return proxyRotator.fetchUrl(url, {
+  return proxyRotator.fetchDirectOrProxy(url, {
     headers: UNIBET_BETOFFERS_HEADERS,
     timeout: 5000,
     label: eventId,
@@ -275,10 +275,11 @@ export async function GET(request, { params }) {
       );
     }
 
-    const result = await fetchBetOffersViaProxy(eventId);
+    const result = await fetchBetOffers(eventId);
+    const via = result.source === 'direct' ? 'direct' : result.proxy;
 
     if (result.status === 404) {
-      console.log(`📋 [PROXY] [${eventId}] Match not found (404) via ${result.proxy}`);
+      console.log(`📋 [${eventId}] Match not found (404) via ${via}`);
       return NextResponse.json(
         {
           success: false,
@@ -294,7 +295,7 @@ export async function GET(request, { params }) {
     }
 
     if (result.status === 410) {
-      console.warn(`⚠️ [PROXY] [${eventId}] API returned 410 via ${result.proxy}`);
+      console.warn(`⚠️ [${eventId}] API returned 410 via ${via}`);
       return NextResponse.json(
         {
           success: false,
@@ -309,19 +310,19 @@ export async function GET(request, { params }) {
     }
 
     if (result.status !== 200 || !result.data) {
-      console.error(`❌ [PROXY] [${eventId}] Failed via proxy: status=${result.status}, error=${result.error}`);
+      console.error(`❌ [${eventId}] Failed: status=${result.status}, error=${result.error}`);
       return NextResponse.json(
         {
           success: false,
           eventId,
-          error: result.error || 'Failed to fetch bet offers via proxy',
+          error: result.error || 'Failed to fetch bet offers',
           timestamp: new Date().toISOString(),
         },
         { status: 502 }
       );
     }
 
-    console.log(`✅ [PROXY] [${eventId}] SUCCESS via ${result.proxy}`);
+    console.log(`✅ [${eventId}] SUCCESS via ${via}`);
 
     const { betoffersData, shouldSuspend } = await buildBetoffersResponse(eventId, result.data);
 
@@ -331,7 +332,7 @@ export async function GET(request, { params }) {
         eventId,
         data: betoffersData,
         timestamp: new Date().toISOString(),
-        source: 'unibet-proxy-nodejs',
+        source: result.source === 'direct' ? 'unibet-direct-nodejs' : 'unibet-proxy-nodejs',
         proxyUsed: result.proxy,
         marketsSuspended: shouldSuspend,
       },
