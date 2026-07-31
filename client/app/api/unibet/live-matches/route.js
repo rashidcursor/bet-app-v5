@@ -88,6 +88,7 @@ function extractFootballMatches(data) {
                     homeName: event.homeName,
                     awayName: event.awayName,
                     start: event.start,
+                    starting_at: event.start, // alias for bet-slip / placeBet
                     state: event.state,
                     sport: event.sport,
                     groupId: event.groupId, // This is the Unibet league ID used for filtering
@@ -146,6 +147,7 @@ function extractFootballMatches(data) {
                         homeName: event.homeName,
                         awayName: event.awayName,
                         start: event.start,
+                        starting_at: event.start, // alias for bet-slip / placeBet
                         state: event.state,
                         sport: event.sport,
                         groupId: event.groupId, // This is the Unibet league ID used for filtering

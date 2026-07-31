@@ -63,6 +63,9 @@ const betSlipSlice = createSlice({
         }
       }
 
+      // Live API uses `start`; some sources use `starting_at`
+      const matchStartAt = match?.starting_at || match?.start || null;
+
       // Determine if match is live/inplay
       const isMatchLive = (match) => {
         // First check if match explicitly has isLive flag (from home page components)
@@ -78,13 +81,14 @@ const betSlipSlice = createSlice({
         if (match?.timing || match?.state_id === 2) return true;
         
         // Original time-based logic as fallback
-        if (!match || !match.starting_at) return false;
+        const startAt = match?.starting_at || match?.start;
+        if (!match || !startAt) return false;
         const now = new Date();
         let matchTime;
-        if (match.starting_at.includes('T')) {
-          matchTime = new Date(match.starting_at.endsWith('Z') ? match.starting_at : match.starting_at + 'Z');
+        if (startAt.includes('T')) {
+          matchTime = new Date(startAt.endsWith('Z') ? startAt : startAt + 'Z');
         } else {
-          matchTime = new Date(match.starting_at.replace(' ', 'T') + 'Z');
+          matchTime = new Date(startAt.replace(' ', 'T') + 'Z');
         }
         const matchEnd = new Date(matchTime.getTime() + 120 * 60 * 1000);
         return matchTime <= now && now < matchEnd;
@@ -125,12 +129,12 @@ const betSlipSlice = createSlice({
             // Helper function to safely extract time from different date formats
             if (match.time) return match.time;
             if (match.startTime) return match.startTime;
-            if (!match.starting_at) return '';
+            if (!matchStartAt) return '';
             
             try {
               // Handle ISO format: "2025-01-15T10:30:00Z" or "2025-01-15T10:30:00"
-              if (match.starting_at.includes('T')) {
-                const date = new Date(match.starting_at);
+              if (matchStartAt.includes('T')) {
+                const date = new Date(matchStartAt);
                 if (!isNaN(date.getTime())) {
                   return date.toLocaleTimeString('en-US', { 
                     hour: 'numeric', 
@@ -141,15 +145,15 @@ const betSlipSlice = createSlice({
               }
               
               // Handle space-separated format: "2025-01-15 10:30:00"
-              if (match.starting_at.includes(' ')) {
-                const timePart = match.starting_at.split(' ')[1];
+              if (matchStartAt.includes(' ')) {
+                const timePart = matchStartAt.split(' ')[1];
                 if (timePart) {
                   return timePart.slice(0, 5); // Extract HH:MM
                 }
               }
               
               // Fallback: try to parse as Date
-              const date = new Date(match.starting_at);
+              const date = new Date(matchStartAt);
               if (!isNaN(date.getTime())) {
                 return date.toLocaleTimeString('en-US', { 
                   hour: 'numeric', 
@@ -158,14 +162,16 @@ const betSlipSlice = createSlice({
                 });
               }
             } catch (error) {
-              console.warn('Error extracting time from starting_at:', match.starting_at, error);
+              console.warn('Error extracting time from starting_at:', matchStartAt, error);
             }
             
             return '';
           })(),
           isLive: match.isLive || false,
           name: match.name || `${match.team1 || ''} vs ${match.team2 || ''}`,
-          starting_at: match.starting_at, // Keep for inplay calculation
+          // Live Unibet list uses `start`; other sources use `starting_at`
+          starting_at: matchStartAt,
+          start: matchStartAt,
           // Add league information
           league: match.league || null,
           // Also add groupId and leagueName directly to the match object
@@ -718,7 +724,7 @@ const extractUnibetMetadata = (bet, matchData) => {
     homeName: bet.match.team1,
     awayName: bet.match.team2,
     // ✅ Get start time from multiple sources: bet object, match data events, or match data root
-    start: bet.match.starting_at || matchData?.data?.events?.[0]?.start || matchData?.data?.start || null
+    start: bet.match.starting_at || bet.match.start || matchData?.data?.events?.[0]?.start || matchData?.data?.start || null
   };
 
   // If we have betOffers data, try to extract more detailed metadata
@@ -874,9 +880,10 @@ export const placeBetThunk = createAsyncThunk(
           const unibetMetadata = extractUnibetMetadata(bet, matchData);
           
           // ✅ CRITICAL: Extract match start time from multiple sources for bet placement
-          // Priority: unibetMetadata.start (from Unibet API) > bet.match.starting_at > matchData
+          // Priority: unibetMetadata.start > bet.match.starting_at/start > matchData
           const matchStartTime = unibetMetadata?.start || 
                                  bet.match.starting_at || 
+                                 bet.match.start ||
                                  matchData?.data?.events?.[0]?.start || 
                                  matchData?.data?.start || 
                                  null;
@@ -887,6 +894,7 @@ export const placeBetThunk = createAsyncThunk(
             console.warn(`⚠️ [placeBetThunk] No match start time found for match ${bet.match.id}`, {
               unibetMetadataStart: unibetMetadata?.start,
               betMatchStartingAt: bet.match.starting_at,
+              betMatchStart: bet.match.start,
               matchDataEventsStart: matchData?.data?.events?.[0]?.start,
               matchDataStart: matchData?.data?.start,
               hasMatchData: !!matchData
@@ -926,11 +934,9 @@ export const placeBetThunk = createAsyncThunk(
             // Add these fields for live matches
             ...(bet.inplay && { 
               isLive: true,
-              matchStartTime: bet.match.starting_at,
-              matchEndTime: bet.match.estimatedMatchEnd || (bet.match.starting_at ? new Date(new Date(bet.match.starting_at).getTime() + 120 * 60 * 1000).toISOString() : null)
+              matchStartTime: matchStartTime || bet.match.starting_at || bet.match.start,
+              matchEndTime: bet.match.estimatedMatchEnd || ((matchStartTime || bet.match.starting_at || bet.match.start) ? new Date(new Date(matchStartTime || bet.match.starting_at || bet.match.start).getTime() + 120 * 60 * 1000).toISOString() : null)
             }),
-            // Add Unibet metadata for enrichment
-            ...unibetMetadata,
             // Use smart fallback for leagueId and leagueName:
             // 1. First try bet.match.league (for League Card bets)
             // 2. Fallback to unibetMetadata (for Match Detail Page bets)
@@ -1006,6 +1012,13 @@ export const placeBetThunk = createAsyncThunk(
           const currentBetState = state.bets.find(b => b.id === bet.id);
           const latestOdds = currentBetState?.odds || bet.odds; // Use current state odds, fallback to bet.odds
           
+          const comboMatchStartTime = unibetMetadata?.start ||
+                                      bet.match.starting_at ||
+                                      bet.match.start ||
+                                      matchData?.data?.events?.[0]?.start ||
+                                      matchData?.data?.start ||
+                                      null;
+          
           combinationData.push({
             matchId: bet.match.id,
             oddId: bet.oddId || `${bet.match.id}_${label.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`,
@@ -1025,16 +1038,17 @@ export const placeBetThunk = createAsyncThunk(
               total: bet.total || null,
               market_description: bet.marketDescription || null,
               handicap: bet.handicapValue || null,
-              name: bet.name || label
+              name: bet.name || label,
+              ...(comboMatchStartTime && { matchDate: comboMatchStartTime })
             },
-            ...(bet.match.starting_at && { matchDate: bet.match.starting_at }),
+            ...(comboMatchStartTime && { start: comboMatchStartTime, matchDate: comboMatchStartTime }),
             ...(bet.match.estimatedMatchEnd && { estimatedMatchEnd: bet.match.estimatedMatchEnd }),
             ...(bet.match.betOutcomeCheckTime && { betOutcomeCheckTime: bet.match.betOutcomeCheckTime }),
             // Add these fields for live matches
             ...(bet.inplay && { 
               isLive: true,
-              matchStartTime: bet.match.starting_at,
-              matchEndTime: bet.match.estimatedMatchEnd || (bet.match.starting_at ? new Date(new Date(bet.match.starting_at).getTime() + 120 * 60 * 1000).toISOString() : null)
+              matchStartTime: comboMatchStartTime || bet.match.starting_at || bet.match.start,
+              matchEndTime: bet.match.estimatedMatchEnd || ((comboMatchStartTime || bet.match.starting_at || bet.match.start) ? new Date(new Date(comboMatchStartTime || bet.match.starting_at || bet.match.start).getTime() + 120 * 60 * 1000).toISOString() : null)
             }),
             // ✅ Spread unibetMeta fields at root level for backend compatibility
             ...unibetMetadata,
