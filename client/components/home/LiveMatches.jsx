@@ -186,6 +186,11 @@ const transformLiveMatchData = (apiMatch, betOffers) => {
         team2: awayTeam,
         date: displayDate, // Shows actual time for live matches, "Today" or date for upcoming
         time: displayTime,
+        // Keep Unibet start for bet placement (LiveMatchCard / bet slip need this)
+        start: apiMatch.start || apiMatch.starting_at || null,
+        starting_at: apiMatch.starting_at || apiMatch.start || null,
+        groupId: apiMatch.groupId,
+        leagueName: apiMatch.leagueName,
         odds: odds,
         clock: true,
         isLive: true,

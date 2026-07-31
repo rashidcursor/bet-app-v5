@@ -36,7 +36,8 @@ const LiveMatchCard = ({ match }) => {
         id: match.id,
         team1: match.team1 || match.homeName || 'Home',
         team2: match.team2 || match.awayName || 'Away',
-        starting_at: match.starting_at,
+        starting_at: match.starting_at || match.start || null,
+        start: match.start || match.starting_at || null,
         participants: match.participants || [
             { name: match.team1 || match.homeName || 'Home', position: 'home' },
             { name: match.team2 || match.awayName || 'Away', position: 'away' }

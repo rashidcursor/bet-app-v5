@@ -2201,7 +2201,8 @@ const BettingOptionButton = ({
                 id: matchData.id,
                 team1: homeTeam || 'Home',
                 team2: awayTeam || 'Away',
-                starting_at: matchData.starting_at,
+                starting_at: matchData.starting_at || matchData.start || null,
+                start: matchData.start || matchData.starting_at || null,
                 participants: matchData.participants
             };
 

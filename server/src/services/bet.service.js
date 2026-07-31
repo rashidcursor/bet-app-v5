@@ -1335,7 +1335,8 @@ class BetService {
                                    unibetMetaPayload?.start || 
                                    clientBetDetails?.matchDate || 
                                    clientBetDetails?.startTime || 
-                                   liveMatch.starting_at;
+                                   liveMatch.starting_at ||
+                                   liveMatch.start;
         
         if (!liveMatchStartTime) {
           console.error(`[placeBet] ❌ CRITICAL: No start time found for live match ${matchId}`);

@@ -926,8 +926,6 @@ export const placeBetThunk = createAsyncThunk(
               // ✅ Add matchDate to betDetails as well
               ...(matchStartTime && { matchDate: matchStartTime })
             },
-            // ✅ CRITICAL: Always include start time for bet placement (from Unibet API or match data)
-            ...(matchStartTime && { start: matchStartTime, matchDate: matchStartTime }),
             ...(bet.match.estimatedMatchEnd && { estimatedMatchEnd: bet.match.estimatedMatchEnd }),
             ...(bet.match.betOutcomeCheckTime && { betOutcomeCheckTime: bet.match.betOutcomeCheckTime }),
             inplay: bet.inplay || false,
@@ -937,6 +935,9 @@ export const placeBetThunk = createAsyncThunk(
               matchStartTime: matchStartTime || bet.match.starting_at || bet.match.start,
               matchEndTime: bet.match.estimatedMatchEnd || ((matchStartTime || bet.match.starting_at || bet.match.start) ? new Date(new Date(matchStartTime || bet.match.starting_at || bet.match.start).getTime() + 120 * 60 * 1000).toISOString() : null)
             }),
+            // Spread Unibet metadata, then force start so null metadata cannot wipe it
+            ...unibetMetadata,
+            ...(matchStartTime && { start: matchStartTime, matchDate: matchStartTime }),
             // Use smart fallback for leagueId and leagueName:
             // 1. First try bet.match.league (for League Card bets)
             // 2. Fallback to unibetMetadata (for Match Detail Page bets)
@@ -1041,7 +1042,6 @@ export const placeBetThunk = createAsyncThunk(
               name: bet.name || label,
               ...(comboMatchStartTime && { matchDate: comboMatchStartTime })
             },
-            ...(comboMatchStartTime && { start: comboMatchStartTime, matchDate: comboMatchStartTime }),
             ...(bet.match.estimatedMatchEnd && { estimatedMatchEnd: bet.match.estimatedMatchEnd }),
             ...(bet.match.betOutcomeCheckTime && { betOutcomeCheckTime: bet.match.betOutcomeCheckTime }),
             // Add these fields for live matches
@@ -1052,6 +1052,8 @@ export const placeBetThunk = createAsyncThunk(
             }),
             // ✅ Spread unibetMeta fields at root level for backend compatibility
             ...unibetMetadata,
+            // Force start after metadata so null cannot wipe a known start time
+            ...(comboMatchStartTime && { start: comboMatchStartTime, matchDate: comboMatchStartTime }),
             // Use smart fallback for leagueId and leagueName:
             // 1. First try bet.match.league (for League Card bets)
             // 2. Fallback to unibetMetadata (for Match Detail Page bets)
